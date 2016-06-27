@@ -8,18 +8,19 @@
 [x] Textures into SimpleAssetManager
 [x] SDF lighting
 [x] sprite pivot points
-[ ] multiple light support
+[x] multiple light support
    The actual light data is straight-forward - separate arrays for point, directional, spotlight.  The interface for getting them up seems to be
    1) generate a uniform buffer object.  We would have one per light type.
    2) use glBindBuffer and glMapBuffer/glUnmapBuffer to copy the data once per frame.
    3) glGetUniformBlockIndex and glBindBufferBase to bind the UBO to a particular buffer location in the shader
    
    The structure of the runtime code deserves some thought.  Currently scene objects only comprise one scene object type.  If we want sprites to also be lights, we either need a spritelight type, we need each scene object to optionally also be a light, we need some componenty thing (ugh), or a way to attach scene objects (ugh).
-[ ] Attenuation
-  [ ] Point
+[✓] Attenuation
+  [x] Point
   [ ] Conical
   [ ] Cylindrical (distance from line)
 [ ] sprite scale
+[x] sprite tint
 [ ] sprite asset
 [ ] Material assets
   [ ] Include normal data for SDF
@@ -33,7 +34,9 @@
 [ ] TODO: Windows port
 [x] shader preprocessing
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
-[ ] Relocate assets
+[ ] Relocate asset file paths
+[ ] Hundreds of sprites
+[ ] SceneObject reference count
 
 ------------------------------------------------
 PUBLISH GIT 

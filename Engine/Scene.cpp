@@ -33,13 +33,12 @@ static int s_SortNodeCmp(const void* _ap, const void* _bp)
 }
 
 static void SceneObjectApplyDelta(SceneObject* scene, const Mat4& delta);
-static void LightInitialize(Light* light, const LightOptions& lightOptions)
-{
-    
-}
 
 uint32_t SceneObjectGetSortKey(const SceneObject* sceneObject)
 {
+    if (sceneObject->m_Type == SceneObjectType::kLight)
+        return 0;
+    
     const SimpleModel* simpleModel = sceneObject->m_ModelInstance;
     
     uint32_t materialIdBits = 0;
@@ -91,6 +90,9 @@ void SceneDestroy(Scene* scene)
 
 void SceneUpdate(Scene* scene)
 {
+    // reset light count
+    scene->m_NumPointLights = 0;
+    
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
     
     for (int i=0,n=scene->m_NumObjects; i<n; ++i)
@@ -99,7 +101,7 @@ void SceneUpdate(Scene* scene)
         if (sceneObject->m_Flags & SceneObject::Flags::kDirty)
         {
             // update children
-            if (sceneObject->m_Child)
+            if (sceneObject->m_Child && sceneObject->m_Flags&SceneObject::Flags::kUpdatedOnce)
             {
                 Mat4 delta;
                 MatrixCalculateDelta(&delta, sceneObject->m_LocalToWorld, sceneObject->m_PrevLocalToWorld);
@@ -111,15 +113,34 @@ void SceneUpdate(Scene* scene)
             sceneObject->m_Flags &= ~SceneObject::Flags::kDirty;
             
             // update position and orientation
-            SimpleModel* modelInstance = sceneObject->m_ModelInstance;
-            MatrixCopy(&modelInstance->m_Po, sceneObject->m_LocalToWorld);
+            if (sceneObject->m_ModelInstance)
+                MatrixCopy(&sceneObject->m_ModelInstance->m_Po, sceneObject->m_LocalToWorld);
             
             // update prev local to world
             MatrixCopy(&sceneObject->m_PrevLocalToWorld, sceneObject->m_LocalToWorld);
         }
         
+        sceneObject->m_Flags |= SceneObject::Flags::kUpdatedOnce;
+        
         sortNodes[i].m_Index = i;
         sortNodes[i].m_Key = SceneObjectGetSortKey(sceneObject);
+        
+        if (sceneObject->m_Type == SceneObjectType::kLight)
+        {
+            Light* light = (Light*) &sceneObject->m_LightData[0];
+            if (light->m_Type == LightType::kPoint)
+            {
+                if (scene->m_NumPointLights == Light::kMaxLights)
+                    continue;
+                
+                PointLight* source = (PointLight*) light;
+                PointLight* dest = &scene->m_PointLights[scene->m_NumPointLights++];
+                *dest = *source;
+                
+                // transform position
+                dest->m_Position = Mat4GetTranslation3(sceneObject->m_LocalToWorld);
+            }
+        }
     }
     
     qsort(sortNodes, scene->m_NumObjects, sizeof(SortNode), s_SortNodeCmp);
@@ -185,7 +206,9 @@ SceneObject* SceneCreateLight(Scene* scene, const LightOptions& lightOptions)
     if (sceneObject)
     {
         sceneObject->m_ModelInstance = nullptr;
-        LightInitialize(&sceneObject->m_Light, lightOptions);
+        LightInitialize((Light*)&sceneObject->m_LightData[0], lightOptions);
+        
+        Mat4ApplyTranslation(&sceneObject->m_LocalToWorld, lightOptions.m_Position.xyz());
     }
     
     return sceneObject;
@@ -195,6 +218,9 @@ SceneObject* SceneCreateSpriteFromFile(Scene* scene, const char* fname)
 {
     Texture* texture = TextureCreateFromFile(fname);
     Material* material = MaterialCreate(g_SimpleTransparentShader, texture);
+    MaterialReserveProperties(material, 1);
+    MaterialSetMaterialPropertyType(material, 0, "TintColor", Material::MaterialPropertyType::kVec4);
+    
     TextureDestroy(texture); // material will own reference
     SpriteOptions spriteOptions;
     return SceneCreateSprite(scene, material, spriteOptions);
@@ -205,6 +231,9 @@ SceneObject* SceneCreateSpriteFromFile(Scene* scene, const char* fname, const Sp
 {
     Texture* texture = TextureCreateFromFile(fname);
     Material* material = MaterialCreate(g_SimpleTransparentShader, texture);
+    MaterialReserveProperties(material, 1);
+    MaterialSetMaterialPropertyType(material, 0, "TintColor", Material::MaterialPropertyType::kVec4);
+    
     TextureDestroy(texture); // material will own reference
     return SceneCreateSprite(scene, material, spriteOptions);
 }
@@ -230,11 +259,16 @@ SceneObject* SceneCreateCube(Scene* scene, Material* material)
 
 void SceneDraw(Scene* scene, RenderContext* renderContext)
 {
+    // update point lights
+    RenderUpdatePointLights(renderContext, scene->m_PointLights, scene->m_NumPointLights);
+    
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
     for (int i=0,n=scene->m_NumObjects; i<n; ++i)
     {
         int index = sortNodes[i].m_Index;
         SceneObject* sceneObject = scene->m_SceneObjects[index];
+        if (sceneObject->m_ModelInstance == nullptr)
+            continue;
         
         Vec3 pos = Mat4GetTranslation3(sceneObject->m_ModelInstance->m_Po);
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
@@ -314,17 +348,23 @@ void SceneGroupAddChild(SceneObject* parent, SceneObject* child)
         SceneGroupRemoveChild(parent, child);
         
     child->m_Parent = parent;
-
+    
     if (parent->m_Child == nullptr)
     {
         parent->m_Child = child;
         return;
     }
-
+    
     SceneObject* itr = parent->m_Child;
     while (itr->m_SiblingNext != nullptr)
         itr = itr->m_SiblingNext;
     itr->m_SiblingNext = child;
+}
+
+void SceneObjectAssert(SceneObject* sceneObject)
+{
+    if (sceneObject->m_Child != nullptr)
+        assert(sceneObject->m_Child->m_Parent == sceneObject);
 }
 
 void SceneGroupRemoveChild(SceneObject* parent, SceneObject* child)
@@ -358,10 +398,20 @@ void SceneObjectDestroy(Scene* scene, SceneObject* sceneObject)
 {
     if (sceneObject != nullptr)
     {
-        if (sceneObject->m_Child)
+        // remove children.  Don't use SceneGroupRemoveChild because we're going to have to iterate anyway.
         {
-            SceneGroupRemoveChild(sceneObject, sceneObject->m_Child);
-            sceneObject->m_Child = nullptr;
+            SceneObject* itr = sceneObject->m_Child;
+            while (itr)
+            {
+                SceneObject* prev = itr;
+                
+                itr->m_Parent = sceneObject->m_Parent;
+                itr = itr->m_SiblingNext;
+                
+                // if parent is null, we're not really parented anymore, so remove sibling links
+                if (sceneObject->m_Parent == nullptr)
+                    prev->m_SiblingNext = nullptr;
+            }
         }
         
         if (sceneObject->m_Parent)
@@ -379,11 +429,17 @@ void SceneObjectDestroy(Scene* scene, SceneObject* sceneObject)
         scene->m_SceneObjects[sceneObject->m_SceneIndex] = scene->m_SceneObjects[--scene->m_NumObjects];
         scene->m_SceneObjects[sceneObject->m_SceneIndex]->m_SceneIndex = sceneObject->m_SceneIndex;
         scene->m_SceneObjects[scene->m_NumObjects] = nullptr;
-
+        
 #ifndef NDEBUG
         memset(sceneObject, 0xff, sizeof *sceneObject);
 #endif
         
         delete sceneObject;
     }
+}
+
+SceneObject* SceneCreateEmpty(Scene* scene)
+{
+    SceneObject* sceneObject = SceneObjectAllocate(scene, SceneObjectType::kEmpty);
+    return sceneObject;
 }

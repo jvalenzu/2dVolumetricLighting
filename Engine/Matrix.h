@@ -107,7 +107,7 @@ struct Vec3
         ret *= value;
         return ret;
     }
-
+    
     inline Vec3& operator+= (const Vec3& value)
     {
         m_X[0] += value.m_X[0];
@@ -129,6 +129,14 @@ struct Vec3
         Vec3 ret(*this);
         ret -= value;
         return ret;
+    }
+
+    inline Vec3& operator/= (float f)
+    {
+        m_X[0] /= f;
+        m_X[1] /= f;
+        m_X[2] /= f;
+        return *this;
     }
     
     inline float LengthSquared() const
@@ -183,6 +191,14 @@ struct Vec4
         m_X[1] = value.m_X[1];
         m_X[2] = value.m_X[2];
         m_X[3] = w;
+    }
+    
+    Vec4(Vec3 value)
+    {
+        m_X[0] = value.m_X[0];
+        m_X[1] = value.m_X[1];
+        m_X[2] = value.m_X[2];
+        m_X[3] = 0.0f;
     }
     
     Vec3 XYZ() const
@@ -257,6 +273,11 @@ struct Vec4
         Vec4 ret(*this);
         ret -= value;
         return ret;
+    }
+    
+    inline Vec3 xyz() const
+    {
+        return Vec3(m_X[0], m_X[1], m_X[2]);
     }
 };
 
@@ -388,3 +409,68 @@ float MatrixDeterminant(const Mat3& m);
 
 // FLOAT
 bool FloatApproxEqual(float a, float b, float eps);
+
+
+// misc
+inline Vec3 ToZeroOne(const Vec3& a)
+{
+    Vec3 ret;
+    ret.m_X[0] = (ret.m_X[0]+1.0f)*0.5f;
+    ret.m_X[1] = (ret.m_X[1]+1.0f)*0.5f;
+    ret.m_X[2] = (ret.m_X[2]+1.0f)*0.5f;
+    return ret;
+}
+inline Vec3 FromZeroOne(const Vec3& a)
+{
+    Vec3 ret;
+    ret.m_X[0] = (ret.m_X[0]*2.0f)-1.0f;
+    ret.m_X[1] = (ret.m_X[1]*2.0f)-1.0f;
+    ret.m_X[2] = (ret.m_X[2]*2.0f)-1.0f;
+    return ret;
+}
+
+inline Vec4 ToZeroOne(const Vec4& a)
+{
+    Vec4 ret;
+    ret.m_X[0] = (ret.m_X[0]+1.0f)*0.5f;
+    ret.m_X[1] = (ret.m_X[1]+1.0f)*0.5f;
+    ret.m_X[2] = (ret.m_X[2]+1.0f)*0.5f;
+    ret.m_X[3] = (ret.m_X[3]+1.0f)*0.5f;
+    return ret;
+}
+inline Vec4 FromZeroOne(const Vec4& a)
+{
+    Vec4 ret;
+    ret.m_X[0] = (ret.m_X[0]*2.0f)-1.0f;
+    ret.m_X[1] = (ret.m_X[1]*2.0f)-1.0f;
+    ret.m_X[2] = (ret.m_X[2]*2.0f)-1.0f;
+    ret.m_X[3] = (ret.m_X[3]*2.0f)-1.0f;
+    return ret;
+}
+
+inline bool operator!=(const Vec4& a, const Vec4& b)
+{
+    bool ret = true;
+    ret = ret && FloatApproxEqual(a.m_X[0], b.m_X[0], 1e-3f);
+    ret = ret && FloatApproxEqual(a.m_X[1], b.m_X[1], 1e-3f);
+    ret = ret && FloatApproxEqual(a.m_X[2], b.m_X[2], 1e-3f);
+    ret = ret && FloatApproxEqual(a.m_X[3], b.m_X[3], 1e-3f);
+    return ret;
+}
+
+inline bool operator!=(const Vec3& a, const Vec3& b)
+{
+    bool ret = true;
+    ret = ret && FloatApproxEqual(a.m_X[0], b.m_X[0], 1e-3f);
+    ret = ret && FloatApproxEqual(a.m_X[1], b.m_X[1], 1e-3f);
+    ret = ret && FloatApproxEqual(a.m_X[2], b.m_X[2], 1e-3f);
+    return ret;
+}
+
+inline bool operator!=(const Vec2& a, const Vec2& b)
+{
+    bool ret = true;
+    ret = ret && FloatApproxEqual(a.m_X[0], b.m_X[0], 1e-3f);
+    ret = ret && FloatApproxEqual(a.m_X[1], b.m_X[1], 1e-3f);
+    return ret;
+}

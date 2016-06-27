@@ -22,6 +22,7 @@ LIBRARIES += -lglfw3 -framework Cocoa -framework OpenGL -framework IOKit -framew
 CLC = /System/Library/Frameworks/OpenCL.framework/Libraries/openclc
 
 # C++ source code to object files
+SRCS += Engine/Light.cpp
 SRCS += Engine/Matrix.cpp
 SRCS += Engine/Obb.cpp
 SRCS += Engine/Scene.cpp

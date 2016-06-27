@@ -132,8 +132,38 @@ vec2 clampCircle(vec2 uv)
     return toZeroOne(origin);
 }
 
-struct PointLight
+layout (std140) struct PointLight
+{
+    float m_TypePad;
+    float m_Range;
+    int m_PadB;
+    int m_PadC;
+    vec4 m_Color;
+    vec4 m_Position;
+};
+
+struct DirectionalLight
+{
+    vec4 m_Direction;
+    vec4 m_Color;
+};
+
+struct ConicalLight
 {
     vec4 m_Position;
+    vec4 m_Direction;
     vec4 m_Color;
+    float m_Range;
+    float m_Angle;
+    float m_Pad[2];
+};
+
+struct CylindrialLight
+{
+    vec4 m_Position;
+    vec4 m_Direction;
+    vec4 m_Color;
+    float m_Range;
+    float m_Angle;
+    float m_Pad[2];
 };

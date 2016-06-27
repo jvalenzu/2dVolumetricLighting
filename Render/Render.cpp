@@ -16,6 +16,7 @@
 #include "Engine/Utils.h"
 #include "Tool/Utils.h"
 
+#define kPointLightBinding 2
 
 const char* GetGLErrorString(GLenum error)
 {
@@ -300,6 +301,15 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     
     // replacement shader
     renderContext->m_ReplacementShader = nullptr;
+    
+    // light ubo
+    glGenBuffers(1, &renderContext->m_PointLightUbo);
+    glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_PointLightUbo);
+    glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(PointLight), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, kPointLightBinding, renderContext->m_PointLightUbo);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    
+    renderContext->m_AmbientLightColor = Vec4(0,0,0,0);
 }
 
 // RenderContextDestroy
@@ -307,9 +317,9 @@ void RenderContextDestroy(RenderContext* renderContext)
 {
     ShaderFini();
     TextureFini();
-
+    
     free(renderContext->m_PostEffects);
-    renderContext->m_PostEffects = nullptr;    
+    renderContext->m_PostEffects = nullptr;
 }
 
 // RenderDrawModel
@@ -328,7 +338,7 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model)
     Mat4 normalModel;
     MatrixInvert(&normalModel, model->m_Po);
     MatrixTransposeInsitu(&normalModel);
-
+    
     RenderUseMaterial(renderContext, material);
     
     GetGLError();
@@ -338,19 +348,52 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model)
     
     GLint nmi = glGetUniformLocation(shader->m_ProgramName, "normalModel");
     glUniformMatrix4fv(nmi, 1, GL_FALSE, normalModel.asFloat());
-
+    
     Mat4 modelView;
     MatrixMultiply(&modelView, model->m_Po, renderContext->m_View);
-
+    
     GLint mvi = glGetUniformLocation(shader->m_ProgramName, "modelView");
     glUniformMatrix4fv(mvi, 1, GL_FALSE, modelView.asFloat());
-
+    
     GLint viewIndex = glGetUniformLocation(shader->m_ProgramName, "view");
     glUniformMatrix4fv(viewIndex, 1, GL_FALSE, renderContext->m_View.asFloat());
-
+    
+    GLuint pointLightsBlockIndex = glGetUniformBlockIndex(shader->m_ProgramName, "LightData");
+    if (pointLightsBlockIndex != GL_INVALID_INDEX)
+        glUniformBlockBinding(shader->m_ProgramName, pointLightsBlockIndex, kPointLightBinding);
+    
     SimpleModelSetVertexAttributes(model);
-
+    
     glDrawElements(GL_TRIANGLES, model->m_NumIndices, GL_UNSIGNED_SHORT, (void*) 0);
+}
+
+void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* pointLights, int numPointLights)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_PointLightUbo);
+    GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    memcpy(p, pointLights, numPointLights * sizeof(PointLight));
+
+    PointLight* dest = (PointLight*)p;
+    for (int i=0; i<numPointLights; ++i)
+    {
+        Vec3 screenPosition = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
+        dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
+    }
+    
+    // printf("------------------\n");
+    // printf("numPointLights: %d\n", numPointLights);
+    // for (int i=0; i<numPointLights; ++i)
+    // {
+    //     Vec3 screenPos = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
+    //     printf("[%d] screenPosition: %f %f %f -> %f %f\n",
+    //            i,
+    //            pointLights[i].m_Position.m_X[0], pointLights[i].m_Position.m_X[1], pointLights[i].m_Position.m_X[2],
+    //            screenPos.m_X[0], screenPos.m_X[1]);
+    //     DumpLight(pointLights[i]);
+    // }
+    
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void RenderOptionsInit(RenderOptions* renderOptions, int width, int height)
@@ -533,7 +576,7 @@ void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int 
         return;
     
     RenderFullscreenSetVertexAttributes(renderContext);
-
+    
     RenderUseProgram(shader);
     
     RenderSetMaterialConstants(renderContext, material);
@@ -570,7 +613,7 @@ void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, int text
     GL_ERROR_SCOPE();
     
     RenderFullscreenSetVertexAttributes(renderContext);
-
+    
     RenderUseProgram(shader);
     
     glActiveTexture(GL_TEXTURE0);
@@ -616,7 +659,7 @@ void RenderDrawFullscreen(RenderContext* renderContext, Material* material, Text
     if (texture != nullptr)
         textureId = texture->m_TextureId;
     
-    RenderDrawFullscreen(renderContext, material, texture->m_TextureId);
+    RenderDrawFullscreen(renderContext, material, textureId);
 }
 
 void RenderSetRenderTarget(RenderContext* renderContext, Texture* texture)
@@ -684,7 +727,7 @@ bool RenderFrameEnd(RenderContext* renderContext)
                 glBindFramebuffer(GL_FRAMEBUFFER, renderContext->m_FrameBufferIds[~i&1]); // target next post effect
             else
                 glBindFramebuffer(GL_FRAMEBUFFER, 0); // target final destination
-        
+            
             RenderDrawFullscreen(renderContext, renderContext->m_PostEffects[i]->m_Shader, frameBufferColorId);
         }
     }
@@ -735,6 +778,9 @@ Vec3 RenderGetScreenPos(RenderContext* renderContext, Vec3 worldPos)
 
 void SimpleModelDestroy(SimpleModel* simpleModel)
 {
+    if (simpleModel == nullptr)
+        return;
+    
     MaterialDestroy(simpleModel->m_Material);
     
     glDeleteBuffers(1, &simpleModel->m_VertexBufferName);
@@ -756,6 +802,10 @@ SimpleModel* RenderGenerateSprite(const SpriteOptions& spriteOptions, Material* 
     SimpleModel* simpleModel = new SimpleModel();
     simpleModel->m_Material = material;
     
+    int index = MaterialGetPropertyIndex(material, "TintColor");
+    if (index >= 0)
+        MaterialSetMaterialPropertyVector(material, index, spriteOptions.m_TintColor);
+    
     // initialize the matrix position/orientation
     MatrixMakeIdentity(&simpleModel->m_Po);
     
@@ -772,11 +822,11 @@ SimpleModel* RenderGenerateSprite(const SpriteOptions& spriteOptions, Material* 
     
     int numPositions = 0;
     
-    const float leftOffset  =       spriteOptions.m_Pivot.m_X[0]  * halfWidth * -1.0f;
-    const float rightOffset = (1.0f-spriteOptions.m_Pivot.m_X[0]) * halfHeight;
-
-    const float topOffset = (1.0f-spriteOptions.m_Pivot.m_X[1]) * 2.0f * halfHeight;
-    const float bottomOffset    =       spriteOptions.m_Pivot.m_X[1]  * 2.0f * halfHeight * -1.0f;
+    const float leftOffset = spriteOptions.m_Pivot.m_X[0] * halfWidth * -1.0f;
+    const float rightOffset = (1.0f-spriteOptions.m_Pivot.m_X[0]) * halfWidth;
+    
+    const float topOffset = (1.0f-spriteOptions.m_Pivot.m_X[1]) * halfHeight;
+    const float bottomOffset = spriteOptions.m_Pivot.m_X[1] * halfHeight * -1.0f;
     
     // 0
     SimpleVertex* simpleVertex = &simpleModel->m_Vertices[numPositions++];
@@ -852,7 +902,7 @@ SimpleModel* RenderGenerateSprite(const SpriteOptions& spriteOptions, Material* 
                           GL_TRUE,                                    // normalize?
                           sizeof(SimpleVertex),                       // stride
                           BUFFER_OFFSETOF(SimpleVertex, m_Normal));   // offset in buffer data
-
+    
     
     glEnableVertexAttribArray(kVertexAttributeTexCoord);
     glVertexAttribPointer(kVertexAttributeTexCoord,
@@ -1085,4 +1135,9 @@ void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
                           BUFFER_OFFSETOF(SimpleVertex, m_Uv));       // offset in buffer data
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, simpleModel->m_IndexBufferName);
+}
+
+void RenderSetAmbientLight(RenderContext* renderContext, Vec4 color)
+{
+    renderContext->m_AmbientLightColor = color;
 }

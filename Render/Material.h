@@ -63,4 +63,6 @@ void      MaterialSetMaterialPropertyFloat(Material* material,   int index, floa
 void      MaterialSetMaterialPropertyVector(Material* material,  int index, Vec4 value);
 void      MaterialSetMaterialPropertyTexture(Material* material, int index, int textureId);
 void      MaterialSetMaterialPropertyTexture(Material* material, int index, Texture* texture);
+int       MaterialGetPropertyIndex(Material* material, const char* materialPropertyName); // -1 on error
+
 void      MaterialDestroy(Material* victim);

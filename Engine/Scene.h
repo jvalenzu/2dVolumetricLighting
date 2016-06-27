@@ -4,6 +4,7 @@
 
 #include "Engine/Matrix.h"
 #include "Engine/Obb.h"
+#include "Engine/Light.h"
 
 struct SimpleModel;
 struct RenderContext;
@@ -15,36 +16,22 @@ enum SceneObjectType : uint32_t
 {
     kCube,
     kSprite,
-    kLight
-};
-
-enum LightType : uint32_t
-{
-    kDirectional,
-    kPoint,
-    kConical,
-    kCylindrical
-};
-
-struct Light
-{
-    LightType m_Type;
-    Vec4 m_Position;
-    Vec4 m_Direction;
-    Vec4 m_Color;
+    kLight,
+    kEmpty
 };
 
 struct SceneObject
 {
     enum Flags : uint32_t
     {
-        kDirty = 1
+        kDirty = 1,
+        kUpdatedOnce = 2
     };
     Mat4 m_PrevLocalToWorld;
     Mat4 m_LocalToWorld;
     SimpleModel* m_ModelInstance;
     Obb m_Obb;
-    Light m_Light;
+    char m_LightData[sizeof(LightUnion)];
     uint32_t m_Flags;
     const char* m_DebugName;
     int m_SceneIndex;
@@ -69,6 +56,9 @@ struct Scene
     enum { kGroupMax = 16 };
     SceneObject* m_SceneGroups[kGroupMax];
     bool m_SceneGroupAllocated[kGroupMax];
+    
+    PointLight m_PointLights[Light::kMaxLights];
+    int m_NumPointLights;
 };
 
 void         SceneCreate(Scene* scene, int maxSceneObjects);
@@ -92,5 +82,6 @@ SceneObject* SceneCreateSpriteFromFile(Scene* scene, const char* fname, const Sp
 SceneObject* SceneCreateSpriteFromRenderTexture(Scene* scene, int width, int height);
 SceneObject* SceneCreateSpriteFromMaterial(Scene* scene, Material* material);
 SceneObject* SceneCreateCube(Scene* scene, Material* material);
+SceneObject* SceneCreateEmpty(Scene* scene);
 
 void         SceneObjectDestroy(Scene* scene, SceneObject* sceneObject);

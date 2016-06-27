@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "Engine/Container/LinkyList.h"
+#include "Engine/Light.h"
 #include "Engine/Scene.h"
 #include "Engine/Utils.h"
 #include "Render/Asset.h"
@@ -44,14 +45,14 @@ int main(int argc, char* argv[])
         Test();
         return 0;
     }
-
+    
     RenderContext renderContext;
     RenderInit(&renderContext, 1024, 768);
-
+    
     RenderSetProcessKeysCallback(&renderContext, s_ProcessKeys);
-
+    
     MainLoop(&renderContext);
-
+    
     RenderContextDestroy(&renderContext);
     
     glfwTerminate();
@@ -70,11 +71,13 @@ static void MainLoop(RenderContext* renderContext)
     
     // LSP
     SpriteOptions spriteOptions;
-    spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
-    SceneObject* sprite0 = s_SceneObject = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
+    // spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
+    SceneObject* sprite0 = s_SceneObject = SceneCreateSpriteFromFile(&scene, "Avatar.png", spriteOptions);
     Mat4ApplyTranslation(&sprite0->m_LocalToWorld, 0, 0, -1);
     sprite0->m_Flags |= SceneObject::Flags::kDirty;
     sprite0->m_DebugName = "lsp";
+    
+    RenderSetAmbientLight(renderContext, Vec4(0.5f, 0.5f, 0.5f, 0.5f));
     
     // initialize target
     s_Target = Mat4GetTranslation3(s_SceneObject->m_LocalToWorld);
@@ -108,7 +111,7 @@ static void MainLoop(RenderContext* renderContext)
     MaterialSetMaterialPropertyType(treeAppleMaterial, 1, "_LightPosition", Material::MaterialPropertyType::kVec4);
     MaterialSetMaterialPropertyTexture(treeAppleMaterial, 0, treeAppleNormal);
     MaterialSetMaterialPropertyVector(treeAppleMaterial, 1, Vec4(1,1,1,1));
-    
+
     SceneObject* sceneObjects[4] = { 0 };
     for (int i=0; i<4; ++i)
     {
@@ -123,11 +126,28 @@ static void MainLoop(RenderContext* renderContext)
         SceneGroupAdd(&scene, shadowCasterGroupId, sprite1);
     }
     
-    // jiv delete me begin
-    // SceneObject* light = SceneCreateSprite(&scene, MaterialRef(treeAppleMaterial), SpriteOptions::SpriteOptions());
-    // SceneGroupAddChild(s_SceneObject, child);
-    // jiv delete me end
+    // create and attach a light to our mover
+    spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
+    spriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
     
+    SceneObject* lightSprite0 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
+    Mat4ApplyTranslation(&lightSprite0->m_LocalToWorld, 10, 0, -1);
+    lightSprite0->m_Flags |= SceneObject::Flags::kDirty;
+    SceneGroupAddChild(s_SceneObject, lightSprite0);
+    
+    spriteOptions.m_TintColor = Vec4(0.25f, 1.0f, 0.25f, 1.0f);
+    SceneObject* lightSprite1 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
+    Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, -10, 0, -1);
+    lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
+    SceneGroupAddChild(s_SceneObject, lightSprite1);
+    
+    SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3( 10,0,-1), Vec4(1,0.25,0.25,1), 2.0f));
+    SceneGroupAddChild(lightSprite0, light0);
+    
+    SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10,0,-1), Vec4(0.25,1,0.25,1), 2.0f));
+    SceneGroupAddChild(lightSprite1, light1);
+    
+    // blur temp textures
     Texture* renderTextureTemp[2];
     for (int i=0; i<2; ++i)
         renderTextureTemp[i] = TextureCreateRenderTexture(512, 512, 0);
@@ -164,7 +184,7 @@ static void MainLoop(RenderContext* renderContext)
     MaterialSetMaterialPropertyType(shadowMapSampleMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
     MaterialSetMaterialPropertyVector(shadowMapSampleMaterial, 0, Vec4(0.25f, 0.25f, 0.0f, 0.0f));
     shadowMapSampleMaterial->m_BlendMode = Material::BlendMode::kBlend;
-    
+
     bool running = true;
     while (running)
     {
@@ -258,6 +278,8 @@ static void MainLoop(RenderContext* renderContext)
     
     // scene destroy
     SceneObjectDestroy(&scene, sprite0);
+    SceneObjectDestroy(&scene, lightSprite0);
+    SceneObjectDestroy(&scene, lightSprite1);
     for (int i=0; i<4; ++i)
         SceneObjectDestroy(&scene, sceneObjects[i]);
     

@@ -4,6 +4,7 @@
 #include <OpenGL/gl3.h>
 #include "Engine/Matrix.h"
 #include "Render/Material.h"
+#include "Engine/Light.h"
 
 #include <assert.h>
 
@@ -39,10 +40,14 @@ struct RenderContext
     PostEffect** m_PostEffects;
     int m_NumPostEffects;
     int m_MaxNumPostEffects;
-
+    
     Shader* m_ReplacementShader;
     
     Vec3 m_ClearColor;
+    
+    GLuint m_PointLightUbo;
+    
+    Vec4 m_AmbientLightColor;
 };
 
 struct RenderOptions
@@ -124,10 +129,12 @@ struct SpriteOptions
     
     float m_PixelsPerUnit;
     Vec2 m_Pivot;
+    Vec4 m_TintColor;
     
     SpriteOptions()
         : m_PixelsPerUnit(kDefaultPixelsPerUnit)
         , m_Pivot(0.5f, 0.5f)
+        , m_TintColor(1.0f, 1.0f, 1.0f, 1.0f)
     {
     }
 };
@@ -140,6 +147,7 @@ void RenderContextDestroy(RenderContext* renderContext);
 
 void RenderFrameInit(RenderContext* context);
 bool RenderFrameEnd(RenderContext* context);
+void RenderSetAmbientLight(RenderContext* context, Vec4 color);
 void RenderUseMaterial(RenderContext* context, const Material* material);
 void RenderSetMaterialConstants(RenderContext* renderContext, const Material* material);
 
@@ -170,6 +178,8 @@ SimpleModel* RenderGenerateSprite(const SpriteOptions& spriteOptions, Material* 
 void RenderDumpModel(const SimpleModel* model);
 void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a);
 void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model);
+
+void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* pointLights, int numPointLights);
 
 void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel);
 

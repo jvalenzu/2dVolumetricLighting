@@ -66,6 +66,9 @@ void RenderSetMaterialConstants(RenderContext* renderContext, const Material* ma
     GLint mainTextureSlot = glGetUniformLocation(shader->m_ProgramName, "_MainTex");
     glProgramUniform1i(shader->m_ProgramName, mainTextureSlot, 0);
     
+    GLint ambientLightColorSlot = glGetUniformLocation(shader->m_ProgramName, "_AmbientLight");
+    glProgramUniform4f(shader->m_ProgramName, ambientLightColorSlot, renderContext->m_AmbientLightColor.m_X[0], renderContext->m_AmbientLightColor.m_X[1], renderContext->m_AmbientLightColor.m_X[2], renderContext->m_AmbientLightColor.m_X[3]);
+    
     int textureSlotItr = 1;
     for (int i=0; i<material->m_NumMaterialProperties; ++i)
     {
@@ -117,6 +120,18 @@ void MaterialSetMaterialPropertyType(Material* material, int index, const char* 
     
     strncpy(materialProperty->m_Key, materialPropertyName, sizeof materialProperty->m_Key-1);
     materialProperty->m_Key[sizeof materialProperty->m_Key-1] = '\0';
+}
+
+int MaterialGetPropertyIndex(Material* material, const char* materialPropertyName)
+{
+    int index = -1;
+    for (int i=0; index==-1&&i<material->m_NumMaterialProperties; ++i)
+    {
+        if (strcmp(material->m_MaterialPropertyBlock[i].m_Key, materialPropertyName))
+            continue;
+        index = i;
+    }
+    return index;
 }
 
 void MaterialSetMaterialPropertyFloat(Material* material, int index, float value)
