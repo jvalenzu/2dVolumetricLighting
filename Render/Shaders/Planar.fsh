@@ -7,9 +7,19 @@ precision highp float;
 uniform sampler2D _MainTex;
 uniform sampler2D _PlanarTex;
 
-layout (std140) uniform LightData
+layout (std140) uniform PointLightData
 {
     PointLight _PointLight[32];
+};
+
+layout (std140) uniform CylindricalLightData
+{
+    CylindricalLight _CylindricalLight[32];
+};
+
+layout (std140) uniform ConicalLightData
+{
+    ConicalLight _ConicalLight[32];
 };
 
 uniform mat4 project;
@@ -32,6 +42,7 @@ void main (void)
     vec2 fragmentPos = screenPosition.xy / screenPosition.w;
     
     vec4 color = vec4(_AmbientLight.rgb,1);
+    
     for (int i=0; i<32; ++i)
     {
         PointLight pointLight = _PointLight[i];
@@ -40,9 +51,42 @@ void main (void)
         
         // screenspace distance based attenuation squared
         float d0 = distance(pointLight.m_Position.xy, fragmentPos.xy);
-        float d1 = clamp((d0*d0) / pointLight.m_Range, 0.0f, 1.0f);
+        float d1 = clamp((d0*d0) * pointLight.m_Range, 0.0f, 1.0f);
         
         color.rgb += (1-d1)*c0*pointLight.m_Color.rgb;
+    }
+    
+    for (int i=0; i<32; ++i)
+    {
+        ConicalLight conicalLight = _ConicalLight[i];
+        
+        vec2 ray = normalize(conicalLight.m_Position.xy - fragmentPos);
+        float c0 = clamp(dot(t1.rg, ray), 0.0, 1);
+        
+        // screenspace distance based attenuation squared
+        float d0 = distance(conicalLight.m_Position.xy, fragmentPos.xy);
+        float d1 = clamp((d0*d0) * conicalLight.m_Range, 0.0f, 1.0f);
+        
+        // angle attenuation
+        float theta = (dot(ray, -conicalLight.m_Direction.xy));
+        if (theta > conicalLight.m_Angle)
+            color.rgb += (1-d1)*c0*conicalLight.m_Color.rgb;
+    }
+    
+    for (int i=0; i<32; ++i)
+    {
+        CylindricalLight cylindricalLight = _CylindricalLight[i];
+        
+        // screenspace distance based attenuation squared
+        vec2 p0 = pointOnLineSegment(cylindricalLight.m_Position.xy, cylindricalLight.m_Position1.xy, fragmentPos.xy);
+        
+        vec2 ray = normalize(p0 - fragmentPos);
+        float c0 = clamp(dot(t1.rg, ray), 0.0, 1);
+        
+        float d0 = distance(p0, fragmentPos.xy);
+        float d1 = clamp((d0*d0) * cylindricalLight.m_Range, 0.0f, 1.0f);
+        
+        color.rgb += (1-d1)*c0*cylindricalLight.m_Color.rgb;
     }
     
     fragColor = vec4(color.rgb*t0.rgb, t0.a);

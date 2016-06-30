@@ -34,6 +34,16 @@ vec4 toZeroOne(vec4 param)
     return (param+1.0f)*0.5f;
 }
 
+vec2 pointOnLineSegment(vec2 p0, vec2 p1, vec2 q0)
+{
+    vec2 ret;
+
+    vec2 p1p0 = p1 - p0;
+    float t0 = dot(q0 + p0, p1p0)/dot(p1p0, p1p0);
+    float t1 = min(t0, 1.0f);
+    float t2 = max(t1, 0.0f);
+    return p0+p1p0*t2;
+}
 
 // clip to box
 // p0 -> point in range -1,1
@@ -142,28 +152,31 @@ layout (std140) struct PointLight
     vec4 m_Position;
 };
 
-struct DirectionalLight
+layout (std140) struct DirectionalLight
 {
     vec4 m_Direction;
     vec4 m_Color;
 };
 
-struct ConicalLight
+layout (std140) struct ConicalLight
 {
-    vec4 m_Position;
-    vec4 m_Direction;
-    vec4 m_Color;
+    int m_TypePad;
     float m_Range;
     float m_Angle;
-    float m_Pad[2];
+    int m_Pad;
+    vec4 m_Color;
+    vec4 m_Position;
+    vec4 m_Direction;
 };
 
-struct CylindrialLight
+layout (std140) struct CylindricalLight
 {
-    vec4 m_Position;
-    vec4 m_Direction;
-    vec4 m_Color;
+    int m_TypePad;
     float m_Range;
-    float m_Angle;
-    float m_Pad[2];
+    int m_Pad;
+    float m_Length;
+    vec4 m_Color;
+    vec2 m_Position;
+    vec2 m_Position1;
+    vec4 m_Direction;
 };

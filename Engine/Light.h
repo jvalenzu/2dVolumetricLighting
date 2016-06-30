@@ -13,7 +13,7 @@ enum LightType : uint32_t
 
 struct Light
 {
-    enum { kMaxLights = 32 };
+    enum { kMaxLights = 8 };
     
     LightType m_Type;
 };
@@ -35,17 +35,17 @@ struct DirectonalLight : Light
 struct ConicalLight : Light
 {
     float m_Range;
-    float m_Angle;
-    int m_Pad[1];
+    float m_CosAngle;
+    int m_Pad;
     Vec4 m_Color;
     Vec4 m_Position;
-    Vec4 m_Direction;
+    Vec4 m_Direction; // actually 'right', but I'm trying to keep this simple.
 };
 
 struct CylindricalLight : Light
 {
     float m_Range;
-    float m_Angle;
+    int m_Pad;
     float m_Length;
     Vec4 m_Color;
     Vec4 m_Position;
@@ -66,9 +66,10 @@ struct LightOptions
     Vec4 m_Position;
     Vec4 m_Direction;
     Vec4 m_Color;
+    float m_Length;
     float m_Range;
     float m_Angle;
-
+    
     static LightOptions MakeDirectionalLight(Vec4 direction, Vec4 color, float range)
     {
         LightOptions ret;
@@ -87,7 +88,7 @@ struct LightOptions
         ret.m_Range = range;
         return ret;
     }
-
+    
     static LightOptions MakePointLight(Vec3 position, Vec4 color, float range)
     {
         return MakePointLight(Vec4(position, 1.0f), color, range);
@@ -105,12 +106,13 @@ struct LightOptions
         return ret;
     }
     
-    static LightOptions MakeCylindricalLight(Vec4 position, Vec4 direction, Vec4 color, float range)
+    static LightOptions MakeCylindricalLight(Vec4 position, Vec4 direction, Vec4 color, float length, float range)
     {
         LightOptions ret;
         ret.m_Type = kCylindrical;
         ret.m_Position = position;
         ret.m_Direction = direction;
+        ret.m_Length = length;
         ret.m_Color = color;
         ret.m_Range = range;
         return ret;

@@ -54,9 +54,7 @@ int main(int argc, char* argv[])
     MainLoop(&renderContext);
     
     RenderContextDestroy(&renderContext);
-    
-    glfwTerminate();
-    
+
     return 0;
 }
 
@@ -80,7 +78,7 @@ static void MainLoop(RenderContext* renderContext)
     RenderSetAmbientLight(renderContext, Vec4(0.5f, 0.5f, 0.5f, 0.5f));
     
     // initialize target
-    s_Target = Mat4GetTranslation3(s_SceneObject->m_LocalToWorld);
+    s_Target = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
     VectorSplat(&s_Dir, 0.0f);
     VectorSplat(&s_LastDir, 0.0f);
     
@@ -111,41 +109,62 @@ static void MainLoop(RenderContext* renderContext)
     MaterialSetMaterialPropertyType(treeAppleMaterial, 1, "_LightPosition", Material::MaterialPropertyType::kVec4);
     MaterialSetMaterialPropertyTexture(treeAppleMaterial, 0, treeAppleNormal);
     MaterialSetMaterialPropertyVector(treeAppleMaterial, 1, Vec4(1,1,1,1));
-
+    
     SceneObject* sceneObjects[4] = { 0 };
     for (int i=0; i<4; ++i)
     {
-        SceneObject* sprite1 = sceneObjects[i] = SceneCreateSprite(&scene, MaterialRef(treeAppleMaterial), SpriteOptions::SpriteOptions());
+        SpriteOptions spriteOptionsTree;
+        // spriteOptionsTree.m_Scale = Vec2(5.0f, 5.0f);
+        
+        SceneObject* sprite1 = sceneObjects[i] = SceneCreateSprite(&scene, MaterialRef(treeAppleMaterial), spriteOptionsTree);
         Mat4ApplyTranslation(&sprite1->m_LocalToWorld, xes[i], yes[i], -1);
         sprite1->m_Flags |= SceneObject::Flags::kDirty;
-        
-        char name[10];
-        sprintf(name, "enemy%d\n", i);
-        sprite1->m_DebugName = strdup(name); // jiv fixme
         
         SceneGroupAdd(&scene, shadowCasterGroupId, sprite1);
     }
     
     // create and attach a light to our mover
     spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
-    spriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
+    spriteOptions.m_Scale = Vec2(0.5f, 0.5f);
     
+    // point light
+    spriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
     SceneObject* lightSprite0 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
     Mat4ApplyTranslation(&lightSprite0->m_LocalToWorld, 10, 0, -1);
     lightSprite0->m_Flags |= SceneObject::Flags::kDirty;
     SceneGroupAddChild(s_SceneObject, lightSprite0);
     
+    SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(10.0f, 0.0f, -1.0f),
+                                                                                  Vec3( 0.0f, 1.0f,  0.0f),
+                                                                                  Vec4(1.0f,0.25f,0.25f,1.0f),
+                                                                                  45.0f,
+                                                                                  20.0f));
+    SceneGroupAddChild(lightSprite0, light0);
+
+    // conical light
     spriteOptions.m_TintColor = Vec4(0.25f, 1.0f, 0.25f, 1.0f);
     SceneObject* lightSprite1 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
     Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, -10, 0, -1);
     lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
     SceneGroupAddChild(s_SceneObject, lightSprite1);
     
-    SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3( 10,0,-1), Vec4(1,0.25,0.25,1), 2.0f));
-    SceneGroupAddChild(lightSprite0, light0);
-    
-    SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10,0,-1), Vec4(0.25,1,0.25,1), 2.0f));
+    SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), Vec4(1.0f, 1.0f, 0.25f, 1.0f), 2.0f));
     SceneGroupAddChild(lightSprite1, light1);
+    
+    // cylindrical light
+    spriteOptions.m_TintColor = Vec4(0.25f, 0.25f, 1.0f, 1.0f);
+        
+    SceneObject* lightSprite2 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
+    Mat4ApplyTranslation(&lightSprite2->m_LocalToWorld, 0.0f, 5.0f, -1.0f);
+    lightSprite2->m_Flags |= SceneObject::Flags::kDirty;
+    SceneGroupAddChild(s_SceneObject, lightSprite2);
+        
+    SceneObject* light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3( 0.0f, 5.0f, -1.0f),
+                                                                                      Vec3( 0.0f, 1.0f,  0.0f),
+                                                                                      spriteOptions.m_TintColor,
+                                                                                      0.5f,
+                                                                                      10.0f));
+    SceneGroupAddChild(lightSprite2, light2);
     
     // blur temp textures
     Texture* renderTextureTemp[2];
@@ -184,7 +203,7 @@ static void MainLoop(RenderContext* renderContext)
     MaterialSetMaterialPropertyType(shadowMapSampleMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
     MaterialSetMaterialPropertyVector(shadowMapSampleMaterial, 0, Vec4(0.25f, 0.25f, 0.0f, 0.0f));
     shadowMapSampleMaterial->m_BlendMode = Material::BlendMode::kBlend;
-
+    
     bool running = true;
     while (running)
     {
@@ -193,7 +212,7 @@ static void MainLoop(RenderContext* renderContext)
         SceneUpdate(&scene);
         
         // calculate the sceen position of our light source
-        Vec3 screenPos = RenderGetScreenPos(renderContext, Mat4GetTranslation3(s_SceneObject->m_LocalToWorld));
+        Vec3 screenPos = RenderGetScreenPos(renderContext, Mat4GetTranslation(s_SceneObject->m_LocalToWorld));
         MaterialSetMaterialPropertyVector(shadow1dMaterial, 0, Vec4(screenPos, 0.0f));
         MaterialSetMaterialPropertyVector(shadowMapSampleMaterial, 0, Vec4(screenPos, 0.0f));
         
@@ -260,7 +279,7 @@ static void MainLoop(RenderContext* renderContext)
         {
             // handle user input
             float err = 0.0f;
-            Vec3 pos = Mat4GetTranslation3(s_SceneObject->m_LocalToWorld);
+            Vec3 pos = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
             Vec3 dir = s_Target - pos;
             if ((err = VectorLengthSquared(dir)) > 1e-3f)
             {
@@ -280,6 +299,7 @@ static void MainLoop(RenderContext* renderContext)
     SceneObjectDestroy(&scene, sprite0);
     SceneObjectDestroy(&scene, lightSprite0);
     SceneObjectDestroy(&scene, lightSprite1);
+    SceneObjectDestroy(&scene, lightSprite2);
     for (int i=0; i<4; ++i)
         SceneObjectDestroy(&scene, sceneObjects[i]);
     
@@ -315,7 +335,7 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
 {
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
-        float step = 3.0f;
+        float step = 2.0f;
         
         float x=0.0f, y=0.0f, z=0.0f;
         
@@ -347,20 +367,27 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
         s_LastDir = s_Dir;
         s_Dir.Normalize();
         
-        // printf("mask  %f/%f/%f\n",  mask.m_X[0],  mask.m_X[1],  mask.m_X[2]);
-        // printf("maskL %f/%f/%f\n", maskL.m_X[0], maskL.m_X[1], maskL.m_X[2]);
-        // printf("strength %i\n", s_Strength);
-        
-        // Mat4 rot;
-        // float uvw[4] = { 0.0f, 0.0f, -1.0f, 0.0f };
-        // MatrixSetRotAboutAxis(&rot, uvw, 0.0872664625995f);
-        // 
-        // Mat4 t1;
-        // MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);
-        // MatrixCopy(&s_SceneObject->m_LocalToWorld, t1);
-        
-        s_Target = Mat4GetTranslation3(s_SceneObject->m_LocalToWorld);
-        s_Target += temp;
+        if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT)
+        {
+            const float sign = key == GLFW_KEY_LEFT ? 1.0f : -1.0f;
+            
+            Mat4 rot;
+            float uvw[4] = { 0.0f, 0.0f, -1.0f, 0.0f };
+            MatrixSetRotAboutAxis(&rot, uvw, sign*0.0872664625995f);
+            
+            Mat4 t1;
+            MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);
+            MatrixCopy(&s_SceneObject->m_LocalToWorld, t1);
+        }
+        else
+        {
+            s_Target = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
+            
+            if (key == GLFW_KEY_W || key == GLFW_KEY_S)
+                s_Target += Mat4GetUp(s_SceneObject->m_LocalToWorld) * (signbit(y)?-1.0f:1.0f) * step;
+            else
+                s_Target += Mat4GetRight(s_SceneObject->m_LocalToWorld) * (signbit(x)?-1.0f:1.0f) * step;
+        }
         
         s_SceneObject->m_Flags |= SceneObject::Flags::kDirty;
     }

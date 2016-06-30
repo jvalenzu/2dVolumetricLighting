@@ -45,7 +45,7 @@ uint32_t SceneObjectGetSortKey(const SceneObject* sceneObject)
     uint32_t blendModeBit = 0;
     uint32_t positionBits = 0;
     
-    Vec3 pos = Mat4GetTranslation3(simpleModel->m_Po);
+    Vec3 pos = Mat4GetTranslation(simpleModel->m_Po);
     
     if (simpleModel->m_Material->m_BlendMode != Material::BlendMode::kOpaque)
     {
@@ -92,6 +92,8 @@ void SceneUpdate(Scene* scene)
 {
     // reset light count
     scene->m_NumPointLights = 0;
+    scene->m_NumConicalLights = 0;
+    scene->m_NumCylindricalLights = 0;
     
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
     
@@ -138,8 +140,40 @@ void SceneUpdate(Scene* scene)
                 *dest = *source;
                 
                 // transform position
-                dest->m_Position = Mat4GetTranslation3(sceneObject->m_LocalToWorld);
+                dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
             }
+            
+            if (light->m_Type == LightType::kConical)
+            {
+                if (scene->m_NumConicalLights == Light::kMaxLights)
+                    continue;
+                
+                ConicalLight* source = (ConicalLight*) light;
+                ConicalLight* dest = &scene->m_ConicalLights[scene->m_NumConicalLights++];
+                *dest = *source;
+                
+                // transform position
+                dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
+                
+                // jiv fixme: it's in world space, shouldn't be
+                dest->m_Direction = Mat4GetRight(sceneObject->m_LocalToWorld);
+            }
+            
+            if (light->m_Type == LightType::kCylindrical)
+            {
+                if (scene->m_NumCylindricalLights == Light::kMaxLights)
+                    continue;
+                
+                CylindricalLight* source = (CylindricalLight*) light;
+                CylindricalLight* dest = &scene->m_CylindricalLights[scene->m_NumCylindricalLights++];
+                *dest = *source;
+                
+                // transform position
+                dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
+                
+                // jiv fixme: it's in world space, shouldn't be
+                // dest->m_Direction = Mat4GetRight(sceneObject->m_LocalToWorld);
+            }            
         }
     }
     
@@ -195,6 +229,9 @@ SceneObject* SceneCreateSprite(Scene* scene, Material* material, const SpriteOpt
     {
         sceneObject->m_ModelInstance = RenderGenerateSprite(spriteOptions, material);
         sceneObject->m_Obb = ToolGenerateObbFromSimpleModel(sceneObject->m_ModelInstance);
+        
+        sceneObject->m_LocalToWorld.m_X[0] *= spriteOptions.m_Scale.m_X[0];
+        sceneObject->m_LocalToWorld.m_Y[1] *= spriteOptions.m_Scale.m_X[1];
     }
     
     return sceneObject;
@@ -235,7 +272,8 @@ SceneObject* SceneCreateSpriteFromFile(Scene* scene, const char* fname, const Sp
     MaterialSetMaterialPropertyType(material, 0, "TintColor", Material::MaterialPropertyType::kVec4);
     
     TextureDestroy(texture); // material will own reference
-    return SceneCreateSprite(scene, material, spriteOptions);
+    SceneObject* ret = SceneCreateSprite(scene, material, spriteOptions);
+    return ret;
 }
 
 SceneObject* SceneCreateSpriteFromRenderTexture(Scene* scene, int width, int height)
@@ -261,6 +299,8 @@ void SceneDraw(Scene* scene, RenderContext* renderContext)
 {
     // update point lights
     RenderUpdatePointLights(renderContext, scene->m_PointLights, scene->m_NumPointLights);
+    RenderUpdateConicalLights(renderContext, scene->m_ConicalLights, scene->m_NumConicalLights);
+    RenderUpdateCylindricalLights(renderContext, scene->m_CylindricalLights, scene->m_NumCylindricalLights);
     
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
     for (int i=0,n=scene->m_NumObjects; i<n; ++i)
@@ -270,7 +310,7 @@ void SceneDraw(Scene* scene, RenderContext* renderContext)
         if (sceneObject->m_ModelInstance == nullptr)
             continue;
         
-        Vec3 pos = Mat4GetTranslation3(sceneObject->m_ModelInstance->m_Po);
+        Vec3 pos = Mat4GetTranslation(sceneObject->m_ModelInstance->m_Po);
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
     }
 }
@@ -294,7 +334,7 @@ void SceneDraw(Scene* scene, RenderContext* renderContext, int groupId)
         if (!found)
             continue;
         
-        Vec3 pos = Mat4GetTranslation3(sceneObject->m_ModelInstance->m_Po);
+        Vec3 pos = Mat4GetTranslation(sceneObject->m_ModelInstance->m_Po);
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
     }
 }

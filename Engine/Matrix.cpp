@@ -63,14 +63,34 @@ void Mat4ApplyTranslation(Mat4* dest, const Vec3& a)
     dest->m_W[2] = a.m_X[2];
 }
 
-void Mat4GetTranslation(const Mat4& dest, float* x, float* y, float* z)
+Vec3 Mat4GetFacing(const Mat4& dest)
 {
-    *x = dest.m_W[0];
-    *y = dest.m_W[1];
-    *z = dest.m_W[2];
+    Vec3 ret;
+    ret.m_X[0] = dest.m_Z[0];
+    ret.m_X[1] = dest.m_Z[1];
+    ret.m_X[2] = dest.m_Z[2];
+    return ret;
 }
 
-Vec3 Mat4GetTranslation3(const Mat4& dest)
+Vec3 Mat4GetRight(const Mat4& dest)
+{
+    Vec3 ret;
+    ret.m_X[0] = dest.m_X[0];
+    ret.m_X[1] = dest.m_X[1];
+    ret.m_X[2] = dest.m_X[2];
+    return ret;
+}
+
+Vec3 Mat4GetUp(const Mat4& dest)
+{
+    Vec3 ret;
+    ret.m_X[0] = dest.m_Y[0];
+    ret.m_X[1] = dest.m_Y[1];
+    ret.m_X[2] = dest.m_Y[2];
+    return ret;
+}
+
+Vec3 Mat4GetTranslation(const Mat4& dest)
 {
     Vec3 ret;
     ret.m_X[0] = dest.m_W[0];

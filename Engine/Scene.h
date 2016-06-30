@@ -59,6 +59,12 @@ struct Scene
     
     PointLight m_PointLights[Light::kMaxLights];
     int m_NumPointLights;
+    
+    ConicalLight m_ConicalLights[Light::kMaxLights];
+    int m_NumConicalLights;
+    
+    CylindricalLight m_CylindricalLights[Light::kMaxLights];
+    int m_NumCylindricalLights;
 };
 
 void         SceneCreate(Scene* scene, int maxSceneObjects);

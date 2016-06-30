@@ -275,9 +275,26 @@ struct Vec4
         return ret;
     }
     
+    inline Vec2 xy() const
+    {
+        return Vec2(m_X[0], m_X[1]);
+    }
+    
     inline Vec3 xyz() const
     {
         return Vec3(m_X[0], m_X[1], m_X[2]);
+    }
+    
+    inline void SetXY(const Vec2& xy)
+    {
+        m_X[0] = xy.m_X[0];
+        m_X[1] = xy.m_X[1];
+    }
+    
+    inline void SetZW(const Vec2& zw)
+    {
+        m_X[2] = zw.m_X[0];
+        m_X[3] = zw.m_X[1];
     }
 };
 
@@ -354,8 +371,10 @@ void MatrixMakeZero(Mat3* dest);
 void MatrixMakeZero(Mat4* dest);
 void MatrixMakeDiagonal(Mat3* dest, float diags[3]);
 
-void Mat4GetTranslation(const Mat4& dest, float* x, float* y, float* z);
-Vec3 Mat4GetTranslation3(const Mat4& dest);
+Vec3 Mat4GetTranslation(const Mat4& dest);
+Vec3 Mat4GetFacing(const Mat4& dest);
+Vec3 Mat4GetRight(const Mat4& dest);
+Vec3 Mat4GetUp(const Mat4& dest);
 
 // set translation
 void Mat4ApplyTranslation(Mat4* dest, float x, float y, float z);
@@ -409,7 +428,6 @@ float MatrixDeterminant(const Mat3& m);
 
 // FLOAT
 bool FloatApproxEqual(float a, float b, float eps);
-
 
 // misc
 inline Vec3 ToZeroOne(const Vec3& a)

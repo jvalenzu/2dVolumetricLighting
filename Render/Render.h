@@ -46,6 +46,8 @@ struct RenderContext
     Vec3 m_ClearColor;
     
     GLuint m_PointLightUbo;
+    GLuint m_CylindricalLightUbo;
+    GLuint m_ConicalLightUbo;
     
     Vec4 m_AmbientLightColor;
 };
@@ -130,11 +132,13 @@ struct SpriteOptions
     float m_PixelsPerUnit;
     Vec2 m_Pivot;
     Vec4 m_TintColor;
+    Vec2 m_Scale;
     
     SpriteOptions()
         : m_PixelsPerUnit(kDefaultPixelsPerUnit)
         , m_Pivot(0.5f, 0.5f)
         , m_TintColor(1.0f, 1.0f, 1.0f, 1.0f)
+        , m_Scale(1.0f, 1.0f)
     {
     }
 };
@@ -180,6 +184,8 @@ void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a);
 void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model);
 
 void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* pointLights, int numPointLights);
+void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight* conicalLights, int numConicalLights);
+void RenderUpdateCylindricalLights(RenderContext* renderContext, const CylindricalLight* cylindricalLights, int numCylindricalLights);
 
 void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel);
 

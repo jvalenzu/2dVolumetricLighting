@@ -4,12 +4,13 @@ include rules.mk
 
 CPPFLAGS += -fstack-protector-strong
 CPPFLAGS += -DGLFW_INCLUDE_GLCOREARB=1
-CPPFLAGS += -g -O0
 CPPFLAGS += -Wc++11-extensions
 
 ifeq ($(BUILD_TYPE),Release)
+CPPFLAGS += -O2
 CPPFLAGS += -DNDEBUG=1
 else
+CPPFLAGS += -g -O0
 CPPFLAGS += -D_DEBUG=1
 endif
 
