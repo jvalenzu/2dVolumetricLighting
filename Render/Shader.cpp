@@ -174,7 +174,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
         delete[] fShaderSource;
         delete[] vShaderSource;
         delete[] sourceString;
-            
+        
         return nullptr;
     }
         
@@ -190,6 +190,11 @@ Shader* ShaderManager::CreateShader(const char* fname)
         
     Shader* ret = AllocateAsset(crc);
     *ret = temp;
+    
+    ret->m_PointLightBlockIndex = glGetUniformBlockIndex(ret->m_ProgramName, "PointLightData");
+    ret->m_CylindricalLightBlockIndex = glGetUniformBlockIndex(ret->m_ProgramName, "CylindricalLightData");
+    ret->m_ConicalLightBlockIndex = glGetUniformBlockIndex(ret->m_ProgramName, "ConicalLightData");
+    
     return ret;
 }
 

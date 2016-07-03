@@ -15,36 +15,47 @@
    3) glGetUniformBlockIndex and glBindBufferBase to bind the UBO to a particular buffer location in the shader
    
    The structure of the runtime code deserves some thought.  Currently scene objects only comprise one scene object type.  If we want sprites to also be lights, we either need a spritelight type, we need each scene object to optionally also be a light, we need some componenty thing (ugh), or a way to attach scene objects (ugh).
-[✓] Light types
+[x] Light types
   [x] Point
   [x] Conical
   [x] Cylindrical (distance from line)
-[✓] Attenuation
+[x] Attenuation
   [x] Point
   [x] Conical
   [x] Cylindrical (distance from line)
 [x] sprite scale
 [x] sprite tint
-[ ] sprite asset
-[ ] Material assets
-  [ ] Include normal data for SDF
+[✓] shadows from multiple lights
+  [x] Point
+  [ ] Conical
+  [ ] Cylindrical (distance from line)
+  Simplest way for non-point lights would be to do attentuation in the 1d phase.
+  [x] 1st: multipass
+  [ ] 2nd: texture array?
+[ ] light prepass optimization
+[ ] Hundreds of sprites
 [x] Add member function for MaterialReserveMaterialProperties
-[ ] Add member function for vec3 for destructive operations
+[x] Add member function for MaterialSetMaterialPropertyType
+[x] Add member function for MaterialSetMaterialPropertyVector
+[x] Add member function for MaterialSetMaterialPropertyFloat
+[x] Add member function for MaterialSetMaterialPropertyTexture
 [ ] ARTIFACT: The volumetric shadow has lines in it
 [ ] ARTIFACT: Dealing with lsp embedded in occluder
 [ ] TODO: Windows port
 [x] shader preprocessing
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
 [ ] Relocate asset file paths
-[ ] Hundreds of sprites
 [ ] SceneObject reference count.
-[ ] light prepass optimization
-[ ] shadows from multiple lights
+[ ] sprite asset
+[ ] Material assets
+  [ ] Include normal data for SDF
+[x] ambient parameterization
 
 ------------------------------------------------
 PUBLISH
 ------------------------------------------------
 
+[ ] Add member function for vec3 for destructive operations
 [ ] movement less jerky
 [ ] memory leaks
 [ ] shader reloading
@@ -53,7 +64,6 @@ PUBLISH
 [ ] Set view/projection param once per frame (or once per camera)
 [ ] global shader parameters
 [ ] realtime SDF (CL)
-[x] ambient parameterization
 [ ] move camera out of RenderContext and into Scene
 [ ] move SceneObject instances over to HandleAssetManager
 [ ] shader fallback when a shader can't be compiled or found
@@ -63,3 +73,9 @@ PUBLISH
 [ ] Makefile dependency if you delete a source file (just hangs currently)
 [ ] GUIDs instead of asset paths
 [ ] Split one-time initialization like ShaderInit out of RenderInit which because it takes a render context implies it's not a singleton.  Alternatively make RenderContext a singleton.
+[ ] Make gamma correct
+[ ] Bilinear filter Gaussian blur
+[ ] Shader assets
+  [ ] Decouple vsh/fsh
+[ ] Shader variants
+  [ ] Back to one SampleShadowMap shader

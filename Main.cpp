@@ -1,8 +1,11 @@
+// baseline 11.76ms
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "Engine/Container/FixedVector.h"
 #include "Engine/Container/LinkyList.h"
 #include "Engine/Light.h"
 #include "Engine/Scene.h"
@@ -106,9 +109,7 @@ static void MainLoop(RenderContext* renderContext)
     Material* treeAppleMaterial = MaterialCreate(outlineLightShader, treeAppleTexture);
     MaterialReserveProperties(treeAppleMaterial, 2);
     MaterialSetMaterialPropertyType(treeAppleMaterial, 0, "_PlanarTex", Material::MaterialPropertyType::kTexture);
-    MaterialSetMaterialPropertyType(treeAppleMaterial, 1, "_LightPosition", Material::MaterialPropertyType::kVec4);
     MaterialSetMaterialPropertyTexture(treeAppleMaterial, 0, treeAppleNormal);
-    MaterialSetMaterialPropertyVector(treeAppleMaterial, 1, Vec4(1,1,1,1));
     
     SceneObject* sceneObjects[4] = { 0 };
     for (int i=0; i<4; ++i)
@@ -140,7 +141,7 @@ static void MainLoop(RenderContext* renderContext)
                                                                                   45.0f,
                                                                                   20.0f));
     SceneGroupAddChild(lightSprite0, light0);
-
+    
     // conical light
     spriteOptions.m_TintColor = Vec4(0.25f, 1.0f, 0.25f, 1.0f);
     SceneObject* lightSprite1 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
@@ -153,14 +154,14 @@ static void MainLoop(RenderContext* renderContext)
     
     // cylindrical light
     spriteOptions.m_TintColor = Vec4(0.25f, 0.25f, 1.0f, 1.0f);
-        
+    
     SceneObject* lightSprite2 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
     Mat4ApplyTranslation(&lightSprite2->m_LocalToWorld, 0.0f, 5.0f, -1.0f);
     lightSprite2->m_Flags |= SceneObject::Flags::kDirty;
     SceneGroupAddChild(s_SceneObject, lightSprite2);
-        
-    SceneObject* light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3( 0.0f, 5.0f, -1.0f),
-                                                                                      Vec3( 0.0f, 1.0f,  0.0f),
+    
+    SceneObject* light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3(0.0f, 5.0f, -1.0f),
+                                                                                      Vec3(0.0f, 1.0f,  0.0f),
                                                                                       spriteOptions.m_TintColor,
                                                                                       0.5f,
                                                                                       10.0f));
@@ -190,18 +191,18 @@ static void MainLoop(RenderContext* renderContext)
     // 1d shadow map material and texture
     Shader* shadowMap1dShader = ShaderCreate("obj/Shader/ShadowMap1d");
     Material* shadow1dMaterial = MaterialCreate(shadowMap1dShader, shadowCasterRenderTarget);
-    MaterialReserveProperties(shadow1dMaterial, 1);
+    shadow1dMaterial->ReserveProperties(1);
     MaterialSetMaterialPropertyType(shadow1dMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
     MaterialSetMaterialPropertyVector(shadow1dMaterial, 0, Vec4(0.25f, 0.25f, 0.0f, 0.0f));
-    
     shadow1dMaterial->m_BlendMode = Material::BlendMode::kOpaque;
-    Texture* shadow1dMap = TextureCreateRenderTexture(1024, 1, 0, Texture::RenderTextureFormat::kFloat);
     
     Shader* sampleShadowMapShader = ShaderCreate("obj/Shader/SampleShadowMap");
     Material* shadowMapSampleMaterial = MaterialCreate(sampleShadowMapShader, nullptr);
-    MaterialReserveProperties(shadowMapSampleMaterial, 1);
+    shadowMapSampleMaterial->ReserveProperties(2);
     MaterialSetMaterialPropertyType(shadowMapSampleMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
-    MaterialSetMaterialPropertyVector(shadowMapSampleMaterial, 0, Vec4(0.25f, 0.25f, 0.0f, 0.0f));
+    MaterialSetMaterialPropertyType(shadowMapSampleMaterial, 1, "_LightColor", Material::MaterialPropertyType::kVec4);
+
+    
     shadowMapSampleMaterial->m_BlendMode = Material::BlendMode::kBlend;
     
     bool running = true;
@@ -210,14 +211,6 @@ static void MainLoop(RenderContext* renderContext)
         RenderFrameInit(renderContext);
         
         SceneUpdate(&scene);
-        
-        // calculate the sceen position of our light source
-        Vec3 screenPos = RenderGetScreenPos(renderContext, Mat4GetTranslation(s_SceneObject->m_LocalToWorld));
-        MaterialSetMaterialPropertyVector(shadow1dMaterial, 0, Vec4(screenPos, 0.0f));
-        MaterialSetMaterialPropertyVector(shadowMapSampleMaterial, 0, Vec4(screenPos, 0.0f));
-        
-        for (int i=0; i<ELEMENTSOF(sceneObjects); ++i)
-            MaterialSetMaterialPropertyVector(sceneObjects[i]->m_ModelInstance->m_Material, 1, Vec4(screenPos, 0.0f));
         
         // 
         //        __                   __ 
@@ -235,17 +228,41 @@ static void MainLoop(RenderContext* renderContext)
         RenderSetReplacementShader(renderContext, shadowCasterShader);
         
         SceneDraw(&scene, renderContext, shadowCasterGroupId);
+        
         RenderSetRenderTarget(renderContext, nullptr);
         RenderClearReplacementShader(renderContext);
         
-        // generate 1d shadow map
-        RenderSetRenderTarget(renderContext, shadow1dMap);
-        RenderDrawFullscreen(renderContext, shadow1dMaterial, shadowCasterRenderTarget);
-        RenderSetRenderTarget(renderContext, nullptr);
+        if (true)
+        {
+            // 4ms
+            FixedVector<SceneObject*,32> lights;
+            SceneGetSceneObjectsByType(&lights, &scene, SceneObjectType::kLight);
+            for (int i=0,n=lights.Count(); i<n; ++i)
+            {
+                SceneObject* lightObject = lights[i];
+                Light* light = SceneObjectGetLight(lightObject);
+                if (light == nullptr)
+                    continue;
+                
+                // calculate the sceen position of our light source
+                // jiv fixme: we already calculate this and cache it via SceneDraw
+                Vec3 screenPos = RenderGetScreenPos(renderContext, Mat4GetTranslation(lightObject->m_LocalToWorld));
+                shadow1dMaterial->SetVector(0, Vec4(screenPos, 0.0f));
+                
+                // generate 1d shadow map
+                RenderSetRenderTarget(renderContext, lightObject->m_Shadow1dMap);
+                RenderDrawFullscreen(renderContext, shadow1dMaterial, shadowCasterRenderTarget);
+                RenderSetRenderTarget(renderContext, nullptr);
+                
+                // render shadow map
+                shadowMapSampleMaterial->SetVector(0, Vec4(screenPos, 0.0f));
+                shadowMapSampleMaterial->SetVector(1, ((PointLight*)light)->m_Color);
+                
+                RenderDrawFullscreen(renderContext, shadowMapSampleMaterial, lightObject->m_Shadow1dMap);
+            }
+        }
         
-        // render shadow map
-        RenderDrawFullscreen(renderContext, shadowMapSampleMaterial, shadow1dMap);
-        
+        // 3ms
         if (true)
         {
             // blur
@@ -254,7 +271,8 @@ static void MainLoop(RenderContext* renderContext)
             RenderSetRenderTarget(renderContext, renderTextureTemp[1]);
             RenderDrawFullscreen(renderContext, shaderBlurY, renderTextureTemp[0]);
             
-            for (int i=1; i<8; ++i)
+            const int limit=8;
+            for (int i=1; i<limit; ++i)
             {
                 const int prevTextureIndex = (i-1)%2;
                 const int nextTextureIndex = (i+1)%2;
@@ -263,7 +281,7 @@ static void MainLoop(RenderContext* renderContext)
                 RenderSetRenderTarget(renderContext, renderTextureTemp[textureIndex]);
                 RenderDrawFullscreen(renderContext, shaderBlurX, renderTextureTemp[prevTextureIndex]);
                 
-                if (i==7)
+                if (i==(limit-1))
                     RenderSetRenderTarget(renderContext, nullptr);
                 else
                     RenderSetRenderTarget(renderContext, renderTextureTemp[nextTextureIndex]);
@@ -308,13 +326,16 @@ static void MainLoop(RenderContext* renderContext)
         TextureDestroy(renderTextureTemp[i]);
     
     ShaderDestroy(shadowCasterShader);
+
     ShaderDestroy(sampleShadowMapShader);
+    
     ShaderDestroy(shaderBlurX);
     ShaderDestroy(shaderBlurY);
     ShaderDestroy(shadowMap1dShader);
     
     // destroy materials
     MaterialDestroy(shadow1dMaterial);
+    
     MaterialDestroy(shadowMapSampleMaterial);
     
     TextureDestroy(treeAppleTexture);

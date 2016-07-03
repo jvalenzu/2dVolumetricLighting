@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "Engine/Container/FixedVector.h"
 #include "Engine/Matrix.h"
 #include "Engine/Obb.h"
 #include "Engine/Light.h"
@@ -11,6 +12,7 @@ struct RenderContext;
 struct Material;
 struct SpriteOptions;
 struct LightOptions;
+struct Texture;
 
 enum SceneObjectType : uint32_t
 {
@@ -32,6 +34,7 @@ struct SceneObject
     SimpleModel* m_ModelInstance;
     Obb m_Obb;
     char m_LightData[sizeof(LightUnion)];
+    Texture* m_Shadow1dMap;
     uint32_t m_Flags;
     const char* m_DebugName;
     int m_SceneIndex;
@@ -90,4 +93,21 @@ SceneObject* SceneCreateSpriteFromMaterial(Scene* scene, Material* material);
 SceneObject* SceneCreateCube(Scene* scene, Material* material);
 SceneObject* SceneCreateEmpty(Scene* scene);
 
+inline Light* SceneObjectGetLight(SceneObject* sceneObject)
+{
+    if (sceneObject->m_Type == SceneObjectType::kLight)
+        return (Light*)sceneObject->m_LightData;
+    return nullptr;
+}
+
+
 void         SceneObjectDestroy(Scene* scene, SceneObject* sceneObject);
+
+int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, SceneObjectType type);
+    
+template <typename N>
+inline void SceneGetSceneObjectsByType(N* dest, Scene* scene, SceneObjectType type)
+{
+    int ret = SceneGetSceneObjectsByType(dest->Data(), N::kMaxSize, scene, type);
+    dest->SetCount(ret);
+}

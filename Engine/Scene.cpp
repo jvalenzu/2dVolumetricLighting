@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// 1d texture dimension
+#define kShadowMapSize 1024
+
 struct SortNode
 {
     int32_t m_Index;
@@ -215,6 +218,8 @@ static SceneObject* SceneObjectAllocate(Scene* scene, SceneObjectType type)
         sceneObject->m_Child = nullptr;
         sceneObject->m_SiblingNext = nullptr;
         
+        sceneObject->m_Shadow1dMap = nullptr;
+        
         MatrixMakeIdentity(&sceneObject->m_PrevLocalToWorld);
         MatrixMakeIdentity(&sceneObject->m_LocalToWorld);
     }
@@ -246,6 +251,9 @@ SceneObject* SceneCreateLight(Scene* scene, const LightOptions& lightOptions)
         LightInitialize((Light*)&sceneObject->m_LightData[0], lightOptions);
         
         Mat4ApplyTranslation(&sceneObject->m_LocalToWorld, lightOptions.m_Position.xyz());
+        
+        // jiv fixme: make some lights not drive shadows
+        sceneObject->m_Shadow1dMap = TextureCreateRenderTexture(kShadowMapSize, 1, 0, Texture::RenderTextureFormat::kFloat);
     }
     
     return sceneObject;
@@ -469,6 +477,9 @@ void SceneObjectDestroy(Scene* scene, SceneObject* sceneObject)
         scene->m_SceneObjects[sceneObject->m_SceneIndex] = scene->m_SceneObjects[--scene->m_NumObjects];
         scene->m_SceneObjects[sceneObject->m_SceneIndex]->m_SceneIndex = sceneObject->m_SceneIndex;
         scene->m_SceneObjects[scene->m_NumObjects] = nullptr;
+
+        TextureDestroy(sceneObject->m_Shadow1dMap);
+        sceneObject->m_Shadow1dMap = nullptr;
         
 #ifndef NDEBUG
         memset(sceneObject, 0xff, sizeof *sceneObject);
@@ -482,4 +493,20 @@ SceneObject* SceneCreateEmpty(Scene* scene)
 {
     SceneObject* sceneObject = SceneObjectAllocate(scene, SceneObjectType::kEmpty);
     return sceneObject;
+}
+
+int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, SceneObjectType type)
+{
+    SceneObject** first = &dest[0];
+    SceneObject** write = &dest[0];
+    SceneObject** last = &dest[size];
+    
+    for (int i=0,n=scene->m_NumObjects; write<last && i<n; ++i)
+    {
+        SceneObject* sceneObject = scene->m_SceneObjects[i];
+        if (sceneObject->m_Type == type)
+            *write++ = sceneObject;
+    }
+
+    return write - first;
 }

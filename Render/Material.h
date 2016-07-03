@@ -45,6 +45,10 @@ struct Material
     };
 
     void ReserveProperties(int numProperties);
+    void SetFloat(int index, float value);
+    void SetVector(int index, Vec4 value);
+    void SetTexture(int index, int textureId);
+    void SetTexture(int index, Texture* texture);
 
     MaterialProperty* m_MaterialPropertyBlock;
     int m_NumMaterialProperties;

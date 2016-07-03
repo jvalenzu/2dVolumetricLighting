@@ -4,6 +4,7 @@ precision highp float;
 
 uniform sampler2D _MainTex;
 uniform vec4      _LightPosition;
+uniform vec4      _LightColor;
 in      vec2      texCoord;
 out     vec4      fragColor;
 
@@ -21,7 +22,7 @@ void main(void)
     vec4 d = texture(_MainTex, vec2(theta, 0));
     float lr = length(ray);
     if (d.r <= lr)
-        fragColor = vec4(0,0,0,kShadowBlendFactor);
+        fragColor = vec4(_LightColor.rgb,kShadowBlendFactor);
     else
         fragColor = vec4(0,0,0,0.0f);
 }

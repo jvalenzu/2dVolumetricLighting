@@ -68,4 +68,6 @@ all: 2dVolumetricLighting
 $(foreach src,$(SRCS),$(eval $(call srcToObj,$(src))))
 $(foreach src,$(SHADER_SRCS),$(eval $(call shaderSrcToObj,$(src))))
 
+CLEAN += 2dVolumetricLighting
+
 include rules2.mk

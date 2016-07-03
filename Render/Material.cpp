@@ -41,6 +41,9 @@ Material* MaterialCreate(Shader* shader, Texture* texture)
 // MaterialDestroy
 void MaterialDestroy(Material* victim)
 {
+    if (victim == nullptr)
+        return;
+    
     ShaderDestroy(victim->m_Shader);
     TextureDestroy(victim->m_Texture);
     
@@ -170,3 +173,25 @@ void Material::ReserveProperties(int numProperties)
 {
     MaterialReserveProperties(this, numProperties);
 }
+
+void Material::SetFloat(int index, float value)
+{
+    MaterialSetMaterialPropertyFloat(this, index, value);
+}
+
+void Material::SetVector(int index, Vec4 value)
+{
+    MaterialSetMaterialPropertyVector(this, index, value);
+}
+
+void Material::SetTexture(int index, int textureId)
+{
+    MaterialSetMaterialPropertyTexture(this, index, textureId);
+}
+
+void Material::SetTexture(int index, Texture* texture)
+{
+    if (texture)
+        MaterialSetMaterialPropertyTexture(this, index, texture->m_TextureId);
+}
+

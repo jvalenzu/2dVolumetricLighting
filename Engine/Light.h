@@ -45,8 +45,8 @@ struct ConicalLight : Light
 struct CylindricalLight : Light
 {
     float m_Range;
-    int m_Pad;
     float m_Length;
+    int m_Pad;
     Vec4 m_Color;
     Vec4 m_Position;
     Vec4 m_Direction;
