@@ -113,8 +113,17 @@ void TextureManager::DestroyTexture(Texture* victim)
     victim->m_TextureId = -1;
     
     victim->m_DebugName = nullptr;
-
-    // jiv fixmedelete framebuffer
+    
+    glDeleteTextures(1, &victim->m_TextureId);
+    victim->m_TextureId = -1;
+    
+    if (victim->m_Flags == Texture::kRenderTexture)
+    {
+        glDeleteFramebuffers(1, &victim->m_FrameBufferId);
+        victim->m_FrameBufferId = -1;
+        delete victim;
+        return;
+    }
     
     DestroyAsset(victim);
 }
@@ -147,14 +156,6 @@ void TextureDestroy(Texture* victim)
 {
     if (victim == nullptr)
         return;
-    
-    if (victim->m_Flags == Texture::kRenderTexture)
-    {
-        glDeleteTextures(1, &victim->m_TextureId);
-        glDeleteFramebuffers(1, &victim->m_FrameBufferId);
-        delete victim;
-        return;
-    }
     
     if (false)
     {

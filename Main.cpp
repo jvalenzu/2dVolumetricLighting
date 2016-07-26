@@ -128,28 +128,39 @@ static void MainLoop(RenderContext* renderContext)
     spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
     spriteOptions.m_Scale = Vec2(0.5f, 0.5f);
     
-    // point light
+    // conical light
     spriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
     SceneObject* lightSprite0 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
     Mat4ApplyTranslation(&lightSprite0->m_LocalToWorld, 10, 0, -1);
     lightSprite0->m_Flags |= SceneObject::Flags::kDirty;
     SceneGroupAddChild(s_SceneObject, lightSprite0);
     
+    // rotate lightSprite0 so it's more obvious what directory it's casting.
+    {
+        Mat4 rot;
+        float uvw[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+        MatrixSetRotAboutAxis(&rot, uvw, 1.5707963268f);
+    
+        Mat4 t1;
+        MatrixMultiply(&t1, rot, lightSprite0->m_LocalToWorld);
+        MatrixCopy(&lightSprite0->m_LocalToWorld, t1);
+    }
+    
     SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(10.0f, 0.0f, -1.0f),
                                                                                   Vec3( 0.0f, 1.0f,  0.0f),
-                                                                                  Vec4(1.0f,0.25f,0.25f,1.0f),
+                                                                                  spriteOptions.m_TintColor,
                                                                                   45.0f,
                                                                                   20.0f));
     SceneGroupAddChild(lightSprite0, light0);
     
-    // conical light
-    spriteOptions.m_TintColor = Vec4(0.25f, 1.0f, 0.25f, 1.0f);
+    // point light
+    spriteOptions.m_TintColor = Vec4(1.0f, 1.0f, 0.25f, 1.0f);
     SceneObject* lightSprite1 = SceneCreateSpriteFromFile(&scene, "Beam.png", spriteOptions);
     Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, -10, 0, -1);
     lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
     SceneGroupAddChild(s_SceneObject, lightSprite1);
     
-    SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), Vec4(1.0f, 1.0f, 0.25f, 1.0f), 2.0f));
+    SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), spriteOptions.m_TintColor, 2.0f));
     SceneGroupAddChild(lightSprite1, light1);
     
     // cylindrical light
@@ -189,21 +200,37 @@ static void MainLoop(RenderContext* renderContext)
     Shader* shadowCasterShader = ShaderCreate("obj/Shader/ShadowCasters");
     
     // 1d shadow map material and texture
-    Shader* shadowMap1dShader = ShaderCreate("obj/Shader/ShadowMap1d");
-    Material* shadow1dMaterial = MaterialCreate(shadowMap1dShader, shadowCasterRenderTarget);
-    shadow1dMaterial->ReserveProperties(1);
-    MaterialSetMaterialPropertyType(shadow1dMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
-    MaterialSetMaterialPropertyVector(shadow1dMaterial, 0, Vec4(0.25f, 0.25f, 0.0f, 0.0f));
-    shadow1dMaterial->m_BlendMode = Material::BlendMode::kOpaque;
+    Shader* shadowMap1dShaders[4];
+    shadowMap1dShaders[0] = nullptr;
+    shadowMap1dShaders[1] = ShaderCreate("obj/Shader/ShadowMap1dPoint");
+    shadowMap1dShaders[2] = ShaderCreate("obj/Shader/ShadowMap1dConical");
+    shadowMap1dShaders[3] = ShaderCreate("obj/Shader/ShadowMap1dPoint");
+    
+    Material* shadow1dMaterials[4] = { nullptr };
+    for (int i=1; i<4; ++i)
+    {
+        Material* shadow1dMaterial = shadow1dMaterials[i] = MaterialCreate(shadowMap1dShaders[i], shadowCasterRenderTarget);
+        shadow1dMaterial->ReserveProperties(2);
+        MaterialSetMaterialPropertyType(shadow1dMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
+        MaterialSetMaterialPropertyType(shadow1dMaterial, 1, "_LightFacingAngle", Material::MaterialPropertyType::kVec4);
+        shadow1dMaterial->m_BlendMode = Material::BlendMode::kOpaque;
+    }
     
     Shader* sampleShadowMapShader = ShaderCreate("obj/Shader/SampleShadowMap");
-    Material* shadowMapSampleMaterial = MaterialCreate(sampleShadowMapShader, nullptr);
-    shadowMapSampleMaterial->ReserveProperties(2);
-    MaterialSetMaterialPropertyType(shadowMapSampleMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
-    MaterialSetMaterialPropertyType(shadowMapSampleMaterial, 1, "_LightColor", Material::MaterialPropertyType::kVec4);
-
     
-    shadowMapSampleMaterial->m_BlendMode = Material::BlendMode::kBlend;
+    Material* shadowMapSampleSimpleMaterial = MaterialCreate(sampleShadowMapShader, nullptr);
+    shadowMapSampleSimpleMaterial->ReserveProperties(2);
+    MaterialSetMaterialPropertyType(shadowMapSampleSimpleMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
+    MaterialSetMaterialPropertyType(shadowMapSampleSimpleMaterial, 1, "_LightColor", Material::MaterialPropertyType::kVec4);
+    shadowMapSampleSimpleMaterial->m_BlendMode = Material::BlendMode::kBlend;
+    
+    Material* shadowMapSampleMaterials[] =
+    {
+        shadowMapSampleSimpleMaterial,
+        shadowMapSampleSimpleMaterial,
+        shadowMapSampleSimpleMaterial,
+        shadowMapSampleSimpleMaterial,
+    };
     
     bool running = true;
     while (running)
@@ -246,17 +273,31 @@ static void MainLoop(RenderContext* renderContext)
                 
                 // calculate the sceen position of our light source
                 // jiv fixme: we already calculate this and cache it via SceneDraw
-                Vec3 screenPos = RenderGetScreenPos(renderContext, Mat4GetTranslation(lightObject->m_LocalToWorld));
-                shadow1dMaterial->SetVector(0, Vec4(screenPos, 0.0f));
+                Vec4 screenPos = RenderGetScreenPos(renderContext, Mat4GetTranslation(lightObject->m_LocalToWorld));
+                
+                // 1d mapping material
+                Material* shadow1dMaterial = shadow1dMaterials[light->m_Type];
+                
+                // sample the 1d raycast texture.  Point/Spotlight sample based on light position to fragment, cylinder lights need to
+                // raycast to the nearest intersection point
+                Material* shadowMapSampleMaterial = shadowMapSampleMaterials[light->m_Type];
+                shadowMapSampleMaterial->SetVector(0, screenPos);
+                shadowMapSampleMaterial->SetVector(1, ((PointLight*)light)->m_Color);
+                
+                // set light position
+                shadow1dMaterial->SetVector(0, screenPos);
+                
+                if (light->m_Type == LightType::kConical)
+                {
+                    Vec4 direction = Mat4GetRight(lightObject->m_LocalToWorld);
+                    direction.m_X[3] = ((ConicalLight*)light)->m_CosAngle;
+                    shadow1dMaterial->SetVector(1, direction);
+                }
                 
                 // generate 1d shadow map
                 RenderSetRenderTarget(renderContext, lightObject->m_Shadow1dMap);
                 RenderDrawFullscreen(renderContext, shadow1dMaterial, shadowCasterRenderTarget);
                 RenderSetRenderTarget(renderContext, nullptr);
-                
-                // render shadow map
-                shadowMapSampleMaterial->SetVector(0, Vec4(screenPos, 0.0f));
-                shadowMapSampleMaterial->SetVector(1, ((PointLight*)light)->m_Color);
                 
                 RenderDrawFullscreen(renderContext, shadowMapSampleMaterial, lightObject->m_Shadow1dMap);
             }
@@ -331,12 +372,15 @@ static void MainLoop(RenderContext* renderContext)
     
     ShaderDestroy(shaderBlurX);
     ShaderDestroy(shaderBlurY);
-    ShaderDestroy(shadowMap1dShader);
+
+    for (int i=0; i<4; ++i)
+        ShaderDestroy(shadowMap1dShaders[i]);
     
     // destroy materials
-    MaterialDestroy(shadow1dMaterial);
+    for (int i=0; i<4; ++i)
+        MaterialDestroy(shadow1dMaterials[i]);
     
-    MaterialDestroy(shadowMapSampleMaterial);
+    MaterialDestroy(shadowMapSampleSimpleMaterial);
     
     TextureDestroy(treeAppleTexture);
     TextureDestroy(treeAppleNormal);

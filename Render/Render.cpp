@@ -432,7 +432,7 @@ void RenderUpdateCylindricalLights(RenderContext* renderContext, const Cylindric
     {
         Vec3 screenPosition = RenderGetScreenPos(renderContext, cylindricalLights[i].m_Position.xyz());
         dest[i].m_Position.SetXY(Vec4(FromZeroOne(screenPosition), 1.0f).xy());
-        dest[i].m_Position.SetZW(dest[i].m_Position.xy() + dest[i].m_Direction.xy()*dest[i].m_Length);
+        dest[i].m_Position.SetZW(dest[i].m_Position.xy() + dest[i].m_Direction.xy().Normalized()*dest[i].m_Length);
         dest[i].m_Range = 1.0f / dest[i].m_Range;
     }
     

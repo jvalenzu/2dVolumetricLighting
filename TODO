@@ -19,6 +19,7 @@
   [x] Point
   [x] Conical
   [x] Cylindrical (distance from line)
+  Cylindrical light parameterization is kind of a mess.  m_Direction?  In screenspace?  But not really?
 [x] Attenuation
   [x] Point
   [x] Conical
@@ -27,13 +28,12 @@
 [x] sprite tint
 [✓] shadows from multiple lights
   [x] Point
-  [ ] Conical
+  [x] Conical
   [ ] Cylindrical (distance from line)
   Simplest way for non-point lights would be to do attentuation in the 1d phase.
   [x] 1st: multipass
   [ ] 2nd: texture array?
 [ ] light prepass optimization
-[ ] Hundreds of sprites
 [x] Add member function for MaterialReserveMaterialProperties
 [x] Add member function for MaterialSetMaterialPropertyType
 [x] Add member function for MaterialSetMaterialPropertyVector
@@ -55,6 +55,7 @@
 PUBLISH
 ------------------------------------------------
 
+[ ] UI describing keys
 [ ] Add member function for vec3 for destructive operations
 [ ] movement less jerky
 [ ] memory leaks
@@ -79,3 +80,5 @@ PUBLISH
   [ ] Decouple vsh/fsh
 [ ] Shader variants
   [ ] Back to one SampleShadowMap shader
+[ ] implement ObbRender
+[ ] Hundreds of sprites

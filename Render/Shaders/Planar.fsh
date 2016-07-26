@@ -28,7 +28,7 @@ void main (void)
     
     vec2 fragmentPos = screenPosition.xy / screenPosition.w;
     
-    vec4 color = vec4(_AmbientLight.rgb,1);
+    vec4 color = vec4(_AmbientLight.rgb, 1);
     
     for (int i=0; i<32; ++i)
     {
@@ -65,7 +65,8 @@ void main (void)
         CylindricalLight cylindricalLight = _CylindricalLight[i];
         
         // screenspace distance based attenuation squared
-        vec2 p0 = pointOnLineSegment(cylindricalLight.m_Position.xy, cylindricalLight.m_Position1.xy, fragmentPos.xy);
+        float temp0 = pointOnLineSegmentT(cylindricalLight.m_Position.xy, cylindricalLight.m_Position1.xy, fragmentPos.xy);
+        vec2 p0 = pointOnLineSegment(temp0, cylindricalLight.m_Position.xy, cylindricalLight.m_Position1.xy);
         
         vec2 ray = normalize(p0 - fragmentPos);
         float c0 = clamp(dot(t1.rg, ray), 0.0, 1);
@@ -77,4 +78,5 @@ void main (void)
     }
     
     fragColor = vec4(color.rgb*t0.rgb, t0.a);
+    // fragColor = vec4(color.rgb, t0.a);    
 }

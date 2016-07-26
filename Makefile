@@ -44,8 +44,10 @@ OBJS := $(foreach src,$(SRCS),$(call outName,$(src)))
 # Shader code preprocessing
 SHADER_SRCS += Render/Shaders/SampleShadowMap.fsh
 SHADER_SRCS += Render/Shaders/SampleShadowMap.vsh
-SHADER_SRCS += Render/Shaders/ShadowMap1d.fsh
-SHADER_SRCS += Render/Shaders/ShadowMap1d.vsh
+SHADER_SRCS += Render/Shaders/ShadowMap1dPoint.fsh
+SHADER_SRCS += Render/Shaders/ShadowMap1dPoint.vsh
+SHADER_SRCS += Render/Shaders/ShadowMap1dConical.fsh
+SHADER_SRCS += Render/Shaders/ShadowMap1dConical.vsh
 SHADER_SRCS += Render/Shaders/Simple.fsh
 SHADER_SRCS += Render/Shaders/Simple.vsh
 SHADER_SRCS += Render/Shaders/SimpleTransparent.fsh
