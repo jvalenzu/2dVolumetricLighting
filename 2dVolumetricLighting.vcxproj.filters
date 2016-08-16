@@ -164,12 +164,6 @@
     <CustomBuild Include="Render\Shaders\SampleShadowMap.vsh">
       <Filter>Render\Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="Render\Shaders\ShadowMap1d.fsh">
-      <Filter>Render\Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="Render\Shaders\ShadowMap1d.vsh">
-      <Filter>Render\Shaders</Filter>
-    </CustomBuild>
     <CustomBuild Include="Render\Shaders\Simple.fsh">
       <Filter>Render\Shaders</Filter>
     </CustomBuild>
@@ -182,5 +176,21 @@
     <CustomBuild Include="Render\Shaders\SimpleTransparent.vsh">
       <Filter>Render\Shaders</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Render\Shaders\ShadowMap1dConical.fsh">
+      <Filter>Render\Shaders</Filter>
+    </None>
+    <None Include="Render\Shaders\ShadowMap1dPoint.fsh">
+      <Filter>Render\Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Render\Shaders\ShadowMap1dConical.vsh">
+      <Filter>Render\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Render\Shaders\ShadowMap1dPoint.vsh">
+      <Filter>Render\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
