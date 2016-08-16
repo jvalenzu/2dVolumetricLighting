@@ -38,6 +38,6 @@ void main(void)
         itr += ray;
         count++;
     }
-    
+
     fragColor = vec4(d,d,d,1.0);
 }

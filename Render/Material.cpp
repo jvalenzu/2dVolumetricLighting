@@ -151,6 +151,8 @@ void MaterialSetMaterialPropertyVector(Material* material, int index, Vec4 value
     Material::MaterialProperty* materialProperty = &material->m_MaterialPropertyBlock[index];
     assert(materialProperty->m_Type == Material::MaterialPropertyType::kVec4);
     materialProperty->m_Vector = value;
+    
+    // printf("setting %s to (%f %f %f %f)\n", materialProperty->m_Key, materialProperty->m_Vector.m_X[0], materialProperty->m_Vector.m_X[1], materialProperty->m_Vector.m_X[2], materialProperty->m_Vector.m_X[3]);
 }
 
 void MaterialSetMaterialPropertyTexture(Material* material, int index, int textureId)

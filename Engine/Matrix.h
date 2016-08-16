@@ -71,6 +71,18 @@ struct Vec2
             m_X[1] /= len;
         }
     }
+    
+    inline Vec2 Normalized() const
+    {
+        Vec2 ret(*this);
+        ret.Normalize();
+        return ret;
+    }
+    
+    inline Vec2 xy() const
+    {
+        return *this;
+    }
 };
 
 inline Vec2 operator+ (const Vec2& a, const Vec2& b)
@@ -90,6 +102,13 @@ struct Vec3
     {
         m_X[0] = x;
         m_X[1] = y;
+        m_X[2] = z;
+    }
+
+    Vec3(const Vec2& v2, float z)
+    {
+        m_X[0] = v2.m_X[0];
+        m_X[1] = v2.m_X[1];
         m_X[2] = z;
     }
     
@@ -159,6 +178,11 @@ struct Vec3
             m_X[1] /= len;
             m_X[2] /= len;
         }
+    }
+    
+    inline Vec2 xy() const
+    {
+        return Vec2(m_X[0], m_X[1]);
     }
 };
 
@@ -438,6 +462,15 @@ inline Vec3 ToZeroOne(const Vec3& a)
     ret.m_X[2] = (ret.m_X[2]+1.0f)*0.5f;
     return ret;
 }
+
+inline Vec2 FromZeroOne(const Vec2& a)
+{
+    Vec2 ret;
+    ret.m_X[0] = (ret.m_X[0]*2.0f)-1.0f;
+    ret.m_X[1] = (ret.m_X[1]*2.0f)-1.0f;
+    return ret;
+}
+
 inline Vec3 FromZeroOne(const Vec3& a)
 {
     Vec3 ret;

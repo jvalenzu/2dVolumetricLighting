@@ -1,4 +1,43 @@
 
+layout (std140) struct PointLight
+{
+    float m_TypePad;
+    float m_Range;
+    int m_PadB;
+    int m_PadC;
+    vec4 m_Color;
+    vec4 m_Position;
+};
+
+layout (std140) struct DirectionalLight
+{
+    vec4 m_Direction;
+    vec4 m_Color;
+};
+
+layout (std140) struct ConicalLight
+{
+    int m_TypePad;
+    float m_Range;
+    float m_Angle;
+    int m_Pad;
+    vec4 m_Color;
+    vec4 m_Position;
+    vec4 m_Direction;
+};
+
+layout (std140) struct CylindricalLight
+{
+    int m_TypePad;
+    float m_Range;
+    int m_Pad;
+    float m_Length;
+    vec4 m_Color;
+    vec2 m_Position;
+    vec2 m_Position1;
+    vec4 m_Direction;
+};
+
 layout (std140) uniform PointLightData
 {
     PointLight _PointLight[32];
