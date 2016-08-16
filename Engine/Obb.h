@@ -10,7 +10,7 @@ struct Obb
     uint32_t m_Pad;
 };
 
-void ObbInit(Obb* obb);
+void ObbInit(Obb* obb, float xExtent, float yExtent, float zExtent);
 void ObbRender(const Obb& obb);
 
 

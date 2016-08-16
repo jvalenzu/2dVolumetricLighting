@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 #include <stdint.h>
 
 namespace Utils
@@ -36,3 +37,6 @@ inline uint32_t Djb(const char* str)
     
     return hash;
 }
+
+int Printf(const char* fmt, ...);
+int FPrintf(FILE* fh, const char* fmt, ...);

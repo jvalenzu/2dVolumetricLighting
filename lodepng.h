@@ -125,6 +125,12 @@ unsigned lodepng_decode32(unsigned char** out, unsigned* w, unsigned* h,
 unsigned lodepng_decode24(unsigned char** out, unsigned* w, unsigned* h,
                           const unsigned char* in, size_t insize);
 
+// jiv begin
+#ifdef __cplusplus
+extern "C" {
+#endif
+// jiv end
+
 #ifdef LODEPNG_COMPILE_DISK
 /*
 Load PNG from disk, from file with given name.
@@ -142,7 +148,15 @@ unsigned lodepng_decode32_file(unsigned char** out, unsigned* w, unsigned* h,
 unsigned lodepng_decode24_file(unsigned char** out, unsigned* w, unsigned* h,
                                const char* filename);
 #endif /*LODEPNG_COMPILE_DISK*/
+
+// jiv begin
+#ifdef __cplusplus
+}
+#endif
+// jiv end
+  
 #endif /*LODEPNG_COMPILE_DECODER*/
+  
 
 
 #ifdef LODEPNG_COMPILE_ENCODER

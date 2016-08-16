@@ -56,12 +56,12 @@ void AssetHandleTable::Dump(int num)
     if (num == -1)
         num = m_MaxAssetHandles;
     
-    printf("num: %d\n", num);
-    printf("  # |   s   |      t\n");
-    printf("---------------------\n");
+    Printf("num: %d\n", num);
+    Printf("  # |   s   |      t\n");
+    Printf("---------------------\n");
     for (int i=0; i<num; ++i)
-        printf("%3d | %3d   |    %3d\n", i, m_Indirect[i], m_ReverseIndirect[i]);
-    printf("\n");
+        Printf("%3d | %3d   |    %3d\n", i, m_Indirect[i], m_ReverseIndirect[i]);
+    Printf("\n");
 }
 
 void AssetHandleTableTest()
@@ -110,7 +110,7 @@ void HandleAssetManager<T,U>::CheckInvariant()
         U shaderHandle = shader->GetHandle();
         if (shaderHandle.Resolve() != shader)
         {
-            printf("shader mismatch %d assetIndex %d name %s vs assetIndex %d name %s\n",
+            Printf("shader mismatch %d assetIndex %d name %s vs assetIndex %d name %s\n",
                    i,
                    shaderHandle.Resolve()->m_AssetIndex,
                    shaderHandle.Resolve()->m_DebugName,
@@ -167,7 +167,7 @@ void HandleAssetManager<T,U>::DestroyAsset(T victim)
 template <typename T>
 void SimpleAssetManager<T>::DestroyAsset(T* victim)
 {
-    int index = victim - m_Assets;
+    size_t index = victim - m_Assets;
     m_Crc[index] = 0;
     m_NumAssets--;
     assert(m_NumAssets >= 0);
@@ -211,20 +211,20 @@ void SimpleAssetManager<T>::Dump(int num)
     {
         DumpTitle();
         
-        printf("num: %d\n", num);
-        printf("  # |   crc\n");
-        printf("---------------------\n");
+        Printf("num: %d\n", num);
+        Printf("  # |   crc\n");
+        Printf("---------------------\n");
         for (int i=0; num&&i<kMaxAssets; ++i)
         {
             if (m_Crc[i]==0)
                 continue;
             num--;
-            printf("%3d | 0x%x ", i, m_Crc[i]);
+            Printf("%3d | 0x%x ", i, m_Crc[i]);
             DumpInternal(&m_Assets[i]);
             
         }
         
-        printf("\n");
+        Printf("\n");
     }
 }
 

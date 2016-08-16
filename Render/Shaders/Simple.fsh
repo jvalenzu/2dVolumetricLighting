@@ -1,3 +1,7 @@
+#extension GL_ARB_explicit_attrib_location : enable
+
+#include "shader.h"
+
 #ifdef GL_ES
 precision highp float;
 #endif

@@ -2,8 +2,10 @@
 
 #include "Tool/RMath.h"
 #include "Engine/Matrix.h"
+#include "Engine/Utils.h"
 
 #include <assert.h>
+#define _USE_MATH_DEFINES 1
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,15 +15,15 @@
 #define kSmallEpsilon 1e-6
 #define kVerySmallEpsilon 1e-9
 
-static int numUniqueDouble(double* controlPoints, int dim);
+static int numUniqueFloat(float* controlPoints, int dim);
 
-static inline double minf(double a, double b)
+static inline float minf(float a, float b)
 {
     return a<b ? a : b;
 }
 
-// doubleDist
-static inline double doubleDist(double a, double b)
+// floatDist
+static inline float floatDist(float a, float b)
 {
     if (a<b)
         return b-a;
@@ -29,7 +31,7 @@ static inline double doubleDist(double a, double b)
 }
 
 // Lerp
-double Lerp(double a, double b, double t)
+float Lerp(float a, float b, float t)
 {
     return a + (b-a) * t;
 }
@@ -37,7 +39,8 @@ double Lerp(double a, double b, double t)
 // PolySize
 size_t PolySize(int order)
 {
-    return sizeof(int32_t) + sizeof(double)*order;
+    size_t sizePoly = offsetof(Poly, m_X);
+    return sizePoly + sizeof(float)*order;
 }
 
 // PolySize
@@ -89,9 +92,9 @@ int PolyDivide(Poly* dest, const Poly* poly, const Poly* divider)
     if (divider->m_Order != 2)
         return 0; // jiv fixme
     
-    double* r = (double*) alloca(10*sizeof(double)); // jiv fixme
-    double* r2 = (double*) alloca(10*sizeof(double)); // jiv fixme
-    double* rBase = r;
+    float* r = (float*) alloca(10*sizeof(float)); // jiv fixme
+    float* r2 = (float*) alloca(10*sizeof(float)); // jiv fixme
+    float* rBase = r;
     
     Poly* q = PolyCopyAlloc(alloca(PolySize(poly->m_Order)), poly);
     
@@ -101,24 +104,24 @@ int PolyDivide(Poly* dest, const Poly* poly, const Poly* divider)
     while (q->m_Order)
     {
         // our current power
-        const double q0 = q->m_X[q->m_Order-1];
+        const float q0 = q->m_X[q->m_Order-1];
         
         // remove current power
         q->m_Order--;
         
         // push multiplier for this coefficient
-        const double p0 = divider->m_X[divider->m_Order-1];
+        const float p0 = divider->m_X[divider->m_Order-1];
         *r++ = q0 / p0;
         
-        const double p1 = divider->m_X[divider->m_Order-2];
-        const double pp1 = (q0 / p0) * p1;
+        const float p1 = divider->m_X[divider->m_Order-2];
+        const float pp1 = (q0 / p0) * p1;
         
         if (q->m_Order == 1)
         {
-            const int numR = r - rBase;
+            const size_t numR = r - rBase;
             for (int j=0; j<numR; ++j)
                 dest->m_X[j] = rBase[numR-j-1];
-            dest->m_Order = numR;
+            dest->m_Order = (int32_t) numR;
             
             return 1;
         }
@@ -133,19 +136,19 @@ int PolyDivide(Poly* dest, const Poly* poly, const Poly* divider)
 void PolyDump(const char* label, const Poly* a)
 {
     const size_t order = a->m_Order;
-    printf("[%s(%ld) ", label, order);
+    Printf("[%s(%f) ", label, order);
     int numWritten = 0;
     for (int i=0; i<order; ++i)
     {
-        const int power = order-i-1;
-        const double coeff = a->m_X[order-i-1];
+        const int power = (int) (order-i-1);
+        const float coeff = a->m_X[order-i-1];
         if (coeff == 0.0)
             continue;
         const char* op = (numWritten==0) ? "" : "+";
         if (coeff < 0.0)
             op = "-";
         const char* opSpace = (numWritten==0) ? "" : " "; // drop space between operator if initial coefficient
-        const double aCoeff = fabs(coeff);
+        const float aCoeff = fabsf(coeff);
         
         const char* end = numWritten==order-1 ? "" : " ";
         
@@ -153,24 +156,24 @@ void PolyDump(const char* label, const Poly* a)
         if (power)
             snprintf(vBuf, sizeof vBuf, "x^%d", power);
         
-        if (doubleDist(coeff, 0.0) < kSmallEpsilon)
+        if (floatDist(coeff, 0.0) < kSmallEpsilon)
             continue;
         
         numWritten++;
         
         if (coeff == ceilf(coeff))
-            printf("%s%s%.0lf%s%s", op, opSpace, aCoeff, vBuf, end);
+            Printf("%s%s%.0lf%s%s", op, opSpace, aCoeff, vBuf, end);
         else
-            printf("%s%s%lf%s%s", op, opSpace, aCoeff, vBuf, end);
+            Printf("%s%s%lf%s%s", op, opSpace, aCoeff, vBuf, end);
     }
-    printf("]\n");
+    Printf("]\n");
 }
 
 // jiv fixme: horner's method
-double PolyEvaluate(const Poly* a, double x)
+float PolyEvaluate(const Poly* a, float x)
 {
-    double temp = 1.0;
-    double ret = 0.0;
+    float temp = 1.0;
+    float ret = 0.0;
     const size_t order = a->m_Order;
     for (int i=0; i<order; ++i)
     {
@@ -181,7 +184,7 @@ double PolyEvaluate(const Poly* a, double x)
 }
 
 // PolyPlot
-void PolyPlot(int iteration, const Poly* poly, double (*f)(double x), const double* extremaAbscissa, int dim0, const double* roots, int dim1, double a, double b)
+void PolyPlot(int iteration, const Poly* poly, float (*f)(float x), const float* extremaAbscissa, int dim0, const float* roots, int dim1, float a, float b)
 {
     char fLabel[32];
     snprintf(fLabel, sizeof fLabel, "foo%d.dat", iteration);
@@ -190,12 +193,12 @@ void PolyPlot(int iteration, const Poly* poly, double (*f)(double x), const doub
     if (fh)
     {
         const int numSteps = 1000;
-        const double step = (b - a) / double(numSteps);
-        double x = a;
+        const float step = (b - a) / float(numSteps);
+        float x = a;
         for (int i=0; i<numSteps; ++i)
         {
-            const double v0 = PolyEvaluate(poly, x);
-            const double v1 = f(x);
+            const float v0 = PolyEvaluate(poly, x);
+            const float v1 = f(x);
             fprintf(fh, "%lf\t%lf\t%lf\t%lf\n", x, v0, v1, v0-v1);
             x += step;
         }
@@ -210,8 +213,8 @@ void PolyPlot(int iteration, const Poly* poly, double (*f)(double x), const doub
     {
         for (int i=0; i<dim0; ++i)
         {
-            const double x = extremaAbscissa[i];
-            const double v = PolyErrorEvaluate(poly, f, x);
+            const float x = extremaAbscissa[i];
+            const float v = PolyErrorEvaluate(poly, f, x);
             fprintf(fh, "%lf\t%lf\n", x, v);
         }
         fclose(fh);
@@ -224,21 +227,21 @@ void PolyPlot(int iteration, const Poly* poly, double (*f)(double x), const doub
     {
         for (int i=0; i<dim1; ++i)
         {
-            const double x = roots[i];
-            const double v = PolyErrorEvaluate(poly, f, x);
+            const float x = roots[i];
+            const float v = PolyErrorEvaluate(poly, f, x);
             fprintf(fh, "%lf\t%lf\n", x, v);
         }
         fclose(fh);
     }
 }
 
-static int numUniqueDouble(double* controlPoints, int dim)
+static int numUniqueFloat(float* controlPoints, int dim)
 {
     if (dim == 1)
         return 1;
     
-    double* temp = (double*) alloca(dim*sizeof(double));
-    memcpy(temp, controlPoints, dim*sizeof(double));
+    float* temp = (float*) alloca(dim*sizeof(float));
+    memcpy(temp, controlPoints, dim*sizeof(float));
     
     for (int i=0; i<dim; ++i)
     {
@@ -246,7 +249,7 @@ static int numUniqueDouble(double* controlPoints, int dim)
         {
             if (temp[i] > temp[j])
             {
-                const double t = temp[i];
+                const float t = temp[i];
                 temp[i] = temp[j];
                 temp[j] = t;
             }
@@ -262,10 +265,10 @@ static int numUniqueDouble(double* controlPoints, int dim)
     return unique;
 }
 
-static inline double fabsDist(double a_, double b_)
+static inline float fabsDist(float a_, float b_)
 {
-    const double a = fabs(a_);
-    const double b = fabs(b_);
+    const float a = fabsf(a_);
+    const float b = fabsf(b_);
     if (a<b)
         return b-a;
     return a-b;
@@ -275,7 +278,7 @@ static inline double fabsDist(double a_, double b_)
 //
 // Uses root estimate of min(n*abs(a0/a1), nthroot (abs(a0/an))) which will be a root of
 // this polynomial.
-static double getSingleRoot(const Poly* a)
+static float getSingleRoot(const Poly* a)
 {
     const size_t order = a->m_Order;
     if (order == 0)
@@ -286,12 +289,12 @@ static double getSingleRoot(const Poly* a)
         return (-a->m_X[1] + sqrtf(a->m_X[1]*a->m_X[1] - 4 * a->m_X[2] * a->m_X[0])) / (2 * a->m_X[2]);
     
     // >= order 2
-    const double n = (double) order;
-    const double a0 = a->m_X[order];
-    const double a1 = a->m_X[order-1];
-    const double an = a->m_X[0];
+    const float n = (float) order;
+    const float a0 = a->m_X[order];
+    const float a1 = a->m_X[order-1];
+    const float an = a->m_X[0];
     
-    double rootEstimate = n * fabs(a0/a1);
+    float rootEstimate = n * fabs(a0/a1);
     if (an)
         rootEstimate = minf(rootEstimate, powf(fabs(a0 / an), 1.0/n));
     
@@ -300,7 +303,7 @@ static double getSingleRoot(const Poly* a)
     Poly* dPoly = PolyAlloc(buf, order-1);
     PolyDerivative(dPoly, a);
     
-    double eRoot = 1000;
+    float eRoot = 1000;
     
     // NR iterate until we're within
     int numIterations = 0;
@@ -309,18 +312,18 @@ static double getSingleRoot(const Poly* a)
         // evaluated value at this root
         eRoot = PolyEvaluate(a, rootEstimate);
         
-        const double d = PolyEvaluate(dPoly, rootEstimate);
-        double newRootEstimate = rootEstimate;
+        const float d = PolyEvaluate(dPoly, rootEstimate);
+        float newRootEstimate = rootEstimate;
         if (d)
             newRootEstimate -= eRoot / d;
         rootEstimate = newRootEstimate;
     }
     
-    double rootEstimateCeil = ceilf(rootEstimate);
-    double rootEstimateFloor = floorf(rootEstimate);
-    if (doubleDist(rootEstimate, rootEstimateCeil) < 1e-4)
+    float rootEstimateCeil = ceilf(rootEstimate);
+    float rootEstimateFloor = floorf(rootEstimate);
+    if (floatDist(rootEstimate, rootEstimateCeil) < 1e-4)
         return rootEstimateCeil;
-    if (doubleDist(rootEstimate, rootEstimateFloor) < 1e-4)
+    if (floatDist(rootEstimate, rootEstimateFloor) < 1e-4)
         return rootEstimateFloor;
     
     return rootEstimate;
@@ -329,13 +332,13 @@ static double getSingleRoot(const Poly* a)
 void PolyCopy(Poly* dest, const Poly* a)
 {
     dest->m_Order = a->m_Order;
-    memcpy(dest->m_X, a->m_X, sizeof (double) * a->m_Order);
+    memcpy(dest->m_X, a->m_X, sizeof (float) * a->m_Order);
 }
 
 // PolyRoots
-int PolyRoots(double* realRoots, const Poly* a)
+int PolyRoots(float* realRoots, const Poly* a)
 {
-    double* saveRealRoots = realRoots;
+    float* saveRealRoots = realRoots;
     
     if (a->m_X[0] == 0.0)
     {
@@ -355,7 +358,7 @@ int PolyRoots(double* realRoots, const Poly* a)
     PolyCopy(poly, a);
     while (poly->m_Order >= 2)
     {
-        const double rootEstimate = getSingleRoot(poly);
+        const float rootEstimate = getSingleRoot(poly);
         q->m_X[0] = -rootEstimate;
         
         // push root estimate
@@ -376,8 +379,8 @@ int PolyRoots(double* realRoots, const Poly* a)
     int i=0;
     while (i<retVal)
     {
-        double e = PolyEvaluate(a, realRoots[i]);
-        double diff = doubleDist(e, 0.0);
+        float e = PolyEvaluate(a, realRoots[i]);
+        float diff = floatDist(e, 0.0);
         if (diff > kSmallEpsilon)
             realRoots[i] = realRoots[--retVal];
         else
@@ -404,15 +407,15 @@ void PolyMultiply(Poly* dest, const Poly* a, const Poly* b)
 // PolyErrorEvaluate
 //
 // Evaluate error function P(x) - f(x) at x0
-double PolyErrorEvaluate(const Poly* poly, double (*f)(double x), double x0)
+float PolyErrorEvaluate(const Poly* poly, float (*f)(float x), float x0)
 {
-    const double v0 = PolyEvaluate(poly, x0);
-    const double v1 = f(x0);
+    const float v0 = PolyEvaluate(poly, x0);
+    const float v1 = f(x0);
     return v0 - v1;
 }
 
 // PolyErrorDerivativeAt
-float PolyErrorDerivativeAt(const Poly* poly, double (*f)(double x), double x)
+float PolyErrorDerivativeAt(const Poly* poly, float (*f)(float x), float x)
 {
     const float h = 0.01;
     
@@ -430,7 +433,7 @@ float PolyErrorDerivativeAt(const Poly* poly, double (*f)(double x), double x)
 }
 
 // PolyErrorPrimeDerivativeAt
-float PolyErrorPrimeDerivativeAt(const Poly* poly, double (*f)(double x), double x)
+float PolyErrorPrimeDerivativeAt(const Poly* poly, float (*f)(float x), float x)
 {
     const float h = 0.01;
     
@@ -444,21 +447,21 @@ float PolyErrorPrimeDerivativeAt(const Poly* poly, double (*f)(double x), double
     const float x2 = +8*PolyErrorDerivativeAt(poly, f, abscissa2);
     const float x3 = -1*PolyErrorDerivativeAt(poly, f, abscissa3);
     
-    return (x0 + x1 + x2 + x3) / (12.0*h);
+    return (x0 + x1 + x2 + x3) / (12.0f*h);
 }
 
 // PolyErrorGetRoot
-double PolyErrorGetRoot(const Poly* poly, double (*f)(double x), double a, double b, float x0)
+float PolyErrorGetRoot(const Poly* poly, float (*f)(float x), float a, float b, float x0)
 {
-    double x = x0;
+    float x = x0;
     
-    double oldValue = nan(nullptr);
-    double currentValue = nan(nullptr);
+    float oldValue = nan(nullptr);
+    float currentValue = nan(nullptr);
     
-    while (doubleDist(oldValue, currentValue) > kSmallEpsilon)
+    while (floatDist(oldValue, currentValue) > kSmallEpsilon)
     {
-        const double fVal = PolyErrorEvaluate(poly, f, x);
-        const double fdVal = PolyErrorDerivativeAt(poly, f, x);
+        const float fVal = PolyErrorEvaluate(poly, f, x);
+        const float fdVal = PolyErrorDerivativeAt(poly, f, x);
         
         x = x - fVal / fdVal;
         
@@ -474,17 +477,17 @@ double PolyErrorGetRoot(const Poly* poly, double (*f)(double x), double a, doubl
 }
 
 // PolyErrorGetExtremaAbscissa
-double PolyErrorGetExtremaAbscissa(const Poly* poly, double (*f)(double x), double a, double b, double x0)
+float PolyErrorGetExtremaAbscissa(const Poly* poly, float (*f)(float x), float a, float b, float x0)
 {
-    double x = x0;
+    float x = x0;
     
-    double oldValue = nan(nullptr);
-    double currentValue = nan(nullptr);
+    float oldValue = nan(nullptr);
+    float currentValue = nan(nullptr);
     
-    while (doubleDist(oldValue, currentValue) > kSmallEpsilon)
+    while (floatDist(oldValue, currentValue) > kSmallEpsilon)
     {
-        const double fd  = PolyErrorDerivativeAt(poly, f, x);
-        const double fpd = PolyErrorPrimeDerivativeAt(poly, f, x);
+        const float fd  = PolyErrorDerivativeAt(poly, f, x);
+        const float fpd = PolyErrorPrimeDerivativeAt(poly, f, x);
         
         x = x - fd/fpd;
         
@@ -509,7 +512,8 @@ double PolyErrorGetExtremaAbscissa(const Poly* poly, double (*f)(double x), doub
 //
 size_t RVectorSize(int dimension)
 {
-    return sizeof(int32_t) + dimension * sizeof(double);
+    size_t sizeRVector = offsetof(RVector, m_X);
+    return sizeRVector + dimension*sizeof(float);
 }
 
 size_t RVectorSize(const RVector* a)
@@ -519,10 +523,10 @@ size_t RVectorSize(const RVector* a)
 
 void RVectorPermute(RVector* dest, int* p)
 {
-    const int rowSize = sizeof(double)*dest->m_Dimension;
+    const int rowSize = sizeof(float)*dest->m_Dimension;
     for (int i=0; i<dest->m_Dimension; ++i)
     {
-        const double temp = dest->m_X[i];
+        const float temp = dest->m_X[i];
         dest->m_X[i] = dest->m_X[p[i]];
         dest->m_X[p[i]] = temp;
         
@@ -557,10 +561,10 @@ RVector* RVectorAlloc(void* data, int dimensions)
 }
 
 // RVectorDot
-double RVectorDot(const RVector* a, const RVector* b)
+float RVectorDot(const RVector* a, const RVector* b)
 {
     assert(a->m_Dimension == b->m_Dimension);
-    double sum = 0.0;
+    float sum = 0.0;
     for (int i=0,count=a->m_Dimension; i<count; ++i)
         sum += a->m_X[i] * b->m_X[i];
     return sum;
@@ -570,19 +574,19 @@ double RVectorDot(const RVector* a, const RVector* b)
 void RVectorDump(const char* label, const RVector* a)
 {
     const size_t order = a->m_Dimension;
-    printf("%s(%ld): [ ", label, order);
+    Printf("%s(%ld): [ ", label, order);
     for (int i=0; i<order; ++i)
     {
-        const double coeff = a->m_X[i];
-        const double aCoeff = fabs(coeff);
+        const float coeff = a->m_X[i];
+        const float aCoeff = fabs(coeff);
         
         const char* end = i==order-1 ? "" : " ";
-        printf("%.2f%s", coeff, end);
+        Printf("%.2f%s", coeff, end);
     }
-    printf(" ]\n");
+    Printf(" ]\n");
 }
 
-void RVectorScale(RVector* dest, const RVector* a, double scale)
+void RVectorScale(RVector* dest, const RVector* a, float scale)
 {
     for (int i=0; i<a->m_Dimension; ++i)
         dest->m_X[i] = a->m_X[i] * scale;
@@ -592,7 +596,7 @@ void RVectorNormalize(RVector* dest, const RVector* a)
 {
     float lengthSqr = RVectorDot(a, a);
     if (fabsf(lengthSqr)>1e-3f)
-        RVectorScale(dest, a, 1/sqrt(lengthSqr));
+        RVectorScale(dest, a, 1.0f/sqrtf(lengthSqr));
 }
 
 // RMatPermute
@@ -600,25 +604,25 @@ void RMatPermute(RMat* dest, const RMat* a, int* p)
 {
     for (int i=0; i<a->m_Rows; ++i)
     {
-        double* dDouble = RMatGetRow(dest, i);
-        const double* source = RMatGetRow(a, p[i]);
-        memcpy(dDouble, source, sizeof(double)*a->m_Columns);
+        float* dFloat = RMatGetRow(dest, i);
+        const float* source = RMatGetRow(a, p[i]);
+        memcpy(dFloat, source, sizeof(float)*a->m_Columns);
     }
 }
 
 // RMatPermute
 void RMatPermute(RMat* dest, int* p)
 {
-    const int rowSize = sizeof(double)*dest->m_Columns;
-    double* temp = (double*) alloca(dest->m_Columns*sizeof(double));
+    const int rowSize = sizeof(float)*dest->m_Columns;
+    float* temp = (float*) alloca(dest->m_Columns*sizeof(float));
     for (int i=0; i<dest->m_Rows; ++i)
     {
-        double* sourceDouble = RMatGetRow(dest, i);
-        double* mappedDouble = RMatGetRow(dest, p[i]);
+        float* sourceFloat = RMatGetRow(dest, i);
+        float* mappedFloat = RMatGetRow(dest, p[i]);
         
-        memcpy(temp, sourceDouble, rowSize);
-        memcpy(sourceDouble, mappedDouble, rowSize);
-        memcpy(mappedDouble, temp, rowSize);
+        memcpy(temp, sourceFloat, rowSize);
+        memcpy(sourceFloat, mappedFloat, rowSize);
+        memcpy(mappedFloat, temp, rowSize);
         
         int pIndex = -1;
         for (int c=0; pIndex<0 && c<dest->m_Rows; ++c)
@@ -638,9 +642,9 @@ void RMatPermuteIdentity(RMat* dest, int* p)
 {
     for (int i=0; i<dest->m_Rows; ++i)
     {
-        double* dDouble = RMatGetRow(dest, i);
-        memset(dDouble, 0.0, sizeof(double)*dest->m_Columns);
-        dDouble[p[i]] = 1.0;
+        float* dFloat = RMatGetRow(dest, i);
+        memset(dFloat, 0.0f, sizeof(float)*dest->m_Columns);
+        dFloat[p[i]] = 1.0f;
     }
 }
 
@@ -648,7 +652,7 @@ void RMatPermuteIdentity(RMat* dest, int* p)
 void RMatCopy(RMat* dest, const RMat* source)
 {
     *dest = *source;
-    memcpy(dest->m_Data, source->m_Data, source->m_Rows*source->m_Columns*sizeof(double));
+    memcpy(dest->m_Data, source->m_Data, source->m_Rows*source->m_Columns*sizeof(float));
 }
 
 void RMatCopy(RMat* dest, const Mat4* mat4)
@@ -674,7 +678,7 @@ RMat* RMatCopy(void* data, const RMat* a)
 
 size_t RMatSize(int rows, int columns)
 {
-    return 2*sizeof(int32_t) + rows * columns * sizeof(double);
+    return 2*sizeof(int32_t) + rows * columns * sizeof(float);
 }
 
 size_t RMatSize(const RMat* rmat)
@@ -694,7 +698,7 @@ RMat* RMatAlloc(void* data, int rows, int columns)
 void RMatMakeIdentity(RMat* dest)
 {
     assert(dest->m_Rows == dest->m_Columns);
-    memset(dest->m_Data, 0, dest->m_Rows * dest->m_Columns * sizeof(double));
+    memset(dest->m_Data, 0, dest->m_Rows * dest->m_Columns * sizeof(float));
     for (int r=0; r<dest->m_Rows; ++r)
         dest->m_Data[r+r*dest->m_Columns] = 1.0;
 }
@@ -702,7 +706,7 @@ void RMatMakeIdentity(RMat* dest)
 // RMatMakeZero
 void RMatMakeZero(RMat* dest)
 {
-    memset(dest->m_Data, 0, dest->m_Rows*dest->m_Columns*sizeof(double));
+    memset(dest->m_Data, 0, dest->m_Rows*dest->m_Columns*sizeof(float));
 }
 
 // RMatTranspose
@@ -715,7 +719,7 @@ void RMatTranspose(RMat* dest, const RMat* a)
     {
         for (int c=0; c<a->m_Columns; ++c)
         {
-            const double value = RMatGetData(a, r, c);
+            const float value = RMatGetData(a, r, c);
             RMatSetData(dest, c, r, value);
         }
     }
@@ -732,9 +736,9 @@ void RMatMulMat(RMat* dest, const RMat* a, const RMat* b)
         
         for (int r=0; r<a->m_Rows; ++r)
         {
-            const double* aRow = RMatGetRow(a, r);
+            const float* aRow = RMatGetRow(a, r);
             
-            double sum = 0.0;
+            float sum = 0.0;
             for (int i=0; i<a->m_Columns; ++i)
                 sum += aRow[i] * RMatGetData(b, i, c);
             
@@ -750,7 +754,7 @@ void RMatMulVec(RVector* dest, const RMat* a, const RVector* b)
     assert(a->m_Columns == b->m_Dimension);
     for (int r=0; r<a->m_Rows; ++r)
     {
-        double sum = 0.0;
+        float sum = 0.0;
         for (int k=0; k<b->m_Dimension; ++k)
             sum += a->m_Data[k+r*a->m_Columns] * b->m_X[k];
         dest->m_X[r] = sum;
@@ -760,57 +764,57 @@ void RMatMulVec(RVector* dest, const RMat* a, const RVector* b)
 // RMatDump
 void RMatDump(const char* label, const RMat* a)
 {
-    printf("%s(%d,%d):\n[\n", label, a->m_Rows, a->m_Columns);
+    Printf("%s(%d,%d):\n[\n", label, a->m_Rows, a->m_Columns);
     for (int r=0; r<a->m_Rows; ++r)
     {
         const bool lastRow = r == a->m_Rows - 1;
-        printf("    [ ");
+        Printf("    [ ");
         for (int c=0; c<a->m_Columns; ++c)
         {
             const bool lastColumn = c == a->m_Columns - 1;
             
-            const double val = RMatGetData(a, r, c);
-            const double aVal = fabs(val);
+            const float val = RMatGetData(a, r, c);
+            const float aVal = fabsf(val);
             const char* signSpacer = lastColumn ? " " : ", ";
-            printf("%+lf%s", val, signSpacer);
+            Printf("%+lf%s", val, signSpacer);
         }
-        printf("]%s", lastRow ? "\n" : ",\n");
+        Printf("]%s", lastRow ? "\n" : ",\n");
     }
-    printf("]\n");
+    Printf("]\n");
 }
 
 // RMatDump
 void RMatDump(const char* label, const RMat* a, const RMat* b)
 {
-    printf("%s(%d,%d):\n[\n", label, a->m_Rows, a->m_Columns);
+    Printf("%s(%d,%d):\n[\n", label, a->m_Rows, a->m_Columns);
     for (int r=0; r<a->m_Rows; ++r)
     {
         const bool lastRow = r == a->m_Rows - 1;
-        printf("    [ ");
+        Printf("    [ ");
         for (int c=0; c<a->m_Columns; ++c)
         {
             const bool lastColumn = c == a->m_Columns - 1;
             
             const char* end = lastColumn ? "" : "";
-            const double val = RMatGetData(a, r, c);
-            const double aVal = fabs(val);
+            const float val = RMatGetData(a, r, c);
+            const float aVal = fabs(val);
             const char* signSpacer = RMatGetData(a, r, c+1)>=0 ? (lastColumn ? "" : ", ") : " "; // jiv fixme
-            printf("%+.10lf%s%s", val, signSpacer, end);
+            Printf("%+.10lf%s%s", val, signSpacer, end);
         }
-        printf(" | ");
+        Printf(" | ");
         for (int c=0; c<a->m_Columns; ++c)
         {
             const bool lastColumn = c == a->m_Columns - 1;
             
             const char* end = lastColumn ? "" : "";
-            const double val = RMatGetData(b, r, c);
-            const double aVal = fabs(val);
+            const float val = RMatGetData(b, r, c);
+            const float aVal = fabsf(val);
             const char* signSpacer = RMatGetData(b, r, c+1)>=0 ? (lastColumn ? "" : ", ") : " "; // jiv fixme
-            printf("%+.10lf%s%s", val, signSpacer, end);
+            Printf("%+.10lf%s%s", val, signSpacer, end);
         }
-        printf(" ]%s", lastRow ? "\n" : ",\n");
+        Printf(" ]%s", lastRow ? "\n" : ",\n");
     }
-    printf("]\n");
+    Printf("]\n");
 }
 
 // RMatDecomposeLdu
@@ -825,13 +829,13 @@ void RMatDecomposeLdu(RMat* lower, RMat* diagonal, RMat* upper, int* p, const RM
     for (int col=0; col<a->m_Columns; ++col)
     {
         int ndx = -1;
-        double value = -1.0;
+        float value = -1.0f;
         for (int row=0; row<a->m_Rows; ++row)
         {
             if (indicesSet[row])
                 continue;
             
-            const double scalar = fabs(RMatGetData(a, row, col));
+            const float scalar = fabsf(RMatGetData(a, row, col));
             if (scalar > value)
             {
                 value = scalar;
@@ -850,21 +854,21 @@ void RMatDecomposeLdu(RMat* lower, RMat* diagonal, RMat* upper, int* p, const RM
     // iterate over each pivot column
     for (int ri=0; ri<a->m_Rows; ++ri)
     {
-        const double* pivotSourceRow = RMatGetRow(upper, ri);
-        const double pivotDiv = RMatGetData(upper, ri, ri);
+        const float* pivotSourceRow = RMatGetRow(upper, ri);
+        const float pivotDiv = RMatGetData(upper, ri, ri);
         
         // iterate over the other rows, adding -(row_value / pivot_value)
         for (int v=ri+1; v<a->m_Rows; ++v)
         {
-            const double* leftSourceRow = RMatGetRow(upper, v);
-            double* leftDestRow = RMatGetRow(upper, v);
-            double* rightDestRow = RMatGetRow(lower, v);
+            const float* leftSourceRow = RMatGetRow(upper, v);
+            float* leftDestRow = RMatGetRow(upper, v);
+            float* rightDestRow = RMatGetRow(lower, v);
             
-            const double rowValAtPivotColumn = RMatGetData(upper, v, ri);
+            const float rowValAtPivotColumn = RMatGetData(upper, v, ri);
             if (fabs(pivotDiv) < kSmallEpsilon || fabs(rowValAtPivotColumn) < kSmallEpsilon)
                 continue;
             
-            const double scale = 1/pivotDiv * rowValAtPivotColumn;
+            const float scale = 1/pivotDiv * rowValAtPivotColumn;
             
             // update U with pivot
             for (int i=0; i<a->m_Columns; ++i)
@@ -883,11 +887,11 @@ void RMatDecomposeLdu(RMat* lower, RMat* diagonal, RMat* upper, int* p, const RM
         
         for (int ri=0; ri<upper->m_Rows; ++ri)
         {
-            const double dValue = RMatGetData(upper, ri, ri);
-            const double invDValue = 1.0 / dValue;
+            const float dValue = RMatGetData(upper, ri, ri);
+            const float invDValue = 1.0f / dValue;
             
             RMatSetData(diagonal, ri, ri, dValue);
-            double* dest = RMatGetRow(upper, ri);
+            float* dest = RMatGetRow(upper, ri);
             for (int i=0; i<upper->m_Columns; ++i)
             {
                 dest[i] *= invDValue;
@@ -898,22 +902,22 @@ void RMatDecomposeLdu(RMat* lower, RMat* diagonal, RMat* upper, int* p, const RM
     }
 }
 
-// DoubleDump
-void DoubleDump(const char* label, const double* x, int rows)
+// FloatDump
+void FloatDump(const char* label, const float* x, int rows)
 {
-    printf("%s[ ", label);
+    Printf("%s[ ", label);
     for (int i=0; i<rows; ++i)
-        printf("%.3f ", x[i]);
-    printf("]\n");
+        Printf("%.3f ", x[i]);
+    Printf("]\n");
 }
 
 // IntDump
 void IntDump(const char* label, const int* x, int rows)
 {
-    printf("%s[ ", label);
+    Printf("%s[ ", label);
     for (int i=0; i<rows; ++i)
-        printf("%d ", x[i]);
-    printf("]\n");
+        Printf("%d ", x[i]);
+    Printf("]\n");
 }
 
 // lower columns = upper rows
@@ -929,12 +933,12 @@ void RMatSolve(RVector* dest, const RMat* a, const RVector* b)
     RMatDecomposeLdu(lower, nullptr, upper, p, a);
     
     // initialize destination array
-    memset(dest->m_X, 0, dest->m_Dimension*sizeof(double));
+    memset(dest->m_X, 0, dest->m_Dimension*sizeof(float));
     
     // solve lower
     for (int i=0; i<lower->m_Rows; ++i)
     {
-        double bi = b->m_X[p[i]];
+        float bi = b->m_X[p[i]];
         for (int j=0; j<i; ++j)
             bi -= dest->m_X[j] * RMatGetData(lower, i, j);
         dest->m_X[i] = bi;
@@ -943,12 +947,12 @@ void RMatSolve(RVector* dest, const RMat* a, const RVector* b)
     // solve upper
     for (int i=upper->m_Rows-1; i>=0; --i)
     {
-        const double coeff = RMatGetData(upper, i, i);
-        double bi = dest->m_X[i];
+        const float coeff = RMatGetData(upper, i, i);
+        float bi = dest->m_X[i];
         
         for (int j=upper->m_Columns-1; j>i; --j)
         {
-            const double rUpper = RMatGetData(upper, i, j);
+            const float rUpper = RMatGetData(upper, i, j);
             bi -= dest->m_X[j] * rUpper;
         }
         dest->m_X[i] = bi / RMatGetData(upper, i, i);
@@ -974,37 +978,37 @@ void RMatLeastSquare(RVector* dest, const RMat* a, const RVector* b)
 }
 
 // ChebyshevRoots
-void ChebyshevRoots(double* dest, int dim, double a, double b)
+void ChebyshevRoots(float* dest, int dim, float a, float b)
 {
-    const double bias  = 0.5 * (a + b);
-    const double scale = 0.5 * (b - a);
+    const float bias  = 0.5f * (a + b);
+    const float scale = 0.5f * (b - a);
     
-    const double twoN = M_PI / (2.0f * dim);
+    const float twoN = M_PI / (2.0f * dim);
     
     for (int k=0; k<dim; ++k)
     {
-        const double cf = cos((2*(k+1)-1) * twoN);
+        const float cf = cosf((2*(k+1)-1) * twoN);
         dest[k] = bias + scale * cf;
     }
 }
 
 // ChebyshevExtrema
-void ChebyshevExtrema(double* dest, int dim, double a, double b)
+void ChebyshevExtrema(float* dest, int dim, float a, float b)
 {
-    const double bias  = 0.5 * (a + b);
-    const double scale = 0.5 * (b - a);
+    const float bias  = 0.5f * (a + b);
+    const float scale = 0.5f * (b - a);
     
-    const double twoN = M_PI / (2.0f * dim);
+    const float twoN = M_PI / (2.0f * dim);
     
     for (int k=0; k<dim; ++k)
     {
-        const double cf = -cos((k*M_PI)/(dim-1));
+        const float cf = -cosf((k*M_PI)/(dim-1));
         dest[k] = bias + scale * cf;
     }
 }
 
 // RMatLeastSquarePoly
-void RMatLeastSquarePoly(Poly* poly, const double* abscissae, const RVector* y)
+void RMatLeastSquarePoly(Poly* poly, const float* abscissae, const RVector* y)
 {
     const int dim = poly->m_Order;
     
@@ -1012,7 +1016,7 @@ void RMatLeastSquarePoly(Poly* poly, const double* abscissae, const RVector* y)
     RMat* leastSquares = RMatAlloc(alloca(RMatSize(dim, dim)), dim, dim);
     for (int r=0; r<dim; ++r)
     {
-        double t = 1.0;
+        float t = 1.0;
         for (int c=0; c<dim; ++c)
         {
             RMatSetData(leastSquares, r, c, t);
@@ -1024,7 +1028,7 @@ void RMatLeastSquarePoly(Poly* poly, const double* abscissae, const RVector* y)
 }
 
 // Remez
-void Remez(RVector* dest, double (*f)(double x), double a, double b)
+void Remez(RVector* dest, float (*f)(float x), float a, float b)
 {
     // dim   = n+1
     // dim+1 = n+2
@@ -1033,7 +1037,7 @@ void Remez(RVector* dest, double (*f)(double x), double a, double b)
     // come up with a least squares polynomial approximation
     Poly* poly = PolyAlloc(alloca(dim), dim);
     
-    double* controlPoints = (double*) alloca(sizeof(double)*(dim+1));
+    float* controlPoints = (float*) alloca(sizeof(float)*(dim+1));
     ChebyshevExtrema(controlPoints, dim+1, a, b);
     
     Poly* p = PolyAlloc(alloca(RVectorSize(dim)), dim);
@@ -1047,8 +1051,8 @@ void Remez(RVector* dest, double (*f)(double x), double a, double b)
         
         for (int i=0; found && i<dim; ++i)
         {
-            const double cp0 = PolyErrorEvaluate(p, f, controlPoints[i]);
-            const double cp1 = PolyErrorEvaluate(p, f, controlPoints[i+1]);
+            const float cp0 = PolyErrorEvaluate(p, f, controlPoints[i]);
+            const float cp1 = PolyErrorEvaluate(p, f, controlPoints[i+1]);
             
             // 0a:
             // errors alternate in sign
@@ -1077,7 +1081,7 @@ void Remez(RVector* dest, double (*f)(double x), double a, double b)
             RMat* leastSquares = RMatAlloc(alloca(RMatSize(dim+1, dim+1)), dim+1, dim+1);
             for (int r=0; r<dim+1; ++r)
             {
-                double t = 1.0;
+                float t = 1.0;
                 for (int c=0; c<dim; ++c)
                 {
                     RMatSetData(leastSquares, r, c, t);
@@ -1085,52 +1089,52 @@ void Remez(RVector* dest, double (*f)(double x), double a, double b)
                 }
                 
                 // error
-                double sign = (r&1) ? -1.0 : 1.0;
+                float sign = (r&1) ? -1.0f : 1.0f;
                 RMatSetData(leastSquares, r, dim, sign);
                 
                 y->m_X[r] = f(controlPoints[r]);
             }
             
             RMatSolve(temp, leastSquares, y);
-            memcpy(p->m_X, temp->m_X, p->m_Order*sizeof(double));
+            memcpy(p->m_X, temp->m_X, p->m_Order*sizeof(float));
         }
         
         // step 2:
         // locate extrema of error function
-        assert(numUniqueDouble(controlPoints, dim+1) == dim+1);
+        assert(numUniqueFloat(controlPoints, dim+1) == dim+1);
         
         // 2a:
         // find roots of error function.  They are between our control points
-        double* roots = (double*) alloca(sizeof(double)*dim+2);
+        float* roots = (float*) alloca(sizeof(float)*dim+2);
         roots[0] = a;
         roots[dim+1] = b;
         for (int i=0; i<dim; ++i)
         {
-            const double intervalBegin = controlPoints[i];
-            const double intervalEnd = controlPoints[i+1];
-            const double x0 = Lerp(intervalBegin, intervalEnd, (i+1)/double(dim+1));
+            const float intervalBegin = controlPoints[i];
+            const float intervalEnd = controlPoints[i+1];
+            const float x0 = Lerp(intervalBegin, intervalEnd, (i+1)/float(dim+1));
             roots[i+1] = PolyErrorGetRoot(p, f, intervalBegin, intervalEnd, x0);
         }
         
-        assert(numUniqueDouble(roots, dim+2) == dim+2);
-        assert(numUniqueDouble(controlPoints, dim+1) == dim+1);
+        assert(numUniqueFloat(roots, dim+2) == dim+2);
+        assert(numUniqueFloat(controlPoints, dim+1) == dim+1);
         
         // 2b:
         // find extrema of error function.  They are between our roots, plus a and b.
         for (int i=0; i<dim+1; ++i)
         {
-            const double intervalBegin = roots[i];
-            const double intervalEnd = roots[i+1];
-            const double x0 = Lerp(intervalBegin, intervalEnd, i/double(dim));
-            const double x = PolyErrorGetExtremaAbscissa(p, f, intervalBegin, intervalEnd, x0);
+            const float intervalBegin = roots[i];
+            const float intervalEnd = roots[i+1];
+            const float x0 = Lerp(intervalBegin, intervalEnd, i/float(dim));
+            const float x = PolyErrorGetExtremaAbscissa(p, f, intervalBegin, intervalEnd, x0);
             controlPoints[i] = x;
         }
         
-        assert(numUniqueDouble(controlPoints, dim+1) == dim+1);
+        assert(numUniqueFloat(controlPoints, dim+1) == dim+1);
     }
     while (true);
     
-    memcpy(dest->m_X, p->m_X, p->m_Order*sizeof(double));
+    memcpy(dest->m_X, p->m_X, p->m_Order*sizeof(float));
 }
 
 size_t RMatSize(const Mat4* mat4)

@@ -19,7 +19,7 @@ struct RVector;
 struct Poly
 {
     int32_t m_Order;
-    double m_X[]; // in reverse order.  m_X[0] = x^0
+    float m_X[]; // in reverse order.  m_X[0] = x^0
 };
 
 size_t  PolySize(int order);
@@ -27,25 +27,25 @@ size_t  PolySize(const Poly* a);
 
 Poly*   PolyAlloc(void* data, int order);
 Poly*   PolyHeapAlloc(int order);
-int     PolyRoots(double* realRoots, const Poly* poly);
+int     PolyRoots(float* realRoots, const Poly* poly);
 void    PolyMultiply(Poly* dest, const Poly* a, const Poly* b);
 
 void    PolyDerivative(Poly* dest, const Poly* a);
-double  PolyEvaluate(const Poly* a, double x);
+float  PolyEvaluate(const Poly* a, float x);
 
 void    PolyCopy(Poly* des, const Poly* a);
 
 void    PolyDump(const char* label, const Poly* a);
 
-void    PolyPlot(const Poly* poly, double (*f)(double x), const double* coeffs, int dim, double a, double b);
+void    PolyPlot(const Poly* poly, float (*f)(float x), const float* coeffs, int dim, float a, float b);
 
 // find the abscissa of the extrema of an error function (P(x) - f(x)) nbetween a and b
-double  PolyErrorGetExtremaAbscissa(const Poly* poly, double (*f)(double x), double a, double b, float x0);
+float  PolyErrorGetExtremaAbscissa(const Poly* poly, float (*f)(float x), float a, float b, float x0);
 
-double  PolyErrorGetRoot(const Poly* poly, double (*f)(double x), double a, double b, float x0);
-double  PolyErrorEvaluate(const Poly* poly, double (*f)(double x), double x);
-void    PolyErrorDerivativeAt(Poly* dest, const Poly* a, double x);
-void    PolyErrorPrimeDerivativeAt(Poly* dest, const Poly* a, double x);
+float  PolyErrorGetRoot(const Poly* poly, float (*f)(float x), float a, float b, float x0);
+float  PolyErrorEvaluate(const Poly* poly, float (*f)(float x), float x);
+void    PolyErrorDerivativeAt(Poly* dest, const Poly* a, float x);
+void    PolyErrorPrimeDerivativeAt(Poly* dest, const Poly* a, float x);
 
 
 
@@ -61,18 +61,18 @@ void    PolyErrorPrimeDerivativeAt(Poly* dest, const Poly* a, double x);
 struct RVector
 {
     int32_t m_Dimension;
-    double m_X[];
+    float m_X[];
 };
 
 size_t RVectorSize(int dimension);
 size_t RVectorSize(const RVector* a);
 RVector* RVectorAlloc(void* data, int dimensions);
 void RVectorDump(const char* label, const RVector* a);
-void RVectorScale(RVector* dest, double scale);
-void RVectorScale(RVector* dest, const RVector* a, double scale);
+void RVectorScale(RVector* dest, float scale);
+void RVectorScale(RVector* dest, const RVector* a, float scale);
 void RVectorPermute(RVector* dest, const RVector* b, int* p, size_t elementsP);
 
-double RVectorDot(const RVector* a, const RVector* b);
+float RVectorDot(const RVector* a, const RVector* b);
 void RVectorNormalize(RVector* dest, const RVector* a);
 
 #define RVEC_A(a) RVectorAlloc(alloca(RVectorSize(a)), (a)->m_Dimension)
@@ -90,7 +90,7 @@ struct RMat
 {
     int32_t m_Rows;
     int32_t m_Columns;
-    double m_Data[];
+    float m_Data[];
 };
 
 size_t RMatSize(int rows, int columns);
@@ -109,7 +109,7 @@ inline RMat* RMatAllocMatchSize(void* data, const RMat* a)
 
 void RMatMakeIdentity(RMat* dest);
 
-inline void RMatSetData(RMat* dest, int row, int col, double value)
+inline void RMatSetData(RMat* dest, int row, int col, float value)
 {
     const int prevRows = dest->m_Rows;
     const int prevCols = dest->m_Columns;
@@ -120,24 +120,24 @@ inline void RMatSetData(RMat* dest, int row, int col, double value)
     assert(dest->m_Columns == prevCols);
 }
 
-inline double RMatGetData(const RMat* dest, int row, int col)
+inline float RMatGetData(const RMat* dest, int row, int col)
 {
     return dest->m_Data[col+row*dest->m_Columns];
 }
 
-inline const double* RMatGetRow(const RMat* dest, int row)
+inline const float* RMatGetRow(const RMat* dest, int row)
 {
     return &dest->m_Data[row*dest->m_Columns];
 }
 
-inline double* RMatGetRow(RMat* dest, int row)
+inline float* RMatGetRow(RMat* dest, int row)
 {
     return &dest->m_Data[row*dest->m_Columns];
 }
 
 inline size_t RMatRowSize(const RMat* a)
 {
-    return a->m_Columns * sizeof(double);
+    return a->m_Columns * sizeof(float);
 }
 
 void RMatTranspose(RMat* dest, const RMat* a);
@@ -151,13 +151,13 @@ void RMatLeastSquare(RVector* dest, const RMat* a, const RVector* b);
 void RMatInvertIterate(RVector* dest, const RMat* a, float lambda);
 
 // implement Remez algorithm
-void Remez(RVector* dest, double (*f)(double x), double a, double b);
+void Remez(RVector* dest, float (*f)(float x), float a, float b);
 
 // Chebyshev nodes
-void ChebyshevNodes(RVector* dest, double a, double b);
+void ChebyshevNodes(RVector* dest, float a, float b);
 
 // Lerp
-double Lerp(double a, double b, double t);
+float Lerp(float a, float b, float t);
 
 //
 struct Mat4;

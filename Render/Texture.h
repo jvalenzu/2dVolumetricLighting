@@ -1,6 +1,7 @@
 #pragma once
 
-#include <opengl/gl3.h>
+#include "Render/GL.h"
+
 #include <stdint.h>
 #include "Engine/Matrix.h"
 
@@ -31,8 +32,8 @@ struct Texture
     int32_t m_Depth;
     GLuint m_TextureId;
     GLuint m_FrameBufferId;
-    float m_Width;
-    float m_Height;
+    int32_t m_Width;
+    int32_t m_Height;
     Vec3 m_ClearColor;
     int m_RefCount;
     const char* m_DebugName;
@@ -48,7 +49,7 @@ struct Texture
     {
     }
 
-    Texture(float width, float height) : m_Width(width), m_Height(height), m_RefCount(0), m_DebugName(nullptr)
+    Texture(int width, int height) : m_Width(width), m_Height(height), m_RefCount(0), m_DebugName(nullptr)
     {
     }
 

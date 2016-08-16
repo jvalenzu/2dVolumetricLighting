@@ -56,6 +56,8 @@ void ToolLoadOrthographic(Mat4* dest, float left, float right, float bottom, flo
 Obb ToolGenerateObbFromSimpleModel(const SimpleModel* model)
 {
     Obb ret;
+    ObbInit(&ret, 0.0f, 0.0f, 0.0f);
+    
     if (model->m_NumVertices)
     {
         float m[3] = { 0.0f, 0.0f, 0.0f };

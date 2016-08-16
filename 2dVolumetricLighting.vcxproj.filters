@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="lodepng.c" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Render\Asset.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Material.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\PostEffect.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Render.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Shader.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Texture.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Light.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Matrix.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Obb.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Scene.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Utils.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Tool\RMath.cpp">
+      <Filter>Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="Tool\Test.cpp">
+      <Filter>Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="Tool\Utils.cpp">
+      <Filter>Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\WindowsGL.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lodepng.h" />
+    <ClInclude Include="Render\asset.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\GL.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Material.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\MaterialHandle.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Model.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\PostEffect.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Render.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Shader.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Texture.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Light.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Matrix.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Obb.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Scene.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Utils.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Container\FixedVector.h">
+      <Filter>Engine\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Container\LinkyList.h">
+      <Filter>Engine\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="Tool\RMath.h">
+      <Filter>Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="Tool\Test.h">
+      <Filter>Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="Tool\Utils.h">
+      <Filter>Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\WindowsGL.h" />
+    <ClInclude Include="Render\Shaders\light.h">
+      <Filter>Render\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Shaders\shader.h">
+      <Filter>Render\Shaders</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Render">
+      <UniqueIdentifier>{f0b2e3ba-5651-49d7-a99f-b396c1e7e8fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine">
+      <UniqueIdentifier>{96c1963a-c42a-4996-9df3-35961ccb9501}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Container">
+      <UniqueIdentifier>{b0d05acf-25a0-4714-9699-6ddcbd9e310e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tool">
+      <UniqueIdentifier>{cc9a6e96-5473-4230-9549-040642ebde5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Render\Shaders">
+      <UniqueIdentifier>{663fcf24-5e8f-47de-9bcc-2deb566ac0a9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Render\Shaders\BlurY.vsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\BlurX.fsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\BlurX.vsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\BlurY.fsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\Planar.vsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\Planar.fsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\SampleShadowMap.fsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\ShadowCasters.fsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\ShadowCasters.vsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\SampleShadowMap.vsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\ShadowMap1d.fsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\ShadowMap1d.vsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\Simple.fsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\Simple.vsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\SimpleTransparent.fsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\SimpleTransparent.vsh">
+      <Filter>Render\Shaders</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

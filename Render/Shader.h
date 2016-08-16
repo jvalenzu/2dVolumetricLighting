@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Render/GL.h"
 #include <stdint.h>
 #include <stdio.h>
 

@@ -1,6 +1,8 @@
 #include "Engine/Light.h"
+#include "Engine/Utils.h"
 
 #include <assert.h>
+#define _USE_MATH_DEFINES 1
 #include <math.h>
 #include <stdio.h>
 
@@ -12,9 +14,9 @@ void DumpLight(const Light& light)
         {
             const PointLight& pointLight = (const PointLight&) light;
             puts("PointLight:\n");
-            printf("m_Range: %f\n", pointLight.m_Range);
-            printf("m_Color: %f %f %f %f\n", pointLight.m_Color.m_X[0], pointLight.m_Color.m_X[1], pointLight.m_Color.m_X[2], pointLight.m_Color.m_X[3]);
-            printf("m_Position: %f %f %f\n", pointLight.m_Position.m_X[0], pointLight.m_Position.m_X[1], pointLight.m_Position.m_X[2]);
+            Printf("m_Range: %f\n", pointLight.m_Range);
+            Printf("m_Color: %f %f %f %f\n", pointLight.m_Color.m_X[0], pointLight.m_Color.m_X[1], pointLight.m_Color.m_X[2], pointLight.m_Color.m_X[3]);
+            Printf("m_Position: %f %f %f\n", pointLight.m_Position.m_X[0], pointLight.m_Position.m_X[1], pointLight.m_Position.m_X[2]);
             
             break;
         }
@@ -22,18 +24,18 @@ void DumpLight(const Light& light)
         {
             const ConicalLight& conicalLight = (const ConicalLight&) light;
             puts("CylindricalLight:\n");
-            printf("m_Range: %f\n", conicalLight.m_Range);
-            printf("m_Color: %f %f %f %f\n", conicalLight.m_Color.m_X[0], conicalLight.m_Color.m_X[1], conicalLight.m_Color.m_X[2], conicalLight.m_Color.m_X[3]);
-            printf("m_Position: %f %f %f\n", conicalLight.m_Position.m_X[0], conicalLight.m_Position.m_X[1], conicalLight.m_Position.m_X[2]);
+            Printf("m_Range: %f\n", conicalLight.m_Range);
+            Printf("m_Color: %f %f %f %f\n", conicalLight.m_Color.m_X[0], conicalLight.m_Color.m_X[1], conicalLight.m_Color.m_X[2], conicalLight.m_Color.m_X[3]);
+            Printf("m_Position: %f %f %f\n", conicalLight.m_Position.m_X[0], conicalLight.m_Position.m_X[1], conicalLight.m_Position.m_X[2]);
             break;
         }        
         case LightType::kCylindrical:
         {
             const CylindricalLight& cylindricalLight = (const CylindricalLight&) light;
             puts("CylindricalLight:\n");
-            printf("m_Range: %f\n", cylindricalLight.m_Range);
-            printf("m_Color: %f %f %f %f\n", cylindricalLight.m_Color.m_X[0], cylindricalLight.m_Color.m_X[1], cylindricalLight.m_Color.m_X[2], cylindricalLight.m_Color.m_X[3]);
-            printf("m_Position: %f %f %f\n", cylindricalLight.m_Position.m_X[0], cylindricalLight.m_Position.m_X[1], cylindricalLight.m_Position.m_X[2]);
+            Printf("m_Range: %f\n", cylindricalLight.m_Range);
+            Printf("m_Color: %f %f %f %f\n", cylindricalLight.m_Color.m_X[0], cylindricalLight.m_Color.m_X[1], cylindricalLight.m_Color.m_X[2], cylindricalLight.m_Color.m_X[3]);
+            Printf("m_Position: %f %f %f\n", cylindricalLight.m_Position.m_X[0], cylindricalLight.m_Position.m_X[1], cylindricalLight.m_Position.m_X[2]);
             break;
         }        
     }

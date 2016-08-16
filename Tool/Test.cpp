@@ -1,8 +1,9 @@
 #include "Engine/Matrix.h"
+#include "Engine/Utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#define _TEST(func, funcString) if (!func()) { printf(funcString " failed!\n"); exit(1); }
+#define _TEST(func, funcString) if (!func()) { Printf(funcString " failed!\n"); exit(1); }
 #define TEST(func) _TEST(func, #func)
 
 static bool Mat3MakeZero();
@@ -19,9 +20,9 @@ void MatrixTest()
 static bool MatrixMultiplyVecTest()
 {
     float v[3];
-    v[0] = rand()/(float)RAND_MAX * 1024 - 512.0;
-    v[1] = rand()/(float)RAND_MAX * 1024 - 512.0;
-    v[2] = rand()/(float)RAND_MAX * 1024 - 512.0;
+    v[0] = rand()/(float)RAND_MAX * 1024 - 512.0f;
+    v[1] = rand()/(float)RAND_MAX * 1024 - 512.0f;
+    v[2] = rand()/(float)RAND_MAX * 1024 - 512.0f;
     
     Mat3 r;
     MatrixMakeRandy(&r, 512.0f, 1024.0f);

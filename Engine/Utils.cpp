@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <sys/stat.h>
+#include <stdarg.h>
+
+#if defined(WINDOWS)
+#include <windows.h>
+#endif
+
 
 char* FileGetAsText(const char* fname)
 {
@@ -17,4 +23,48 @@ char* FileGetAsText(const char* fname)
     }
     
     return ret;
+}
+
+int Printf(const char* fmt, ...)
+{
+  int ret = 0;
+  va_list args;
+  va_start(args, fmt);
+
+  char buf[2048];
+  ret = vsnprintf(buf, sizeof buf, fmt, args);
+  puts(buf);
+
+#if defined(WINDOWS)
+  OutputDebugStringA(buf);
+#endif
+  va_end(args);
+
+  return ret;
+}
+
+int FPrintf(FILE* fh, const char* fmt, ...)
+{
+  int ret = 0;
+  va_list args;
+  va_start(args, fmt);
+
+  if (fh == stderr)
+  {
+    char buf[2048];
+    vsnprintf(buf, sizeof buf, fmt, args);
+    puts(buf);
+
+#if defined(WINDOWS)
+    OutputDebugStringA(buf);
+#endif
+  }
+  else
+  {
+    ret = vfprintf(fh, fmt, args);
+  }
+  
+  va_end(args);
+
+  return ret;
 }

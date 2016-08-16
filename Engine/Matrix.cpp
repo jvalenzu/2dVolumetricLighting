@@ -1,7 +1,10 @@
 #include <string.h>
 #include <stdio.h>
+#define _USE_MATH_DEFINES 1
 #include <math.h>
+#include <stdlib.h>
 
+#include "Engine/Platform.h"
 #include "Engine/Matrix.h"
 #include "Engine/Utils.h"
 #include "Tool/RMath.h"
@@ -242,19 +245,19 @@ void MatrixToGl(float temp[16], const Mat4& a)
 
 void MatrixDump(const Mat4& m, const char* prefix)
 {
-    printf("%s  \n", prefix);
-    printf("[ [ %f %f %f %f ],\n", m.m_X[0], m.m_X[1], m.m_X[2], m.m_X[3]);
-    printf("  [ %f %f %f %f ],\n", m.m_Y[0], m.m_Y[1], m.m_Y[2], m.m_Y[3]);
-    printf("  [ %f %f %f %f ],\n", m.m_Z[0], m.m_Z[1], m.m_Z[2], m.m_Z[3]);
-    printf("  [ %f %f %f %f ] ]\n", m.m_W[0], m.m_W[1], m.m_W[2], m.m_W[3]);
+    Printf("%s  \n", prefix);
+    Printf("[ [ %f %f %f %f ],\n", m.m_X[0], m.m_X[1], m.m_X[2], m.m_X[3]);
+    Printf("  [ %f %f %f %f ],\n", m.m_Y[0], m.m_Y[1], m.m_Y[2], m.m_Y[3]);
+    Printf("  [ %f %f %f %f ],\n", m.m_Z[0], m.m_Z[1], m.m_Z[2], m.m_Z[3]);
+    Printf("  [ %f %f %f %f ] ]\n", m.m_W[0], m.m_W[1], m.m_W[2], m.m_W[3]);
 }
 
 void MatrixDump(const Mat3& m, const char* prefix)
 {
-    printf("%s  \n", prefix);
-    printf("[ [ %f, %f, %f ],\n", m.m_X[0], m.m_X[1], m.m_X[2]);
-    printf("  [ %f, %f, %f ],\n", m.m_Y[0], m.m_Y[1], m.m_Y[2]);
-    printf("  [ %f, %f, %f ] ]\n", m.m_Z[0], m.m_Z[1], m.m_Z[2]);
+    Printf("%s  \n", prefix);
+    Printf("[ [ %f, %f, %f ],\n", m.m_X[0], m.m_X[1], m.m_X[2]);
+    Printf("  [ %f, %f, %f ],\n", m.m_Y[0], m.m_Y[1], m.m_Y[2]);
+    Printf("  [ %f, %f, %f ] ]\n", m.m_Z[0], m.m_Z[1], m.m_Z[2]);
 }
 
 void MatrixTransposeInsitu(Mat4* dest)
@@ -368,27 +371,27 @@ void MatrixCopy(Mat4* dest, const Mat4& a)
 // vector3 dump
 void Vector3Dump(float v[3], const char* prefix)
 {
-    printf("%s[%f %f %f]\n", prefix, v[0], v[1], v[2]);
+    Printf("%s[%f %f %f]\n", prefix, v[0], v[1], v[2]);
 }
 
 void VectorDump(const Vec3* a, const char* prefix)
 {
-    printf("%s[%f %f %f]\n", prefix, a->m_X[0], a->m_X[1], a->m_X[2]);
+    Printf("%s[%f %f %f]\n", prefix, a->m_X[0], a->m_X[1], a->m_X[2]);
 }
 
 void VectorDump(const Vec3& a, const char* prefix)
 {
-    printf("%s[%f %f %f]\n", prefix, a.m_X[0], a.m_X[1], a.m_X[2]);
+    Printf("%s[%f %f %f]\n", prefix, a.m_X[0], a.m_X[1], a.m_X[2]);
 }
 
 void VectorDump(const Vec4* a, const char* prefix)
 {
-    printf("%s[%f %f %f %f]\n", prefix, a->m_X[0], a->m_X[1], a->m_X[2], a->m_X[3]);
+    Printf("%s[%f %f %f %f]\n", prefix, a->m_X[0], a->m_X[1], a->m_X[2], a->m_X[3]);
 }
 
 void VectorDump(const Vec4& a, const char* prefix)
 {
-    printf("%s[%f %f %f %f]\n", prefix, a.m_X[0], a.m_X[1], a.m_X[2], a.m_X[3]);
+    Printf("%s[%f %f %f %f]\n", prefix, a.m_X[0], a.m_X[1], a.m_X[2], a.m_X[3]);
 }
 
 
@@ -703,7 +706,7 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
     
     float phi;
     if (r <= -1.0f)
-        phi = M_PI / 3.0f;
+        phi = (float)M_PI / 3.0f;
     else if (r >= 1.0f)
         phi = 0.0f;
     else

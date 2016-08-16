@@ -65,6 +65,8 @@ all: 2dVolumetricLighting
 2dVolumetricLighting : $(OBJS) $(SHADER_TRANSFORMED)
 	$(CXX) -o $@ $(OBJS) -I$(CURDIR) -I/usr/local/include $(LDFLAGS) $(LIBRARIES)
 
+shaders : $(SHADER_TRANSFORMED)
+
 $(foreach src,$(SRCS),$(eval $(call srcToObj,$(src))))
 $(foreach src,$(SHADER_SRCS),$(eval $(call shaderSrcToObj,$(src))))
 

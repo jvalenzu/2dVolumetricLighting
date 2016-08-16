@@ -1,9 +1,5 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-#include <opengl/CGLContext.h>
-#include <opengl/CGLCurrent.h>
-#include <opengl/gl3.h>
 #include <stdint.h>
 
 struct AssetHandle
@@ -95,11 +91,6 @@ struct HandleAssetManager
     HandleAssetManager()
     {
         m_NumAssets = 0;
-    }
-    
-    void Create()
-    {
-        m_NumAssets = 0;
         m_AssetHandleTable.Create(kMaxAssets);
         for (int i=0; i<kMaxAssets; ++i)
         {
@@ -167,11 +158,6 @@ struct SimpleAssetManager
     int      m_NumAssets;
     
     SimpleAssetManager()
-    {
-        m_NumAssets = 0;
-    }
-    
-    void Create()
     {
         m_NumAssets = 0;
         for (int i=0; i<kMaxAssets; ++i)

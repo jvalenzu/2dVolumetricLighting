@@ -28,7 +28,6 @@
 [✓] shadows from multiple lights
   [x] Point
   [ ] Conical
-  [ ] Cylindrical (distance from line)
   Simplest way for non-point lights would be to do attentuation in the 1d phase.
   [x] 1st: multipass
   [ ] 2nd: texture array?
@@ -42,7 +41,9 @@
 [ ] ARTIFACT: The volumetric shadow has lines in it
 [ ] ARTIFACT: Dealing with lsp embedded in occluder
 [ ] TODO: Windows port
-[x] shader preprocessing
+  [ ] DirectX 11 or 12
+[✓] shader preprocessing
+  [ ] Deal with different configurations
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
 [ ] Relocate asset file paths
 [ ] SceneObject reference count.

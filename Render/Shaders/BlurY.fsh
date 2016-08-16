@@ -1,3 +1,5 @@
+#extension GL_ARB_explicit_attrib_location : enable
+
 #ifdef GL_ES
 precision highp float;
 #endif

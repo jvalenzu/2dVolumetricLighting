@@ -1,8 +1,6 @@
 #pragma once
 
-#include <opengl/gl3.h>
-#include <stdint.h>
-
+#include "Render/GL.h"
 #include "Render/Texture.h"
 #include "Engine/Matrix.h"
 #include "Render/Shader.h"

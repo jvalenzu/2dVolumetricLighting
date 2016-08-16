@@ -26,7 +26,9 @@ ShaderManager::ShaderManager()
 {
     float languageVersion;
     sscanf((const char *)glGetString(GL_SHADING_LANGUAGE_VERSION), "%f", &languageVersion);
-    m_Version = 100 * languageVersion;
+    m_Version = (int) (100 * languageVersion);
+    
+    Printf("shader version: %d\n", m_Version);
 }
 
 
@@ -50,7 +52,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
     char* vShaderSource = FileGetAsText(vshFilePath);
     if (vShaderSource == nullptr)
     {
-        printf("Unable to find %s\n", vshFilePath);
+        Printf("Unable to find %s\n", vshFilePath);
         return nullptr;
     }
         
@@ -60,7 +62,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
     char* fShaderSource = FileGetAsText(fshFilePath);
     if (fShaderSource == nullptr)
     {
-        printf("Unable to find %s\n", fshFilePath);
+        Printf("Unable to find %s\n", fshFilePath);
         delete[] vShaderSource;
         return nullptr;
     }
@@ -99,11 +101,11 @@ Shader* ShaderManager::CreateShader(const char* fname)
         {
             GLchar* log = new GLchar[logLength];
             glGetShaderInfoLog(vertexShader, logLength, &logLength, log);
-            printf("Vtx Shader compile log:%s\n", log);
+            Printf("Vtx Shader compile log:%s\n", log);
             delete[] log;
         }
             
-        fprintf(stderr, "Failed to compile vtx shader:\n%s\n", sourceString);
+        FPrintf(stderr, "Failed to compile vtx shader:\n%s\n", sourceString);
             
         delete[] fShaderSource;
         delete[] vShaderSource;
@@ -130,7 +132,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
     glGetShaderiv(fragShader, GL_COMPILE_STATUS, &status);
     if (status == 0)
     {
-        fprintf(stderr, "Failed to compile %s.fsh\n", fname);
+        FPrintf(stderr, "Failed to compile %s.fsh\n", fname);
             
         GLint logLength;
         glGetShaderiv(fragShader, GL_INFO_LOG_LENGTH, &logLength);
@@ -138,7 +140,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
         {
             GLchar* log = new GLchar[logLength];
             glGetShaderInfoLog(fragShader, logLength, &logLength, log);
-            printf("Frag Shader compile log:\n%s\n", log);
+            Printf("Frag Shader compile log:\n%s\n", log);
             delete[] log;
         }
             
@@ -167,7 +169,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
         {
             GLchar* log = new GLchar[logLength];
             glGetProgramInfoLog(temp.m_ProgramName, logLength, &logLength, log);
-            printf("Frag Shader link log:\n%s\n", log);
+            Printf("Frag Shader link log:\n%s\n", log);
             delete[] log;
         }
             
@@ -241,7 +243,7 @@ void ShaderManager::DumpInternal()
     for (int i=0; i<m_NumAssets; ++i)
     {
         Shader& shader = m_Assets[i];
-        printf("%2d name %s crc 0x%x refCount %d\n", i, shader.m_DebugName, m_Crc[i], shader.m_RefCount);
+        Printf("%2d name %s crc 0x%x refCount %d\n", i, shader.m_DebugName, m_Crc[i], shader.m_RefCount);
     }
 }
 

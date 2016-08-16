@@ -508,5 +508,5 @@ int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, Scene
             *write++ = sceneObject;
     }
 
-    return write - first;
+    return (int) (write - first);
 }

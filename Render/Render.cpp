@@ -1,8 +1,4 @@
-#include <GLFW/glfw3.h>
-#include <opengl/CGLContext.h>
-#include <opengl/CGLCurrent.h>
-#include <opengl/gl3.h>
-#include <OpenCL/opencl.h>
+#include "Render/GL.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,6 +90,7 @@ GLErrorScope::~GLErrorScope()
 // Initialize GL
 static bool s_CgInit(RenderContext* renderContext)
 {
+#if USE_CL
     CGLContextObj glContext = CGLGetCurrentContext();
     CGLShareGroupObj shareGroup = CGLGetShareGroup(glContext);
     cl_context_properties properties[] =
@@ -110,7 +107,7 @@ static bool s_CgInit(RenderContext* renderContext)
     int err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_GPU, 2, device_ids, &num_devices);
     if (err != CL_SUCCESS)
     {
-        printf("Error: Failed to create a device group!\n");
+        Printf("Error: Failed to create a device group!\n");
         return false;
     }
     
@@ -121,7 +118,7 @@ static bool s_CgInit(RenderContext* renderContext)
     cl_context context = renderContext->m_Context = clCreateContext(0, 1, &device_id, nullptr, nullptr, &err);
     if (!context)
     {
-        printf("Error: Failed to create a compute context!\n");
+        Printf("Error: Failed to create a compute context!\n");
         return false;
     }
     
@@ -129,7 +126,7 @@ static bool s_CgInit(RenderContext* renderContext)
     cl_command_queue commands = renderContext->m_CommandQueue = clCreateCommandQueue(context, device_id, 0, &err);
     if (!commands)
     {
-        printf("Error: Failed to create a command commands!\n");
+        Printf("Error: Failed to create a command commands!\n");
         return false;
     }
     
@@ -138,14 +135,15 @@ static bool s_CgInit(RenderContext* renderContext)
     // 
     // char* extensions = new char[extensionSize];
     // clGetDeviceInfo(device_id, CL_DEVICE_EXTENSIONS, extensionSize, extensions, nullptr);
-    // fprintf(stderr, "\nDevice Extensions:\n");
+    // FPrintf(stderr, "\nDevice Extensions:\n");
     // for (int i=0; i<(int)strlen(extensions); ++i)
     // {
     //     if (extensions[i] == ' ')
     //         extensions[i] = '\n';
     // }
-    // fprintf(stderr, "%s\n", extensions);
+    // FPrintf(stderr, "%s\n", extensions);
     // delete[] extensions;
+#endif
     
     return true;
 }
@@ -161,16 +159,16 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
 {
     int width = renderOptions.m_Width;
     int height = renderOptions.m_Height;
-    
+
     auto errorCallback = [] (int error, const char* description)
     {
-        fprintf(stderr, "Error[%d]: %s\n", error, description);
+        FPrintf(stderr, "Error[%d]: %s\n", error, description);
     };
     glfwSetErrorCallback(errorCallback);
     
     if (!glfwInit())
         exit(EXIT_FAILURE);
-    
+
     glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
     
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -184,8 +182,16 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
+
     
     glfwMakeContextCurrent(renderContext->m_Window);
+
+    #if defined(WINDOWS)
+    WindowsGLInit();
+#endif
+    
+
+
     glfwGetFramebufferSize(renderContext->m_Window, &width, &height);
     renderContext->m_Width = width;
     renderContext->m_Height = height;
@@ -206,7 +212,6 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     const float aspectRatio = (float) renderContext->m_Width/renderContext->m_Height;
     
     // initialize perspective matrix
-    Mat4 temp;
     if (renderOptions.m_CameraType == RenderOptions::kPerspective)
         ToolLoadPerspective(&renderContext->m_Projection, 45.0f, aspectRatio, 1.0f, 16777216.0f);
     else
@@ -404,12 +409,12 @@ void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* poi
         dest[i].m_Range = 1.0f / dest[i].m_Range;
     }
     
-    // printf("------------------\n");
-    // printf("numPointLights: %d\n", numPointLights);
+    // Printf("------------------\n");
+    // Printf("numPointLights: %d\n", numPointLights);
     // for (int i=0; i<numPointLights; ++i)
     // {
     //     Vec3 screenPos = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
-    //     printf("[%d] screenPosition: %f %f %f -> %f %f\n",
+    //     Printf("[%d] screenPosition: %f %f %f -> %f %f\n",
     //            i,
     //            pointLights[i].m_Position.m_X[0], pointLights[i].m_Position.m_X[1], pointLights[i].m_Position.m_X[2],
     //            screenPos.m_X[0], screenPos.m_X[1]);
@@ -468,10 +473,10 @@ void RenderOptionsInit(RenderOptions* renderOptions, int width, int height)
 
 void RenderDumpModel(const SimpleModel* model)
 {
-    printf("model:\n");
+    Printf("model:\n");
     MatrixDump(model->m_Po, "    ");
-    printf("    numVertices: %d\n", model->m_NumVertices);
-    printf("    numIndices: %d\n", model->m_NumIndices);
+    Printf("    numVertices: %d\n", model->m_NumVertices);
+    Printf("    numIndices: %d\n", model->m_NumIndices);
     
     for (int i=0; i<model->m_NumIndices; ++i)
     {
@@ -479,23 +484,23 @@ void RenderDumpModel(const SimpleModel* model)
         float in[3] = { vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2] };
         float out[3];
         MatrixMultiplyVec(out, in, model->m_Po);
-        printf("    point[%d] = { %.2f, %.2f, %.2f }\n", i, out[0], out[1], out[2]);
+        Printf("    point[%d] = { %.2f, %.2f, %.2f }\n", i, out[0], out[1], out[2]);
     }
 }
 
 void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a)
 {
-    printf("model:\n");
+    Printf("model:\n");
     MatrixDump(a, "    ");
-    printf("    numVertices: %d\n", model->m_NumVertices);
-    printf("    numIndices: %d\n", model->m_NumIndices);
+    Printf("    numVertices: %d\n", model->m_NumVertices);
+    Printf("    numIndices: %d\n", model->m_NumIndices);
     
     for (int i=0; i<model->m_NumIndices; ++i)
     {
         const SimpleVertex* vertex = model->m_Vertices + model->m_Indices[i];
         float out[3];
         MatrixMultiplyVec(out, vertex->m_Position, a);
-        printf("    point[%d] = [ %.2f, %.2f, %.2f, 1 ] -> [ %.2f, %.2f, %.2f, 1 ]\n",
+        Printf("    point[%d] = [ %.2f, %.2f, %.2f, 1 ] -> [ %.2f, %.2f, %.2f, 1 ]\n",
                i, vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2], out[0], out[1], out[2]);
     }
 }
@@ -528,7 +533,7 @@ void RenderSetBlendMode(Material::BlendMode blendMode)
 
 static inline void RenderUseProgram(const Shader* shader)
 {
-    // printf("Using %s\n", shader->m_DebugName);
+    // Printf("Using %s\n", shader->m_DebugName);
     glUseProgram(shader->m_ProgramName);
 }
 
@@ -765,7 +770,7 @@ void RenderSetRenderTarget(RenderContext* renderContext, Texture* texture)
     else
     {
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            printf("Error - framebuffer is not ready\n");
+            Printf("Error - framebuffer is not ready\n");
         
         glBindFramebuffer(GL_FRAMEBUFFER, renderContext->m_FrameBufferIds[0]);
         glViewport(0, 0, renderContext->m_Width, renderContext->m_Height);

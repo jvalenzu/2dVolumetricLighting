@@ -1,7 +1,6 @@
 #pragma once
 
-#include <OpenCL/opencl.h>
-#include <OpenGL/gl3.h>
+#include "Render/GL.h"
 #include "Engine/Matrix.h"
 #include "Render/Material.h"
 #include "Engine/Light.h"
@@ -28,9 +27,11 @@ struct RenderContext
     int m_FrameCount;
     int m_FrameRollover;    
     
+#if USE_CL
     cl_context m_Context;
     cl_command_queue m_CommandQueue;
-    
+#endif
+
     GLuint m_QuadVertexArrayId;
     GLuint m_QuadVertexBufferId;
     
@@ -194,6 +195,26 @@ void SimpleModelDestroy(SimpleModel* simpleModel);
 const char * GetGLErrorString(GLenum error);
 
 #ifndef NDEBUG
+
+// jiv fixme copy pasta
+#if defined(WINDOWS)
+#include <stdlib.h>
+
+#define GetGLError()                                            \
+{                                                               \
+    GLenum err = glGetError();                                  \
+    int errCount =  0;                                          \
+    while (err != GL_NO_ERROR) {                                \
+        fprintf(stderr, "[%s:%d] GLError %s set in\n",          \
+                __FILE__,                                       \
+                __LINE__,                                       \
+                GetGLErrorString(err));                         \
+        err = glGetError();                                     \
+        errCount++;                                             \
+    }                                                           \
+    if (errCount) { DebugBreak(); exit(1); }    \
+}
+#else
 #define GetGLError()                                            \
 {                                                               \
     GLenum err = glGetError();                                  \
@@ -208,6 +229,7 @@ const char * GetGLErrorString(GLenum error);
     }                                                           \
     if (errCount) { __builtin_trap(); exit(1); }                \
 }
+#endif
 
 class GLErrorScope
 {

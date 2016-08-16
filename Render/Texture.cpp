@@ -3,10 +3,9 @@
 #include "Render/Material.h"
 #include "Render/Render.h"
 #include "Engine/Utils.h"
+#include "Render/GL.h"
 
 #include "lodepng.h"
-
-#include <execinfo.h>
 
 struct TextureManager : SimpleAssetManager<Texture>
 {
@@ -23,21 +22,6 @@ TextureManager* g_TextureManager;
 
 Texture* TextureRef(Texture* texture)
 {
-    if (false)
-    {
-        if (texture)
-            printf("%s\n", texture->m_DebugName);
-        
-        void* array[8192];
-        char** symbols;
-        int n = backtrace(array, 8192);
-        symbols = backtrace_symbols(array, n);
-        for (int i=0; i<n; ++i)
-            printf("%s\n", symbols[i]);
-        free(symbols);
-        puts("\n");
-    }
-    
     if (texture)
         texture->m_RefCount++;
     return texture;
@@ -121,7 +105,7 @@ void TextureManager::DestroyTexture(Texture* victim)
 
 void TextureManager::DumpInternal(const Texture* texture)
 {
-    printf("name %s refCount %d\n", texture->m_DebugName, texture->m_RefCount);
+    Printf("name %s refCount %d\n", texture->m_DebugName, texture->m_RefCount);
 }
 
 Texture* TextureCreateFromFile(const char* filename)
@@ -156,18 +140,20 @@ void TextureDestroy(Texture* victim)
         return;
     }
     
+#if !defined(WINDOWS)
     if (false)
     {
-        printf("%s\n", victim->m_DebugName);
+        Printf("%s\n", victim->m_DebugName);
         puts("\n");
         void* array[8192];
         char** symbols;
         int n = backtrace(array, 8192);
         symbols = backtrace_symbols(array, n);
         for (int i=0; i<n; ++i)
-            printf("%s\n", symbols[i]);
+            Printf("%s\n", symbols[i]);
         free(symbols);
     }
+#endif
     
     if (--victim->m_RefCount == 0)
         g_TextureManager->DestroyTexture(victim);
@@ -193,5 +179,5 @@ void TextureFini()
 
 void TextureManager::DumpTitle()
 {
-    printf("TextureManager\n");
+    Printf("TextureManager\n");
 }
