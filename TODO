@@ -32,8 +32,6 @@
   Simplest way for non-point lights would be to do attentuation in the 1d phase.
   [x] 1st: multipass
   [ ] 2nd: texture array?
-[ ] TODO: Windows port.
-    DirectX?  Not strictly necessary but would probably be more useful.  Not excited about abstracting that out though.
 [ ] light prepass optimization
 [x] Add member function for MaterialReserveMaterialProperties
 [x] Add member function for MaterialSetMaterialPropertyType
@@ -42,12 +40,12 @@
 [x] Add member function for MaterialSetMaterialPropertyTexture
 [ ] ARTIFACT: The volumetric shadow has lines in it
 [ ] ARTIFACT: Dealing with lsp embedded in occluder
-[ ] TODO: Windows port
-  [ ] DirectX 11 or 12
+[✓] Windows port
+  [ ] DirectX 11 or 12.
 [✓] shader preprocessing
   [ ] Deal with different configurations
-=======
-[x] shader preprocessing
+[✓] shader preprocessing
+  [ ] suppress warning on windows
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
 [ ] Relocate asset file paths
 [ ] SceneObject reference count

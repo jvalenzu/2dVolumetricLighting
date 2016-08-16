@@ -1,5 +1,5 @@
 
-layout (std140) struct PointLight
+struct PointLight
 {
     float m_TypePad;
     float m_Range;
@@ -9,13 +9,13 @@ layout (std140) struct PointLight
     vec4 m_Position;
 };
 
-layout (std140) struct DirectionalLight
+struct DirectionalLight
 {
     vec4 m_Direction;
     vec4 m_Color;
 };
 
-layout (std140) struct ConicalLight
+struct ConicalLight
 {
     int m_TypePad;
     float m_Range;
@@ -26,7 +26,7 @@ layout (std140) struct ConicalLight
     vec4 m_Direction;
 };
 
-layout (std140) struct CylindricalLight
+struct CylindricalLight
 {
     int m_TypePad;
     float m_Range;
