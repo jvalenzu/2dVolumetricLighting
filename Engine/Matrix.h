@@ -466,36 +466,36 @@ inline Vec3 ToZeroOne(const Vec3& a)
 inline Vec2 FromZeroOne(const Vec2& a)
 {
     Vec2 ret;
-    ret.m_X[0] = (ret.m_X[0]*2.0f)-1.0f;
-    ret.m_X[1] = (ret.m_X[1]*2.0f)-1.0f;
+    ret.m_X[0] = (a.m_X[0]*2.0f)-1.0f;
+    ret.m_X[1] = (a.m_X[1]*2.0f)-1.0f;
     return ret;
 }
 
 inline Vec3 FromZeroOne(const Vec3& a)
 {
     Vec3 ret;
-    ret.m_X[0] = (ret.m_X[0]*2.0f)-1.0f;
-    ret.m_X[1] = (ret.m_X[1]*2.0f)-1.0f;
-    ret.m_X[2] = (ret.m_X[2]*2.0f)-1.0f;
+    ret.m_X[0] = (a.m_X[0]*2.0f)-1.0f;
+    ret.m_X[1] = (a.m_X[1]*2.0f)-1.0f;
+    ret.m_X[2] = (a.m_X[2]*2.0f)-1.0f;
     return ret;
 }
 
 inline Vec4 ToZeroOne(const Vec4& a)
 {
     Vec4 ret;
-    ret.m_X[0] = (ret.m_X[0]+1.0f)*0.5f;
-    ret.m_X[1] = (ret.m_X[1]+1.0f)*0.5f;
-    ret.m_X[2] = (ret.m_X[2]+1.0f)*0.5f;
-    ret.m_X[3] = (ret.m_X[3]+1.0f)*0.5f;
+    ret.m_X[0] = (a.m_X[0]+1.0f)*0.5f;
+    ret.m_X[1] = (a.m_X[1]+1.0f)*0.5f;
+    ret.m_X[2] = (a.m_X[2]+1.0f)*0.5f;
+    ret.m_X[3] = (a.m_X[3]+1.0f)*0.5f;
     return ret;
 }
 inline Vec4 FromZeroOne(const Vec4& a)
 {
     Vec4 ret;
-    ret.m_X[0] = (ret.m_X[0]*2.0f)-1.0f;
-    ret.m_X[1] = (ret.m_X[1]*2.0f)-1.0f;
-    ret.m_X[2] = (ret.m_X[2]*2.0f)-1.0f;
-    ret.m_X[3] = (ret.m_X[3]*2.0f)-1.0f;
+    ret.m_X[0] = (a.m_X[0]*2.0f)-1.0f;
+    ret.m_X[1] = (a.m_X[1]*2.0f)-1.0f;
+    ret.m_X[2] = (a.m_X[2]*2.0f)-1.0f;
+    ret.m_X[3] = (a.m_X[3]*2.0f)-1.0f;
     return ret;
 }
 

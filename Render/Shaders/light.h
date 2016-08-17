@@ -1,7 +1,9 @@
+// -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
+
 
 struct PointLight
 {
-    float m_TypePad;
+    int m_TypePad;
     float m_Range;
     int m_PadB;
     int m_PadC;

@@ -53,6 +53,10 @@
 [ ] Material assets
   [ ] Include normal data for SDF
 [x] ambient parameterization
+[ ] imgui layer to describe keys, toggle options like disabling lights and changing resolution
+[x] Query the default resolution to create an appropriately sized window.
+[ ] Black screen after resize
+[ ] directional lights
 
 ------------------------------------------------
 PUBLISH

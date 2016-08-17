@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #include "Engine/Light.h"
 #include "Engine/Utils.h"
 
@@ -58,7 +60,7 @@ void LightInitialize(Light* light, const LightOptions& lightOptions)
         {
             ConicalLight* conicalLight = (ConicalLight*) light;
             conicalLight->m_Type = LightType::kConical;
-            conicalLight->m_CosAngle = cosf(M_PI * lightOptions.m_Angle / 360.0f);
+            conicalLight->m_CosAngle = cosf(float(M_PI) * lightOptions.m_Angle / 360.0f);
             conicalLight->m_Range = lightOptions.m_Range;
             conicalLight->m_Color = lightOptions.m_Color;
             conicalLight->m_Position = lightOptions.m_Position;

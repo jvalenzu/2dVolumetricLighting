@@ -1,13 +1,14 @@
+// -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
+
 #ifdef GL_ES
 precision highp float;
 #endif
 
 #include "shader.h"
+#include "light.h"
 
 uniform sampler2D _MainTex;
 uniform sampler2D _PlanarTex;
-
-#include "light.h"
 
 uniform mat4 project;
 uniform mat4 modelView;
@@ -59,7 +60,7 @@ void main (void)
         if (theta > conicalLight.m_Angle)
             color.rgb += (1-d1)*c0*conicalLight.m_Color.rgb;
     }
-    
+
     for (int i=0; i<32; ++i)
     {
         CylindricalLight cylindricalLight = _CylindricalLight[i];
@@ -78,5 +79,4 @@ void main (void)
     }
     
     fragColor = vec4(color.rgb*t0.rgb, t0.a);
-    // fragColor = vec4(color.rgb, t0.a);    
 }

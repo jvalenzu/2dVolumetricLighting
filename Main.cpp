@@ -1,4 +1,6 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
 // baseline 11.76ms
+
 
 #include <math.h>
 #include <stdio.h>
@@ -49,8 +51,11 @@ int main(int argc, char* argv[])
         return 0;
     }
     
+    int width = -1;
+    int height = -1;
+    
     RenderContext renderContext;
-    RenderInit(&renderContext, 1024, 768);
+    RenderInit(&renderContext, width, height);
     
     RenderSetProcessKeysCallback(&renderContext, s_ProcessKeys);
     

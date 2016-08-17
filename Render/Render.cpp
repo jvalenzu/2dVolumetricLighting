@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #include "Render/GL.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -99,7 +101,7 @@ static bool s_CgInit(RenderContext* renderContext)
         (cl_context_properties)shareGroup,
         0
     };
-
+    
     gcl_gl_set_sharegroup(shareGroup);
     
     cl_device_id device_ids[2];
@@ -159,7 +161,7 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
 {
     int width = renderOptions.m_Width;
     int height = renderOptions.m_Height;
-
+    
     auto errorCallback = [] (int error, const char* description)
     {
         FPrintf(stderr, "Error[%d]: %s\n", error, description);
@@ -168,7 +170,7 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     
     if (!glfwInit())
         exit(EXIT_FAILURE);
-
+    
     glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
     
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -176,22 +178,40 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     
-    renderContext->m_Window = glfwCreateWindow(width, height, "asdf", NULL, NULL);
+    int count = 0;
+    GLFWmonitor** monitors = glfwGetMonitors(&count);
+    
+    if (width == -1 || height == -1)
+    {
+        if (monitors && count > 0)
+        {
+            const GLFWvidmode* glfwVidMode = glfwGetVideoMode(monitors[0]);
+            if (glfwVidMode)
+            {
+                if (width == -1)
+                    width = glfwVidMode->width;
+                if (height == -1)
+                    height = glfwVidMode->height;
+            }
+        }
+    }
+    
+    // make a fullscreen option jiv fixme
+    monitors = nullptr;
+    
+    renderContext->m_Window = glfwCreateWindow(width, height, "asdf", monitors ? monitors[0] : nullptr, nullptr);
     if (!renderContext->m_Window)
     {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-
     
     glfwMakeContextCurrent(renderContext->m_Window);
-
-    #if defined(WINDOWS)
+    
+#if defined(WINDOWS)
     WindowsGLInit();
 #endif
     
-
-
     glfwGetFramebufferSize(renderContext->m_Window, &width, &height);
     renderContext->m_Width = width;
     renderContext->m_Height = height;
@@ -409,17 +429,38 @@ void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* poi
         dest[i].m_Range = 1.0f / dest[i].m_Range;
     }
     
-    // Printf("------------------\n");
-    // Printf("numPointLights: %d\n", numPointLights);
-    // for (int i=0; i<numPointLights; ++i)
-    // {
-    //     Vec3 screenPos = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
-    //     Printf("[%d] screenPosition: %f %f %f -> %f %f\n",
-    //            i,
-    //            pointLights[i].m_Position.m_X[0], pointLights[i].m_Position.m_X[1], pointLights[i].m_Position.m_X[2],
-    //            screenPos.m_X[0], screenPos.m_X[1]);
-    //     // DumpLight(pointLights[i]);
-    // }
+#if 0
+    Printf("------------------\n");
+    Printf("numPointLights: %d\n", numPointLights);
+    for (int i=0; i<numPointLights; ++i)
+    {
+        Vec3 screenPos = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
+        Printf("[%d] screenPosition: %f %f %f -> %f %f\n",
+               i,
+               pointLights[i].m_Position.m_X[0], pointLights[i].m_Position.m_X[1], pointLights[i].m_Position.m_X[2],
+               screenPos.m_X[0], screenPos.m_X[1]);
+        DumpLight(pointLights[i]);
+    }
+#endif
+    
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight* conicalLights, int numConicalLights)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_ConicalLightUbo);
+    glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(PointLight), nullptr, GL_DYNAMIC_DRAW);
+    GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT);
+    memcpy(p, conicalLights, numConicalLights * sizeof(ConicalLight));
+    
+    ConicalLight* dest = (ConicalLight*)p;
+    for (int i=0; i<numConicalLights; ++i)
+    {
+        Vec3 screenPosition = RenderGetScreenPos(renderContext, conicalLights[i].m_Position.xyz());
+        dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
+        dest[i].m_Range = 1.0f / dest[i].m_Range;
+    }
     
     glUnmapBuffer(GL_UNIFORM_BUFFER);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -438,25 +479,6 @@ void RenderUpdateCylindricalLights(RenderContext* renderContext, const Cylindric
         Vec3 screenPosition = RenderGetScreenPos(renderContext, cylindricalLights[i].m_Position.xyz());
         dest[i].m_Position.SetXY(Vec4(FromZeroOne(screenPosition), 1.0f).xy());
         dest[i].m_Position.SetZW(dest[i].m_Position.xy() + dest[i].m_Direction.xy().Normalized()*dest[i].m_Length);
-        dest[i].m_Range = 1.0f / dest[i].m_Range;
-    }
-    
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
-
-void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight* conicalLights, int numConicalLights)
-{
-    glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_ConicalLightUbo);
-    glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(PointLight), nullptr, GL_DYNAMIC_DRAW);
-    GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT);
-    memcpy(p, conicalLights, numConicalLights * sizeof(ConicalLight));
-    
-    ConicalLight* dest = (ConicalLight*)p;
-    for (int i=0; i<numConicalLights; ++i)
-    {
-        Vec3 screenPosition = RenderGetScreenPos(renderContext, conicalLights[i].m_Position.xyz());
-        dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
         dest[i].m_Range = 1.0f / dest[i].m_Range;
     }
     
