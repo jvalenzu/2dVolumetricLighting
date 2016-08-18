@@ -1,3 +1,5 @@
+// -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
+
 #extension GL_ARB_uniform_buffer_object : enable
 
 #define kPiOverTwo  1.5707963268
