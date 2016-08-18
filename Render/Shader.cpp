@@ -28,7 +28,7 @@ ShaderManager::ShaderManager()
     sscanf((const char *)glGetString(GL_SHADING_LANGUAGE_VERSION), "%f", &languageVersion);
     m_Version = (int) (100 * languageVersion);
     
-    Printf("shader version: %d\n", m_Version);
+    Printf("OpenGL shader version: %d\n", m_Version);
 }
 
 
