@@ -7,6 +7,10 @@
 
 #include "lodepng.h"
 
+#if !defined(WINDOWS)
+#include <execinfo.h>
+#endif
+
 struct TextureManager : SimpleAssetManager<Texture>
 {
     Texture* CreateTexture(const char* fname, uint32_t crc);

@@ -19,6 +19,7 @@
 
 #include <OpenCL/opencl.h>
 #include <OpenGL/gl3.h>
+#include <OpenGL/OpenGL.h>
 
 #define USE_CL 1
 #endif

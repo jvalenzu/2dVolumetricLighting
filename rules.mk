@@ -27,8 +27,9 @@ shaderOutName = obj/Shader/$(notdir $1)
 shaderDepName = obj/Shader/$(notdir $1).d
 
 define shaderSrcToObj
-$(call shaderOutName,$1) : obj/dummy obj/Shader/dummy $1 $(call shaderDepName,$1) Makefile
-	cpp -MMD -MF$(call shaderDepName,$1) $1 $(call shaderOutName,$1)
+$(call shaderOutName,$1) : obj/dummy obj/Shader/dummy $1 $(call shaderDepName,$1) Makefile rules.mk
+#	cpp -MMD -IRender/Shaders -MF$(call shaderDepName,$1) $1 $(call shaderOutName,$1)
+	-Build/Binary/mcpp -P -@old -MMD -IRender/Shaders -MF $(call shaderDepName,$1) $1 $(call shaderOutName,$1)
 
 $(call shaderDepName,$1) : $1 
 

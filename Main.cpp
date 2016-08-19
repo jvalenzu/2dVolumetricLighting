@@ -372,12 +372,12 @@ static void MainLoop(RenderContext* renderContext)
         TextureDestroy(renderTextureTemp[i]);
     
     ShaderDestroy(shadowCasterShader);
-
+    
     ShaderDestroy(sampleShadowMapShader);
     
     ShaderDestroy(shaderBlurX);
     ShaderDestroy(shaderBlurY);
-
+    
     for (int i=0; i<4; ++i)
         ShaderDestroy(shadowMap1dShaders[i]);
     
