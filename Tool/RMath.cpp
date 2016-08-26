@@ -1157,10 +1157,10 @@ void RMatInvertIterate(RVector* dest, const RMat* a, float lambda)
     u->m_Data[ 0] -= lambda;
     u->m_Data[ 4] -= lambda;
     u->m_Data[ 8] -= lambda;
-
-    dest->m_X[0] = rand()/(float)RAND_MAX * 2.0f * lambda - lambda;
-    dest->m_X[1] = rand()/(float)RAND_MAX * 2.0f * lambda - lambda;
-    dest->m_X[2] = rand()/(float)RAND_MAX * 2.0f * lambda - lambda;
+    
+    dest->m_X[0] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
+    dest->m_X[1] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
+    dest->m_X[2] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
     
     RVector* x = RVectorAlloc(alloca(RVectorSize(a->m_Rows)), a->m_Rows);
     for (int i=0; i<10; ++i)
@@ -1168,4 +1168,5 @@ void RMatInvertIterate(RVector* dest, const RMat* a, float lambda)
         RMatSolve(x, u, dest);
         RVectorNormalize(dest, x);
     }
+    RVectorNormalize(dest, x);
 }

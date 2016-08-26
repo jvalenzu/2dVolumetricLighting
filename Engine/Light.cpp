@@ -2,6 +2,7 @@
 
 #include "Engine/Light.h"
 #include "Engine/Utils.h"
+#include "Tool/Utils.h"
 
 #include <assert.h>
 #define _USE_MATH_DEFINES 1
@@ -12,6 +13,11 @@ void DumpLight(const Light& light)
 {
     switch (light.m_Type)
     {
+        case LightType::kDirectional:
+        {
+            assert(false);
+            break;
+        }
         case LightType::kPoint:
         {
             const PointLight& pointLight = (const PointLight&) light;
@@ -84,4 +90,49 @@ void LightInitialize(Light* light, const LightOptions& lightOptions)
             break;
         }
     }
+}
+
+void LightGenerateObb(Obb* dest, const LightOptions& lightOptions)
+{
+    const float q2 = 1.41421356237f;
+    Vec3 verticesPoint[] =
+    {
+        { -q2, -q2,  q2 },
+        {  q2, -q2,  q2 },
+        {  q2,  q2,  q2 },
+        { -q2,  q2,  q2 },
+        { -q2,  q2, -q2 },
+        { -q2, -q2, -q2 },
+        {  q2, -q2, -q2 },
+        {  q2,  q2, -q2 }
+    };
+    Vec3 verticesCone[] =
+    {
+        { -q2, -q2, q2 },
+        {  q2, -q2, q2 },
+        {  q2,  q2, q2 },
+        { -q2,  q2, q2 },
+        { -q2,  q2, -q2 },
+        { -q2, -q2, -q2 },
+        {  q2, -q2, -q2 },
+        {  q2,  q2, -q2 }
+    };
+    Vec3* vertices;
+    int n;
+    
+    if (lightOptions.m_Type == LightType::kPoint)
+    {
+        n = ELEMENTSOF(verticesPoint);
+        vertices = verticesPoint;
+    }
+    else
+    {
+        n = ELEMENTSOF(verticesCone);
+        vertices = verticesCone;
+    }
+    
+    // for (int i=0; i<n; ++i)
+    //     vertices[i] *= lightOptions.m_Range;
+    
+    *dest = ToolGenerateObbFromVec3(vertices, n);
 }

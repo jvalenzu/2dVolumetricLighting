@@ -33,6 +33,7 @@
   [x] 1st: multipass
   [ ] 2nd: texture array?
 [ ] light prepass optimization
+[ ] directional light
 [x] Add member function for MaterialReserveMaterialProperties
 [x] Add member function for MaterialSetMaterialPropertyType
 [x] Add member function for MaterialSetMaterialPropertyVector
@@ -43,9 +44,9 @@
 [✓] Windows port
   [ ] DirectX 11 or 12.
 [✓] shader preprocessing
-  [ ] Deal with different configurations
-[✓] shader preprocessing
-  [ ] suppress warning on windows
+  [ ] Deal with different configurations (DEBUG, RELEASE, OSX, ETC)
+  [ ] shader variations
+  [ ] suppress MCPP warning from unrecognized #extension directive
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
 [ ] Relocate asset file paths
 [ ] SceneObject reference count
@@ -56,7 +57,9 @@
 [ ] imgui layer to describe keys, toggle options like disabling lights and changing resolution
 [x] Query the default resolution to create an appropriately sized window.
 [ ] Black screen after resize
-[ ] directional lights
+[ ] Remove Obb?  There's probably too many cached local to world matrices about
+[ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
+[ ] Aspect ratio is incorrect
 
 ------------------------------------------------
 PUBLISH
@@ -87,5 +90,7 @@ PUBLISH
   [ ] Decouple vsh/fsh
 [ ] Shader variants
   [ ] Back to one SampleShadowMap shader
-[ ] implement ObbRender
 [ ] Hundreds of sprites
+[ ] FIXME:
+  [ ] // duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
+

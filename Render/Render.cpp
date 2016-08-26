@@ -349,11 +349,24 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     
     renderContext->m_AmbientLightColor = Vec4(0,0,0,0);
+    
+    renderContext->m_WhiteTexture = TextureCreateFromFile("white.png");
+    
+    // cache a cube model for rendering OBBs
+    renderContext->m_CubeModel = RenderGenerateCube(renderContext, 0.5f);
 }
 
 // RenderContextDestroy
 void RenderContextDestroy(RenderContext* renderContext)
 {
+    // destroy "singleton" graphics assets
+    SimpleModelDestroy(renderContext->m_CubeModel);
+    renderContext->m_CubeModel = nullptr;
+    
+    TextureDestroy(renderContext->m_WhiteTexture);
+    renderContext->m_WhiteTexture = nullptr;
+
+    // teardown shader/texture singleton data structures
     ShaderFini();
     TextureFini();
     
@@ -366,6 +379,14 @@ void RenderContextDestroy(RenderContext* renderContext)
 // Render model.
 void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model)
 {
+    RenderDrawModel(renderContext, model, model->m_Po);
+}
+
+// RenderDrawModel
+//
+// Render model.
+void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, const Mat4& localToWorld)
+{
     GL_ERROR_SCOPE();
     
     const Material* material = model->m_Material;
@@ -375,7 +396,7 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model)
         shader = renderContext->m_ReplacementShader;
     
     Mat4 normalModel;
-    MatrixInvert(&normalModel, model->m_Po);
+    MatrixInvert(&normalModel, localToWorld);
     MatrixTransposeInsitu(&normalModel);
     
     RenderUseMaterial(renderContext, material);
@@ -389,7 +410,7 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model)
     glUniformMatrix4fv(nmi, 1, GL_FALSE, normalModel.asFloat());
     
     Mat4 modelView;
-    MatrixMultiply(&modelView, model->m_Po, renderContext->m_View);
+    MatrixMultiply(&modelView, localToWorld, renderContext->m_View);
     
     GLint mvi = glGetUniformLocation(shader->m_ProgramName, "modelView");
     glUniformMatrix4fv(mvi, 1, GL_FALSE, modelView.asFloat());
@@ -527,6 +548,9 @@ void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a)
     }
 }
 
+// RenderSetBlendMode
+//
+// Set the blend mode
 void RenderSetBlendMode(Material::BlendMode blendMode)
 {
     switch (blendMode)
@@ -889,24 +913,7 @@ Vec3 RenderGetScreenPos(RenderContext* renderContext, Vec3 worldPos)
     return ret.XYZ();
 }
 
-
-void SimpleModelDestroy(SimpleModel* simpleModel)
-{
-    if (simpleModel == nullptr)
-        return;
-    
-    MaterialDestroy(simpleModel->m_Material);
-    
-    glDeleteBuffers(1, &simpleModel->m_VertexBufferName);
-    glDeleteBuffers(1, &simpleModel->m_IndexBufferName);
-    glDeleteVertexArrays(1, &simpleModel->m_VaoName);
-    
-    delete [] simpleModel->m_Vertices;
-    delete [] simpleModel->m_Indices;
-    delete simpleModel;
-}
-
-SimpleModel* RenderGenerateSprite(const SpriteOptions& spriteOptions, Material* material)
+SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOptions& spriteOptions, Material* material)
 {
     GL_ERROR_SCOPE();
     
@@ -1035,9 +1042,11 @@ SimpleModel* RenderGenerateSprite(const SpriteOptions& spriteOptions, Material* 
 
 // renderGenerateCube
 //
-SimpleModel* RenderGenerateCube(float halfWidth)
+SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
 {
-    SimpleModel* simpleModel = new SimpleModel;
+    SimpleModel* simpleModel = new SimpleModel();
+    
+    simpleModel->m_Material = MaterialCreate(g_SimpleShader, renderContext->m_WhiteTexture);
     
     // initialize the matrix position/orientation
     MatrixMakeIdentity(&simpleModel->m_Po);
@@ -1210,6 +1219,27 @@ SimpleModel* RenderGenerateCube(float halfWidth)
     return simpleModel;
 }
 
+// SimpleModelDestroy(SimpleModel* simpleModel)
+void SimpleModelDestroy(SimpleModel* simpleModel)
+
+{
+    if (simpleModel == nullptr)
+        return;
+    
+    MaterialDestroy(simpleModel->m_Material);
+    
+    glDeleteBuffers(1, &simpleModel->m_VertexBufferName);
+    glDeleteBuffers(1, &simpleModel->m_IndexBufferName);
+    glDeleteVertexArrays(1, &simpleModel->m_VaoName);
+    
+    delete [] simpleModel->m_Vertices;
+    delete [] simpleModel->m_Indices;
+    delete simpleModel;
+}
+
+// SimpleModelSetVertexAttributes
+//
+//
 void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
 {
     glBindBuffer(GL_ARRAY_BUFFER, simpleModel->m_VertexBufferName);

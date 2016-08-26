@@ -145,14 +145,6 @@ void TextureDestroy(Texture* victim)
     if (victim == nullptr)
         return;
     
-    if (victim->m_Flags == Texture::kRenderTexture)
-    {
-        glDeleteTextures(1, &victim->m_TextureId);
-        glDeleteFramebuffers(1, &victim->m_FrameBufferId);
-        delete victim;
-        return;
-    }
-    
 #if !defined(WINDOWS)
     if (false)
     {
@@ -169,7 +161,17 @@ void TextureDestroy(Texture* victim)
 #endif
     
     if (--victim->m_RefCount == 0)
+    {
+        if (victim->m_Flags == Texture::kRenderTexture)
+        {
+            glDeleteTextures(1, &victim->m_TextureId);
+            glDeleteFramebuffers(1, &victim->m_FrameBufferId);
+            delete victim;
+            return;
+        }
+        
         g_TextureManager->DestroyTexture(victim);
+    }
 }
 
 void TextureSetClearFlags(Texture* texture, Texture::RenderTextureFlags renderTextureFlags, float r, float g, float b, float z)

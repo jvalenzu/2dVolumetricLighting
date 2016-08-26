@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #include <string.h>
 #include <stdio.h>
 #define _USE_MATH_DEFINES 1
@@ -688,35 +690,44 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
     const float t0 = Mat3Trace(a);
     const float q = t0 / 3.0f;
     const float p1 = (a.m_X[1]*a.m_X[1]) + (a.m_X[2]*a.m_X[2]) + (a.m_Y[2]*a.m_Y[2]);
-    const float p2 = powf(a.m_X[0] - q, 2.0f) + powf(a.m_Y[1] - q, 2.0f) + powf(a.m_Z[2] - q, 2.0f) + 2.0f*p1;
-    const float p = sqrtf(p2 / 6.0f);
-    
-    const float t1 = MatrixDeterminant(a);
-    
-    Mat3 qi;
-    Mat3MakeScale(&qi, q);
-    
-    Mat3 b0;
-    Mat3Sub(&b0, a, qi);
-    
-    Mat3 b;
-    Mat3MulScalar(&b, b0, 1.0f/p);
-    
-    const float r = MatrixDeterminant(b) * 0.5f;
-    
-    float phi;
-    if (r <= -1.0f)
-        phi = (float)M_PI / 3.0f;
-    else if (r >= 1.0f)
-        phi = 0.0f;
+    if (FloatApproxEqual(p1, 0.0f))
+    {
+        lambda3[0] = a.m_X[0];
+        lambda3[1] = a.m_Y[1];
+        lambda3[2] = a.m_Z[2];
+    }
     else
-        phi = acosf(r) / 3.0f;
+    {
+        const float p2 = powf(a.m_X[0] - q, 2.0f) + powf(a.m_Y[1] - q, 2.0f) + powf(a.m_Z[2] - q, 2.0f) + 2.0f*p1;
+        const float p = sqrtf(p2 / 6.0f);
+        
+        const float t1 = MatrixDeterminant(a);
+        
+        Mat3 qi;
+        Mat3MakeScale(&qi, q);
+        
+        Mat3 b0;
+        Mat3Sub(&b0, a, qi);
+        
+        Mat3 b;
+        Mat3MulScalar(&b, b0, 1.0f/p);
+        
+        const float r = MatrixDeterminant(b) * 0.5f;
+        
+        float phi;
+        if (r <= -1.0f)
+            phi = (float)M_PI / 3.0f;
+        else if (r >= 1.0f)
+            phi = 0.0f;
+        else
+            phi = acosf(r) / 3.0f;
+        
+        lambda3[0] = q + 2.0f*p*cosf(phi);
+        lambda3[2] = q + 2.0f*p*cosf(phi + (2.0f*M_PI/3.0f));
+        lambda3[1] = 3.0f * q - lambda3[0] - lambda3[2];
+    }
     
-    lambda3[0] = q + 2.0f*p*cosf(phi);
-    lambda3[2] = q + 2.0f*p*cosf(phi + (2.0f*M_PI/3.0f));
-    lambda3[1] = 3.0f * q - lambda3[0] - lambda3[2];
-    
-    // generate eigenvalues from lambda
+    // generate eigenvectors from lambdas
     RMat* rma = (RMat*) RMAT_A(3, 3);
     for (int i=0; i<9; ++i)
         rma->m_Data[i] = a.asFloat()[i];

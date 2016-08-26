@@ -1,3 +1,5 @@
+// -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
+
 #extension GL_ARB_explicit_attrib_location : enable
 
 #ifdef GL_ES
@@ -17,4 +19,5 @@ void main (void)
     vec4 c = texture(_MainTex, texCoord);
     c.rgb *= TintColor.rgb;
     fragColor = c;
+    // fragColor = vec4(1,0,0,1);
 }
