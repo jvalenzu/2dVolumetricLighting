@@ -21,7 +21,8 @@ struct Material
         kUnused,
         kFloat,
         kVec4,
-        kTexture
+        kTexture,
+        kMat4,
     };
     
     struct MaterialProperty
@@ -34,6 +35,7 @@ struct Material
             float m_Float;
             Vec4 m_Vector;
             int m_TextureId;
+            Mat4 m_Matrix;
         };
         
         MaterialProperty()
@@ -45,6 +47,7 @@ struct Material
     void ReserveProperties(int numProperties);
     void SetFloat(int index, float value);
     void SetVector(int index, Vec4 value);
+    void SetMatrix(int index, Mat4 mat);
     void SetTexture(int index, int textureId);
     void SetTexture(int index, Texture* texture);
     
@@ -63,6 +66,7 @@ void      MaterialReserveProperties(Material* material, int numProperties);
 void      MaterialSetMaterialPropertyType(Material* material, int index, const char* materialPropertyName, Material::MaterialPropertyType type);
 void      MaterialSetMaterialPropertyFloat(Material* material,   int index, float value);
 void      MaterialSetMaterialPropertyVector(Material* material,  int index, Vec4 value);
+void      MaterialSetMaterialPropertyMatrix(Material* material,  int index, Mat4 value);
 void      MaterialSetMaterialPropertyTexture(Material* material, int index, int textureId);
 void      MaterialSetMaterialPropertyTexture(Material* material, int index, Texture* texture);
 int       MaterialGetPropertyIndex(Material* material, const char* materialPropertyName); // -1 on error

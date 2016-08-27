@@ -1,3 +1,5 @@
+// -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
+
 #pragma once
 
 #include "Render/GL.h"
@@ -25,13 +27,13 @@ struct RenderContext
     GLFWwindow* m_Window;
     float m_LastTime;
     int m_FrameCount;
-    int m_FrameRollover;    
+    int m_FrameRollover;
     
 #if USE_CL
     cl_context m_Context;
     cl_command_queue m_CommandQueue;
 #endif
-
+    
     GLuint m_QuadVertexArrayId;
     GLuint m_QuadVertexBufferId;
     
@@ -51,6 +53,11 @@ struct RenderContext
     GLuint m_ConicalLightUbo;
     
     Vec4 m_AmbientLightColor;
+    
+    Texture* m_WhiteTexture;
+    
+    SimpleModel* m_CubeModel;
+    
 };
 
 struct RenderOptions
@@ -84,19 +91,19 @@ struct DebugRenderContext
     GLuint m_VertexBufferName;
     GLuint m_IndexBufferName;
     
-    int getNumIndices() const
+    int GetNumIndices() const
     {
         return 4*m_NumLines;
     }
     
-    void clear()
+    void Clear()
     {
         m_NumLines = 0;
     }
     
     DebugRenderContext()
     {
-        clear();
+        Clear();
     }
 };
 
@@ -142,6 +149,11 @@ struct SpriteOptions
         , m_Scale(1.0f, 1.0f)
     {
     }
+    
+    void ResetPivot()
+    {
+        m_Pivot = Vec2(0.5f, 0.5f);
+    }
 };
 
 void RenderOptionsInit(RenderOptions* renderOptions, int width, int height);
@@ -163,8 +175,8 @@ void RenderClearReplacementShader(RenderContext* renderContext);
 typedef void ProcessKeysCallback(void* data, int key, int scanCode, int action, int mods);
 void RenderSetProcessKeysCallback(RenderContext* context, ProcessKeysCallback (*processKeysCallback));
 
-
 void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model);
+void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, const Mat4& localToWorld);
 
 void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, Texture* texture);
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, Texture* texture);
@@ -175,10 +187,8 @@ Vec3 RenderGetScreenPos(RenderContext* renderContext, Vec3 avatarPosition);
 
 void RenderSetBlendMode(Material::BlendMode blendMode);
 
-
-SimpleModel* RenderGenerateSphere(float radius);
-SimpleModel* RenderGenerateCube(float halfExtent);
-SimpleModel* RenderGenerateSprite(const SpriteOptions& spriteOptions, Material* material);
+SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfExtent);
+SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOptions& spriteOptions, Material* material);
 
 void RenderDumpModel(const SimpleModel* model);
 void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a);

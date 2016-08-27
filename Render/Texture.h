@@ -48,11 +48,11 @@ struct Texture
     Texture() : m_RefCount(0), m_DebugName(nullptr)
     {
     }
-
+    
     Texture(int width, int height) : m_Width(width), m_Height(height), m_RefCount(0), m_DebugName(nullptr)
     {
     }
-
+    
     Texture(const Texture& rhs) :
         m_Flags(rhs.m_Flags),
         m_RenderTextureFlags(rhs.m_RenderTextureFlags),
@@ -79,6 +79,4 @@ void      TextureDestroy(Texture* victim);
 
 Texture*  TextureRef(Texture* texture);
 
-
-void      TextureSetClearFlags(Texture* texture, Texture::RenderTextureFlags renderTextureFlags,
-                               float r, float g, float b, float z);
+void      TextureSetClearFlags(Texture* texture, Texture::RenderTextureFlags renderTextureFlags, float r, float g, float b, float z);

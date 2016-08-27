@@ -4,6 +4,8 @@
 #include "Engine/Matrix.h"
 #include <stdint.h>
 
+struct Obb;
+
 enum LightType : uint32_t
 {
     kDirectional,
@@ -122,3 +124,4 @@ struct LightOptions
 
 void DumpLight(const Light& light);
 void LightInitialize(Light* light, const LightOptions& lightOptions);
+void LightGenerateObb(Obb* dest, const LightOptions& lightOptions);

@@ -1,4 +1,5 @@
 #include "Engine/Matrix.h"
+#include "Engine/Utils.h"
 #include "Render/Render.h"
 #include "Tool/Utils.h"
 
@@ -56,7 +57,7 @@ void ToolLoadOrthographic(Mat4* dest, float left, float right, float bottom, flo
 Obb ToolGenerateObbFromSimpleModel(const SimpleModel* model)
 {
     Obb ret;
-    ObbInit(&ret, 0.0f, 0.0f, 0.0f);
+    ObbInit(&ret);
     
     if (model->m_NumVertices)
     {
@@ -89,10 +90,18 @@ Obb ToolGenerateObbFromSimpleModel(const SimpleModel* model)
             {
                 for (int j=0; j<3; ++j)
                 {
-                    const float a = f[i] - m[i];
-                    const float b = f[j] - m[j];
-                    
-                    covarf[i*3+j] += a*b;
+                    for (int k=0; k<3; ++k)
+                    {
+                        const float x_variance = f[i] - m[i];
+                        const float y_variance = f[j] - m[j];
+                        const float z_variance = f[k] - m[k];
+                        
+                        const float x_variance_2 = x_variance*x_variance;
+                        const float y_variance_2 = y_variance*y_variance;
+                        const float z_variance_2 = z_variance*z_variance;
+                        
+                        covarf[i*3+j] += x_variance_2*x_variance_2 + y_variance_2*y_variance_2 + z_variance_2*z_variance_2;
+                    }
                 }
             }
         }
@@ -100,10 +109,94 @@ Obb ToolGenerateObbFromSimpleModel(const SimpleModel* model)
         // eigendecompose
         Mat3 s;
         Mat3 sInv;
-        
+
         float lambdas[3];
         Mat3Diagonalize(&s, lambdas, &sInv, covar);
+
+        ret.m_Axes = s;
+        
+        for (int i=0; i<3; ++i)
+            ret.m_HalfExtents[i] = lambdas[i] * 0.5f;
     }
+    
+    return ret;
+}
+
+// jiv fixme duplication
+Obb ToolGenerateObbFromVec3(const Vec3* vertices, size_t n)
+{
+    Obb ret;
+    ObbInit(&ret);
+    
+    float m[3] = { 0.0f, 0.0f, 0.0f };
+    
+    for (int i=0; i<n; ++i)
+    {
+        m[0] += vertices[i].m_X[0];
+        m[1] += vertices[i].m_X[1];
+        m[2] += vertices[i].m_X[2];
+    }
+    
+    const float recipN = 1.0f / n;
+    m[0] *= recipN;
+    m[1] *= recipN;
+    m[2] *= recipN;
+    
+    Mat3 covar;
+    float* covarf = covar.asFloat();
+
+#if 0
+    Printf("X=[");
+    for (int c=0; c<n; ++c)
+    {
+        const float* f = vertices[c].asFloat();
+        Printf("%f%s", f[0], (c==n-1)?"":",");
+    }
+    Printf("]\n");
+    Printf("Y=[");
+    for (int c=0; c<n; ++c)
+    {
+        const float* f = vertices[c].asFloat();
+        Printf("%f%s", f[1], (c==n-1)?"":",");
+    }
+    Printf("]\n");
+#endif
+    
+    // covariance (xi, xj) = Σ[(xi - mi)(xj - mj)]
+    for (int i=0; i<3; ++i)
+    {
+        for (int j=0; j<3; ++j)
+        {
+            covarf[i*3+j] = 0.0f;
+            
+            for (int c=0; c<n; ++c)
+            {
+                const float* f = vertices[c].asFloat();
+                
+                const float x_variance = f[i] - m[i];
+                const float y_variance = f[j] - m[j];
+                
+                covarf[i*3+j] += x_variance*y_variance;
+            }
+            
+            covarf[i*3+j] /= (n-1);
+        }
+    }
+    
+    MatrixDump(covar, "covar");
+    
+    // eigendecompose
+    Mat3 sInv;
+    
+    float lambdas[3];
+    Mat3Diagonalize(&ret.m_Axes, lambdas, &sInv, covar);
+    
+    MatrixDump(ret.m_Axes, "axes");
+    MatrixDump(sInv, "sInv");
+    Printf("lambda3: %f %f %f\n", lambdas[0], lambdas[1], lambdas[2]);
+    
+    for (int i=0; i<3; ++i)
+        ret.m_HalfExtents[i] = lambdas[i] * 0.5f;
     
     return ret;
 }

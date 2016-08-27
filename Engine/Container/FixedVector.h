@@ -5,7 +5,8 @@
 template <typename T, int maxSize>
 struct FixedVector
 {
-    enum {
+    enum
+    {
         kMaxSize = maxSize
     };
     char m_Raw[maxSize * sizeof(T)];
@@ -14,17 +15,17 @@ struct FixedVector
     FixedVector()
     {
     }
-
+    
     T* Data()
     {
         return (T*)m_Raw;
     }
-
+    
     const T* Data() const
     {
         return (const T*)m_Raw;
     }
-
+    
     void SetCount(int count)
     {
         m_Index = count;

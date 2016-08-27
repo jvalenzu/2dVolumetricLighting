@@ -229,12 +229,12 @@ static SceneObject* SceneObjectAllocate(Scene* scene, SceneObjectType type)
     return sceneObject;
 }
 
-SceneObject* SceneCreateSprite(Scene* scene, Material* material, const SpriteOptions& spriteOptions)
+SceneObject* SceneCreateSprite(Scene* scene, RenderContext* renderContext, Material* material, const SpriteOptions& spriteOptions)
 {
     SceneObject* sceneObject = SceneObjectAllocate(scene, SceneObjectType::kSprite);
     if (sceneObject)
     {
-        sceneObject->m_ModelInstance = RenderGenerateSprite(spriteOptions, material);
+        sceneObject->m_ModelInstance = RenderGenerateSprite(renderContext, spriteOptions, material);
         sceneObject->m_Obb = ToolGenerateObbFromSimpleModel(sceneObject->m_ModelInstance);
         
         sceneObject->m_LocalToWorld.m_X[0] *= spriteOptions.m_Scale.m_X[0];
@@ -256,12 +256,14 @@ SceneObject* SceneCreateLight(Scene* scene, const LightOptions& lightOptions)
         
         // jiv fixme: make some lights not drive shadows
         sceneObject->m_Shadow1dMap = TextureCreateRenderTexture(kShadowMapSize, 1, 0, Texture::RenderTextureFormat::kFloat);
+        
+        LightGenerateObb(&sceneObject->m_Obb, lightOptions);
     }
     
     return sceneObject;
 }
 
-SceneObject* SceneCreateSpriteFromFile(Scene* scene, const char* fname)
+SceneObject* SceneCreateSpriteFromFile(Scene* scene, RenderContext* renderContext, const char* fname)
 {
     Texture* texture = TextureCreateFromFile(fname);
     Material* material = MaterialCreate(g_SimpleTransparentShader, texture);
@@ -270,11 +272,11 @@ SceneObject* SceneCreateSpriteFromFile(Scene* scene, const char* fname)
     
     TextureDestroy(texture); // material will own reference
     SpriteOptions spriteOptions;
-    return SceneCreateSprite(scene, material, spriteOptions);
+    return SceneCreateSprite(scene, renderContext, material, spriteOptions);
 }
 
 
-SceneObject* SceneCreateSpriteFromFile(Scene* scene, const char* fname, const SpriteOptions& spriteOptions)
+SceneObject* SceneCreateSpriteFromFile(Scene* scene, RenderContext* renderContext, const char* fname, const SpriteOptions& spriteOptions)
 {
     Texture* texture = TextureCreateFromFile(fname);
     Material* material = MaterialCreate(g_SimpleTransparentShader, texture);
@@ -282,24 +284,24 @@ SceneObject* SceneCreateSpriteFromFile(Scene* scene, const char* fname, const Sp
     MaterialSetMaterialPropertyType(material, 0, "TintColor", Material::MaterialPropertyType::kVec4);
     
     TextureDestroy(texture); // material will own reference
-    SceneObject* ret = SceneCreateSprite(scene, material, spriteOptions);
+    SceneObject* ret = SceneCreateSprite(scene, renderContext, material, spriteOptions);
     return ret;
 }
 
-SceneObject* SceneCreateSpriteFromRenderTexture(Scene* scene, int width, int height)
+SceneObject* SceneCreateSpriteFromRenderTexture(Scene* scene, RenderContext* renderContext, int width, int height)
 {
     Texture* texture = TextureCreateRenderTexture(width, height, 0); // jiv fixme
     Material* material = MaterialCreate(g_SimpleTransparentShader, texture);
     SpriteOptions spriteOptions;
-    return SceneCreateSprite(scene, material, spriteOptions);
+    return SceneCreateSprite(scene, renderContext, material, spriteOptions);
 }
 
-SceneObject* SceneCreateCube(Scene* scene, Material* material)
+SceneObject* SceneCreateCube(Scene* scene, RenderContext* renderContext, Material* material)
 {
     SceneObject* sceneObject = SceneObjectAllocate(scene, SceneObjectType::kCube);
     if (sceneObject)
     {
-        sceneObject->m_ModelInstance = RenderGenerateCube(1.0f);
+        sceneObject->m_ModelInstance = RenderGenerateCube(renderContext, 1.0f);
         sceneObject->m_Obb = ToolGenerateObbFromSimpleModel(sceneObject->m_ModelInstance);
     }
     return sceneObject;
@@ -511,4 +513,18 @@ int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, Scene
     }
 
     return (int) (write - first);
+}
+
+void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject)
+{
+    Mat4 localToWorld;
+    MatrixMakeZero(&localToWorld);
+    
+    localToWorld.SetRot(sceneObject->m_Obb.m_Axes);
+    localToWorld.SetTranslation(sceneObject->m_LocalToWorld.GetTranslation());
+    
+    // MatrixDump(localToWorld, "localToWorld");
+    
+    // ObbDump(sceneObject->m_Obb, sceneObject->m_DebugName);
+    RenderDrawModel(renderContext, renderContext->m_CubeModel, localToWorld);
 }

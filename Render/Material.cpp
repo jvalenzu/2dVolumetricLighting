@@ -103,6 +103,11 @@ void RenderSetMaterialConstants(RenderContext* renderContext, const Material* ma
                 glProgramUniform1i(shader->m_ProgramName, slot, textureSlotItr++);
                 break;
             }
+            case Material::kMat4:
+            {
+                glUniformMatrix4fv(slot, 1, GL_FALSE, materialProperty->m_Matrix.asFloat());
+                break;
+            }
         }
     }
 }
@@ -151,8 +156,14 @@ void MaterialSetMaterialPropertyVector(Material* material, int index, Vec4 value
     Material::MaterialProperty* materialProperty = &material->m_MaterialPropertyBlock[index];
     assert(materialProperty->m_Type == Material::MaterialPropertyType::kVec4);
     materialProperty->m_Vector = value;
-    
-    // printf("setting %s to (%f %f %f %f)\n", materialProperty->m_Key, materialProperty->m_Vector.m_X[0], materialProperty->m_Vector.m_X[1], materialProperty->m_Vector.m_X[2], materialProperty->m_Vector.m_X[3]);
+}
+
+void MaterialSetMaterialPropertyMatrix(Material* material, int index, Mat4 value)
+{
+    assert(index < material->m_NumMaterialProperties);
+    Material::MaterialProperty* materialProperty = &material->m_MaterialPropertyBlock[index];
+    assert(materialProperty->m_Type == Material::MaterialPropertyType::kMat4);
+    materialProperty->m_Matrix = value;
 }
 
 void MaterialSetMaterialPropertyTexture(Material* material, int index, int textureId)

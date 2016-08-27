@@ -9,7 +9,7 @@
 
 char* FileGetAsText(const char* fname)
 {
-    char* ret = NULL;
+    char* ret = nullptr;
     
     struct stat buf;
     if (stat(fname, &buf) != -1)
@@ -33,7 +33,7 @@ int Printf(const char* fmt, ...)
 
   char buf[2048];
   ret = vsnprintf(buf, sizeof buf, fmt, args);
-  puts(buf);
+  fputs(buf, stdout);
 
 #if defined(WINDOWS)
   OutputDebugStringA(buf);
@@ -49,17 +49,16 @@ int FPrintf(FILE* fh, const char* fmt, ...)
   va_list args;
   va_start(args, fmt);
 
+#if defined(WINDOWS)
   if (fh == stderr)
   {
     char buf[2048];
     vsnprintf(buf, sizeof buf, fmt, args);
-    puts(buf);
-
-#if defined(WINDOWS)
+    
     OutputDebugStringA(buf);
-#endif
   }
   else
+#endif
   {
     ret = vfprintf(fh, fmt, args);
   }

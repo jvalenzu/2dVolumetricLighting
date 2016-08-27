@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #pragma once
 
 #include <math.h>
@@ -29,7 +31,7 @@ struct Vec2
         ret *= value;
         return ret;
     }
-
+    
     inline Vec2& operator+= (const Vec2& value)
     {
         m_X[0] += value.m_X[0];
@@ -83,6 +85,9 @@ struct Vec2
     {
         return *this;
     }
+    
+    float* asFloat() { return &m_X[0]; }
+    const float* asFloat() const { return &m_X[0]; }
 };
 
 inline Vec2 operator+ (const Vec2& a, const Vec2& b)
@@ -184,6 +189,9 @@ struct Vec3
     {
         return Vec2(m_X[0], m_X[1]);
     }
+    
+    float* asFloat() { return &m_X[0]; }
+    const float* asFloat() const { return &m_X[0]; }
 };
 
 inline Vec3 operator+ (const Vec3& a, const Vec3& b)
@@ -320,17 +328,10 @@ struct Vec4
         m_X[2] = zw.m_X[0];
         m_X[3] = zw.m_X[1];
     }
-};
-
-struct Mat4
-{
-    float m_X[4];
-    float m_Y[4];
-    float m_Z[4];
-    float m_W[4];
-
+    
     float* asFloat() { return &m_X[0]; }
     const float* asFloat() const { return &m_X[0]; }
+    
 };
 
 struct Mat3
@@ -341,6 +342,64 @@ struct Mat3
     
     float* asFloat() { return &m_X[0]; }
     const float* asFloat() const { return &m_X[0]; }
+
+    inline Mat3 operator/= (float f)
+    {
+        const float rf = 1.0f / f;
+        for (int i=0; i<3; ++i)
+        {
+            m_X[i] *= rf;
+            m_Y[i] *= rf;
+            m_Z[i] *= rf;
+        }
+        return *this;
+    }
+};
+
+struct Mat4
+{
+    float m_X[4];
+    float m_Y[4];
+    float m_Z[4];
+    float m_W[4];
+    
+    inline void SetRot(const Mat3& mat33)
+    {
+        for (int i=0; i<3; ++i)
+        {
+            m_X[i] = mat33.m_X[i];
+            m_Y[i] = mat33.m_Y[i];
+            m_Z[i] = mat33.m_Z[i];
+        }
+    }
+    
+    float* asFloat() { return &m_X[0]; }
+    const float* asFloat() const { return &m_X[0]; }
+    
+    inline Vec3 GetTranslation() const
+    {
+        return Vec3(m_W[0], m_W[1], m_W[2]);
+    }
+    
+    inline void SetTranslation(Vec3 pos)
+    {
+        m_W[0] = pos.m_X[0];
+        m_W[1] = pos.m_X[1];
+        m_W[2] = pos.m_X[2];
+    }
+    
+    inline Mat4 operator/= (float f)
+    {
+        const float rf = 1.0f / f;
+        for (int i=0; i<4; ++i)
+        {
+            m_X[i] *= rf;
+            m_Y[i] *= rf;
+            m_Z[i] *= rf;
+            m_W[i] *= rf;
+        }
+        return *this;
+    }
 };
 
 // splat value in dest
@@ -451,7 +510,7 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a);
 float MatrixDeterminant(const Mat3& m);
 
 // FLOAT
-bool FloatApproxEqual(float a, float b, float eps);
+bool FloatApproxEqual(float a, float b, float eps=1e-3f);
 
 // misc
 inline Vec3 ToZeroOne(const Vec3& a)

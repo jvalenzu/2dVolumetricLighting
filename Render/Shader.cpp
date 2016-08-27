@@ -18,7 +18,8 @@ struct ShaderManager : SimpleAssetManager<Shader>
     ShaderManager();
     Shader* CreateShader(const char* fname);
     void DestroyShader(Shader* victim);
-    
+
+    virtual void DumpTitle();
     virtual void DumpInternal();
 };
 
@@ -128,12 +129,12 @@ Shader* ShaderManager::CreateShader(const char* fname)
     GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragShader, 1, (const GLchar **)&sourceString, nullptr);
     glCompileShader(fragShader);
-        
+    
     glGetShaderiv(fragShader, GL_COMPILE_STATUS, &status);
     if (status == 0)
     {
         FPrintf(stderr, "Failed to compile %s.fsh\n", fname);
-            
+        
         GLint logLength;
         glGetShaderiv(fragShader, GL_INFO_LOG_LENGTH, &logLength);
         if (logLength > 0) 
@@ -143,22 +144,22 @@ Shader* ShaderManager::CreateShader(const char* fname)
             Printf("Frag Shader compile log:\n%s\n", log);
             delete[] log;
         }
-            
+        
         delete[] fShaderSource;
         delete[] vShaderSource;
         delete[] sourceString;
         
         return nullptr;
     }
-        
+    
     delete [] sourceString;
     sourceString = nullptr;
-        
+    
     glAttachShader(temp.m_ProgramName, fragShader);
     glAttachShader(temp.m_ProgramName, vertexShader);
-        
+    
     GetGLError();
-        
+    
     glLinkProgram(temp.m_ProgramName);
     glGetProgramiv(temp.m_ProgramName, GL_LINK_STATUS, &status);
     if (status == 0)
@@ -172,24 +173,24 @@ Shader* ShaderManager::CreateShader(const char* fname)
             Printf("Frag Shader link log:\n%s\n", log);
             delete[] log;
         }
-            
+        
         delete[] fShaderSource;
         delete[] vShaderSource;
         delete[] sourceString;
         
         return nullptr;
     }
-        
+    
     glValidateProgram(temp.m_ProgramName);
-        
+    
     delete[] vShaderSource;
     delete[] fShaderSource;
-        
+    
     GetGLError();
-        
+    
     // jiv fixme strdup
     temp.m_DebugName = fname;
-        
+    
     Shader* ret = AllocateAsset(crc);
     *ret = temp;
     
@@ -266,4 +267,9 @@ void ShaderFini()
     g_ShaderManager->Dump();
     g_ShaderManager->Destroy();
     g_ShaderManager = nullptr;
+}
+
+void ShaderManager::DumpTitle()
+{
+    Printf("ShaderManager\n");
 }
