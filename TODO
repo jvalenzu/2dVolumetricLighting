@@ -32,7 +32,8 @@
   Simplest way for non-point lights would be to do attentuation in the 1d phase.
   [x] 1st: multipass
   [ ] 2nd: texture array?
-[ ] light prepass optimization
+[✓] light prepass optimization
+  [ ] Light prepass doesn't match falloff exactly, leading to sharp edge.
 [ ] directional light
 [x] Add member function for MaterialReserveMaterialProperties
 [x] Add member function for MaterialSetMaterialPropertyType
@@ -42,6 +43,7 @@
 [ ] ARTIFACT: The volumetric shadow has lines in it
 [ ] ARTIFACT: Dealing with lsp embedded in occluder
 [✓] Windows port
+  [x] OpenGL
   [ ] DirectX 11 or 12.
 [✓] shader preprocessing
   [ ] Deal with different configurations (DEBUG, RELEASE, OSX, ETC)
@@ -60,6 +62,7 @@
 [ ] Remove Obb?  There's probably too many cached local to world matrices about
 [ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
 [ ] Aspect ratio is incorrect
+[ ] Better method of finding eigenvectors in Obb tool
 
 ------------------------------------------------
 PUBLISH
@@ -93,4 +96,3 @@ PUBLISH
 [ ] Hundreds of sprites
 [ ] FIXME:
   [ ] // duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
-

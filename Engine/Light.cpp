@@ -131,8 +131,8 @@ void LightGenerateObb(Obb* dest, const LightOptions& lightOptions)
         vertices = verticesCone;
     }
     
-    // for (int i=0; i<n; ++i)
-    //     vertices[i] *= lightOptions.m_Range;
+    for (int i=0; i<n; ++i)
+        vertices[i] *= lightOptions.m_Range;
     
     *dest = ToolGenerateObbFromVec3(vertices, n);
 }

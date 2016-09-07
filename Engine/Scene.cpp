@@ -267,8 +267,8 @@ SceneObject* SceneCreateSpriteFromFile(Scene* scene, RenderContext* renderContex
 {
     Texture* texture = TextureCreateFromFile(fname);
     Material* material = MaterialCreate(g_SimpleTransparentShader, texture);
-    MaterialReserveProperties(material, 1);
-    MaterialSetMaterialPropertyType(material, 0, "TintColor", Material::MaterialPropertyType::kVec4);
+    material->ReserveProperties(1);
+    material->SetPropertyType("TintColor", Material::MaterialPropertyType::kVec4);
     
     TextureDestroy(texture); // material will own reference
     SpriteOptions spriteOptions;
@@ -280,8 +280,8 @@ SceneObject* SceneCreateSpriteFromFile(Scene* scene, RenderContext* renderContex
 {
     Texture* texture = TextureCreateFromFile(fname);
     Material* material = MaterialCreate(g_SimpleTransparentShader, texture);
-    MaterialReserveProperties(material, 1);
-    MaterialSetMaterialPropertyType(material, 0, "TintColor", Material::MaterialPropertyType::kVec4);
+    material->ReserveProperties(1);
+    material->SetPropertyType("TintColor", Material::MaterialPropertyType::kVec4);
     
     TextureDestroy(texture); // material will own reference
     SceneObject* ret = SceneCreateSprite(scene, renderContext, material, spriteOptions);
@@ -307,13 +307,16 @@ SceneObject* SceneCreateCube(Scene* scene, RenderContext* renderContext, Materia
     return sceneObject;
 }
 
-void SceneDraw(Scene* scene, RenderContext* renderContext)
+void SceneLightsUpdate(Scene* scene, RenderContext* renderContext)
 {
     // update point lights
     RenderUpdatePointLights(renderContext, scene->m_PointLights, scene->m_NumPointLights);
     RenderUpdateConicalLights(renderContext, scene->m_ConicalLights, scene->m_NumConicalLights);
     RenderUpdateCylindricalLights(renderContext, scene->m_CylindricalLights, scene->m_NumCylindricalLights);
-    
+}
+
+void SceneDraw(Scene* scene, RenderContext* renderContext)
+{
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
     for (int i=0,n=scene->m_NumObjects; i<n; ++i)
     {
@@ -351,6 +354,16 @@ void SceneDraw(Scene* scene, RenderContext* renderContext, int groupId)
     }
 }
 
+// 
+//  ____                                       
+// /\  _`\
+// \ \ \L\_\   _ __    ___    __  __   _____
+//  \ \ \L_L  /\`'__\ / __`\ /\ \/\ \ /\ '__`\
+//   \ \ \/, \\ \ \/ /\ \L\ \\ \ \_\ \\ \ \L\ \
+//    \ \____/ \ \_\ \ \____/ \ \____/ \ \ ,__/
+//     \/___/   \/_/  \/___/   \/___/   \ \ \/ 
+//                                       \ \_\
+//                                        \/_/
 int SceneGroupCreate(Scene* scene)
 {
     for (int i=0; i<Scene::kGroupMax; ++i)
@@ -481,7 +494,7 @@ void SceneObjectDestroy(Scene* scene, SceneObject* sceneObject)
         scene->m_SceneObjects[sceneObject->m_SceneIndex] = scene->m_SceneObjects[--scene->m_NumObjects];
         scene->m_SceneObjects[sceneObject->m_SceneIndex]->m_SceneIndex = sceneObject->m_SceneIndex;
         scene->m_SceneObjects[scene->m_NumObjects] = nullptr;
-
+        
         TextureDestroy(sceneObject->m_Shadow1dMap);
         sceneObject->m_Shadow1dMap = nullptr;
         
@@ -493,17 +506,19 @@ void SceneObjectDestroy(Scene* scene, SceneObject* sceneObject)
     }
 }
 
+// SceneCreateEmpty
 SceneObject* SceneCreateEmpty(Scene* scene)
 {
     SceneObject* sceneObject = SceneObjectAllocate(scene, SceneObjectType::kEmpty);
     return sceneObject;
 }
 
+// SceneGetSceneObjectsByType
 int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, SceneObjectType type)
 {
     SceneObject** first = &dest[0];
     SceneObject** write = &dest[0];
-    SceneObject** last = &dest[size];
+    SceneObject** last  = &dest[size];
     
     for (int i=0,n=scene->m_NumObjects; write<last && i<n; ++i)
     {
@@ -511,10 +526,11 @@ int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, Scene
         if (sceneObject->m_Type == type)
             *write++ = sceneObject;
     }
-
+    
     return (int) (write - first);
 }
 
+// SceneDrawObb
 void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject)
 {
     Mat4 localToWorld;
@@ -523,8 +539,19 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
     localToWorld.SetRot(sceneObject->m_Obb.m_Axes);
     localToWorld.SetTranslation(sceneObject->m_LocalToWorld.GetTranslation());
     
-    // MatrixDump(localToWorld, "localToWorld");
+    if (sceneObject->m_Type == SceneObjectType::kLight)
+    {
+        const Light* light = (Light*) &sceneObject->m_LightData[0];
+        switch (light->m_Type)
+        {
+            default:
+            case LightType::kPoint:
+            {
+                PointLight* pointLight = (PointLight*) light;
+                MatrixScaleInsitu(&localToWorld, Vec3(pointLight->m_Range, pointLight->m_Range, pointLight->m_Range));
+            }
+        }
+    }
     
-    // ObbDump(sceneObject->m_Obb, sceneObject->m_DebugName);
     RenderDrawModel(renderContext, renderContext->m_CubeModel, localToWorld);
 }

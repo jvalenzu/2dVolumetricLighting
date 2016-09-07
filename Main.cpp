@@ -112,9 +112,9 @@ static void MainLoop(RenderContext* renderContext)
     Texture* treeAppleNormal = TextureCreateFromFile("TreeApple_OUTPUT.png");
     Shader* outlineLightShader = ShaderCreate("obj/Shader/Planar");
     Material* treeAppleMaterial = MaterialCreate(outlineLightShader, treeAppleTexture);
-    MaterialReserveProperties(treeAppleMaterial, 2);
-    MaterialSetMaterialPropertyType(treeAppleMaterial, 0, "_PlanarTex", Material::MaterialPropertyType::kTexture);
-    MaterialSetMaterialPropertyTexture(treeAppleMaterial, 0, treeAppleNormal);
+    treeAppleMaterial->ReserveProperties(2);
+    int planarTex = treeAppleMaterial->SetPropertyType("_PlanarTex", Material::MaterialPropertyType::kTexture);
+    treeAppleMaterial->SetTexture(planarTex, treeAppleNormal);
     
     SceneObject* sceneObjects[4] = { 0 };
     for (int i=0; i<4; ++i)
@@ -170,7 +170,7 @@ static void MainLoop(RenderContext* renderContext)
         lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
         SceneGroupAddChild(s_SceneObject, lightSprite1);
         
-        SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), pointLightSpriteOptions.m_TintColor, 2.0f));
+        SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), pointLightSpriteOptions.m_TintColor, 4.0f));
         light1->m_DebugName = "PointLight";
         SceneGroupAddChild(lightSprite1, light1);
     }
@@ -196,6 +196,8 @@ static void MainLoop(RenderContext* renderContext)
     for (int i=0; i<2; ++i)
         renderTextureTemp[i] = TextureCreateRenderTexture(512, 512, 0);
     
+    Texture* renderTextureInt = TextureCreateRenderTexture(512, 512, 0, Texture::RenderTextureFormat::kUInt);
+    
     Shader* shaderBlurX = ShaderCreate("obj/Shader/BlurX");
     Shader* shaderBlurY = ShaderCreate("obj/Shader/BlurY");
     
@@ -209,7 +211,8 @@ static void MainLoop(RenderContext* renderContext)
     float dir[3] = { 1, 0, 0 };
     
     Texture* shadowCasterRenderTarget = TextureCreateRenderTexture(512, 512, 0);
-    TextureSetClearFlags(shadowCasterRenderTarget, Texture::RenderTextureFlags::kClearColor, 0,1,0,1);
+    shadowCasterRenderTarget->SetClearFlags(Texture::RenderTextureFlags::kClearColor, 0,1,0,1);
+    
     Shader* shadowCasterShader = ShaderCreate("obj/Shader/ShadowCasters");
     
     // 1d shadow map material and texture
@@ -223,24 +226,25 @@ static void MainLoop(RenderContext* renderContext)
     for (int i=1; i<4; ++i)
     {
         Material* shadow1dMaterial = shadow1dMaterials[i] = MaterialCreate(shadowMap1dShaders[i], shadowCasterRenderTarget);
-        shadow1dMaterial->ReserveProperties(2);
-        MaterialSetMaterialPropertyType(shadow1dMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
-        MaterialSetMaterialPropertyType(shadow1dMaterial, 1, "_LightFacingAngle", Material::MaterialPropertyType::kVec4);
         shadow1dMaterial->m_BlendMode = Material::BlendMode::kOpaque;
+        shadow1dMaterial->ReserveProperties(2);
+        shadow1dMaterial->SetPropertyType("_LightPosition", Material::MaterialPropertyType::kVec4);
+        shadow1dMaterial->SetPropertyType("_LightFacingAngle", Material::MaterialPropertyType::kVec4);
     }
     
     Shader* sampleShadowMapShader = ShaderCreate("obj/Shader/SampleShadowMap");
     
     Material* shadowMapSampleMaterial = MaterialCreate(sampleShadowMapShader, nullptr);
-    shadowMapSampleMaterial->ReserveProperties(2);
-    MaterialSetMaterialPropertyType(shadowMapSampleMaterial, 0, "_LightPosition", Material::MaterialPropertyType::kVec4);
-    MaterialSetMaterialPropertyType(shadowMapSampleMaterial, 1, "_LightColor", Material::MaterialPropertyType::kVec4);
     shadowMapSampleMaterial->m_BlendMode = Material::BlendMode::kBlend;
+    shadowMapSampleMaterial->ReserveProperties(2);
+    int shadowMapLightPosition = shadowMapSampleMaterial->SetPropertyType("_LightPosition", Material::MaterialPropertyType::kVec4);
+    int shadowMapLightColor = shadowMapSampleMaterial->SetPropertyType("_LightColor", Material::MaterialPropertyType::kVec4);
     
     Shader* lightPrepassShader = ShaderCreate("obj/Shader/LightPrepass");
-    Material* lightPrepassMaterial = MaterialCreate(lightPrepassShader, nullptr);
-    lightPrepassMaterial->ReserveProperties(1);
-    MaterialSetMaterialPropertyType(lightPrepassMaterial, 0, "_PostTransform", Material::MaterialPropertyType::kMat4);
+    int lightBitmaskIndex = RenderAddGlobalProperty(renderContext, "_LightBitmask", Material::MaterialPropertyType::kUInt);
+    int lightPrepassTextureIndex = RenderAddGlobalProperty(renderContext, "_LightPrepassTex", Material::MaterialPropertyType::kTexture);
+    
+    Shader* debugLightPrepassSampleShader = ShaderCreate("obj/Shader/DebugLightPrepassSample");
     
     bool running = true;
     while (running)
@@ -295,10 +299,10 @@ static void MainLoop(RenderContext* renderContext)
                 
                 // sample the 1d raycast texture.  Point/Spotlight sample based on light position to fragment, cylinder lights need to
                 // raycast to the nearest intersection point
-                shadowMapSampleMaterial->SetVector(0, screenPos);
-                shadowMapSampleMaterial->SetVector(1, ((PointLight*)light)->m_Color);
+                shadowMapSampleMaterial->SetVector(shadowMapLightPosition, screenPos);
+                shadowMapSampleMaterial->SetVector(shadowMapLightColor, ((PointLight*)light)->m_Color);
                 
-                // set light position in screen space
+                // set light position in screen space.  Relying on initialization order instead of explicit index
                 shadow1dMaterial->SetVector(0, screenPos);
                 
                 if (light->m_Type == LightType::kConical)
@@ -347,14 +351,18 @@ static void MainLoop(RenderContext* renderContext)
                 RenderDrawFullscreen(renderContext, shaderBlurY, renderTextureTemp[textureIndex]);
             }
         }
-        
+
         // light prepass
         if (true)
         {
             // setup one of the temporary render texture targets to receive the light pass.  We'll render
             // out each light as an opaque OBB which approximates (conservatively) their area of influence
+            renderTextureInt->SetClearFlags(Texture::RenderTextureFlags::kClearColor, 0,0,0,1);
+            RenderSetRenderTarget(renderContext, renderTextureInt);
+            RenderSetReplacementShader(renderContext, lightPrepassShader);
             
-            // RenderSetRenderTarget(renderContext, renderTextureTemp[0]);
+            // RenderSetReplacementShader resets this for now
+            RenderSetBlendMode(Material::BlendMode::kOr);
             
             FixedVector<SceneObject*,32> lights;
             SceneGetSceneObjectsByType(&lights, &scene, SceneObjectType::kLight);
@@ -365,20 +373,29 @@ static void MainLoop(RenderContext* renderContext)
                 if (light == nullptr)
                     continue;
                 
-                Mat4 localToWorld = lightObject->m_LocalToWorld;
-
-                if (light->m_Type != LightType::kPoint)
-                    continue;
+                light->m_Index = i;
+                RenderGlobalSetInt(renderContext, lightBitmaskIndex, 1U<<light->m_Index);
                 
                 // draw obb
                 SceneDrawObb(&scene, renderContext, lightObject);
-                
-                // RenderSetRenderTarget(renderContext, nullptr);
             }
+            
+            RenderSetReplacementShader(renderContext, nullptr);
+            RenderSetRenderTarget(renderContext, nullptr);
+            renderTextureInt->SetClearFlags(Texture::RenderTextureFlags::kClearNone);
+            
+            // light prepass texture
+            RenderGlobalSetTexture(renderContext, lightPrepassTextureIndex, renderTextureInt);
         }
+
+        // upload light data
+        SceneLightsUpdate(&scene, renderContext);
         
         // draw actual scene
         SceneDraw(&scene, renderContext);
+        
+        // debug: draw fullscreen
+        // RenderDrawFullscreen(renderContext, debugLightPrepassSampleShader, renderTextureInt);
         
         if (true)
         {
@@ -396,8 +413,14 @@ static void MainLoop(RenderContext* renderContext)
                 s_SceneObject->m_Flags |= SceneObject::Flags::kDirty;
             }
         }
+
+        GetGLError();
+        
         
         running = RenderFrameEnd(renderContext);
+
+        GetGLError();
+        
     }
     
     // scene destroy
@@ -434,7 +457,7 @@ static void MainLoop(RenderContext* renderContext)
     MaterialDestroy(treeAppleMaterial);
     
     ShaderDestroy(lightPrepassShader);
-    MaterialDestroy(lightPrepassMaterial);
+    ShaderDestroy(debugLightPrepassSampleShader);
     
     // PostEffectDestroy(postEffect0);
     // PostEffectDestroy(postEffect1);
@@ -487,7 +510,7 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
             
             Mat4 rot;
             float uvw[4] = { 0.0f, 0.0f, -1.0f, 0.0f };
-            MatrixSetRotAboutAxis(&rot, uvw, sign*0.0872664625995f);
+            MatrixSetRotAboutAxis(&rot, uvw, sign*0.0436332312998f);
             
             Mat4 t1;
             MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);

@@ -109,10 +109,10 @@ Obb ToolGenerateObbFromSimpleModel(const SimpleModel* model)
         // eigendecompose
         Mat3 s;
         Mat3 sInv;
-
+        
         float lambdas[3];
         Mat3Diagonalize(&s, lambdas, &sInv, covar);
-
+        
         ret.m_Axes = s;
         
         for (int i=0; i<3; ++i)
@@ -144,7 +144,7 @@ Obb ToolGenerateObbFromVec3(const Vec3* vertices, size_t n)
     
     Mat3 covar;
     float* covarf = covar.asFloat();
-
+    
 #if 0
     Printf("X=[");
     for (int c=0; c<n; ++c)
@@ -183,17 +183,11 @@ Obb ToolGenerateObbFromVec3(const Vec3* vertices, size_t n)
         }
     }
     
-    MatrixDump(covar, "covar");
-    
     // eigendecompose
     Mat3 sInv;
     
     float lambdas[3];
     Mat3Diagonalize(&ret.m_Axes, lambdas, &sInv, covar);
-    
-    MatrixDump(ret.m_Axes, "axes");
-    MatrixDump(sInv, "sInv");
-    Printf("lambda3: %f %f %f\n", lambdas[0], lambdas[1], lambdas[2]);
     
     for (int i=0; i<3; ++i)
         ret.m_HalfExtents[i] = lambdas[i] * 0.5f;

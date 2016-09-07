@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #pragma once
 
 #include "Render/GL.h"
@@ -17,7 +19,8 @@ struct Texture
     {
         kRgb,
         kRgba,
-        kFloat
+        kFloat,
+        kUInt
     };
     
     enum RenderTextureFlags : uint32_t
@@ -37,6 +40,7 @@ struct Texture
     Vec3 m_ClearColor;
     int m_RefCount;
     const char* m_DebugName;
+    uint32_t m_Format;
     
     inline void Invalidate()
     {
@@ -66,7 +70,8 @@ struct Texture
         m_DebugName(nullptr)
     {
     }
-    
+
+    void SetClearFlags(Texture::RenderTextureFlags renderTextureFlags, float r=0, float g=0, float b=0, float z=1.0f);
 };
 
 void      TextureInit();
@@ -78,5 +83,3 @@ Texture*  TextureCreateRenderTexture(int width, int height, int depth, Texture::
 void      TextureDestroy(Texture* victim);
 
 Texture*  TextureRef(Texture* texture);
-
-void      TextureSetClearFlags(Texture* texture, Texture::RenderTextureFlags renderTextureFlags, float r, float g, float b, float z);

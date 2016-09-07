@@ -1,7 +1,8 @@
-// -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
 
 #pragma once
 
+#include "Engine/Container/FixedVector.h"
 #include "Render/GL.h"
 #include "Engine/Matrix.h"
 #include "Render/Material.h"
@@ -28,6 +29,7 @@ struct RenderContext
     float m_LastTime;
     int m_FrameCount;
     int m_FrameRollover;
+    int m_LightIndex;
     
 #if USE_CL
     cl_context m_Context;
@@ -58,6 +60,7 @@ struct RenderContext
     
     SimpleModel* m_CubeModel;
     
+    FixedVector<Material::MaterialProperty, 32> m_MaterialProperties;
 };
 
 struct RenderOptions
@@ -165,8 +168,8 @@ void RenderContextDestroy(RenderContext* renderContext);
 void RenderFrameInit(RenderContext* context);
 bool RenderFrameEnd(RenderContext* context);
 void RenderSetAmbientLight(RenderContext* context, Vec4 color);
-void RenderUseMaterial(RenderContext* context, const Material* material);
-void RenderSetMaterialConstants(RenderContext* renderContext, const Material* material);
+void RenderUseMaterial(RenderContext* context, int* textureSlotItr, const Material* material);
+void RenderSetMaterialConstants(RenderContext* renderContext, int* textureSlotItr, const Material* material);
 
 void RenderSetRenderTarget(RenderContext* renderContexxt, Texture* texture);
 void RenderSetReplacementShader(RenderContext* renderContext, Shader* shader);
@@ -197,6 +200,15 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model);
 void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* pointLights, int numPointLights);
 void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight* conicalLights, int numConicalLights);
 void RenderUpdateCylindricalLights(RenderContext* renderContext, const CylindricalLight* cylindricalLights, int numCylindricalLights);
+
+// global properties
+int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type);
+void RenderGlobalSetFloat(RenderContext* renderContext, int index, float value);
+void RenderGlobalSetInt(RenderContext* renderContext, int index, int value);
+void RenderGlobalSetVector(RenderContext* renderContext, int index, Vec4 value);
+void RenderGlobalSetMatrix(RenderContext* renderContext, int index, const Mat4& value);
+void RenderGlobalSetTexture(RenderContext* renderContext, int index, int textureId);
+void RenderGlobalSetTexture(RenderContext* renderContext, int index, Texture* texture);
 
 void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel);
 

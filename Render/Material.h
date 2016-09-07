@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #pragma once
 
 #include "Render/GL.h"
@@ -13,13 +15,15 @@ struct Material
     {
         kOpaque,
         kCutout,
-        kBlend
+        kBlend,
+        kOr
     };
     
     enum MaterialPropertyType : uint32_t
     {
         kUnused,
         kFloat,
+        kUInt,
         kVec4,
         kTexture,
         kMat4,
@@ -33,6 +37,7 @@ struct Material
         union
         {
             float m_Float;
+            int m_Int;
             Vec4 m_Vector;
             int m_TextureId;
             Mat4 m_Matrix;
@@ -43,11 +48,14 @@ struct Material
             m_Type = kUnused;
         }
     };
-
+    
     void ReserveProperties(int numProperties);
+    int SetPropertyType(const char* materialPropertyName, Material::MaterialPropertyType type);
+    int GetPropertyIndex(const char* materialPropertyName);
     void SetFloat(int index, float value);
+    void SetInt(int index, int value);
     void SetVector(int index, Vec4 value);
-    void SetMatrix(int index, Mat4 mat);
+    void SetMatrix(int index, const Mat4& value);
     void SetTexture(int index, int textureId);
     void SetTexture(int index, Texture* texture);
     
@@ -61,14 +69,6 @@ struct Material
 // create/destroy material
 Material* MaterialCreate(Shader* shader, Texture* texture);
 Material* MaterialRef(Material* material);
-
-void      MaterialReserveProperties(Material* material, int numProperties);
-void      MaterialSetMaterialPropertyType(Material* material, int index, const char* materialPropertyName, Material::MaterialPropertyType type);
-void      MaterialSetMaterialPropertyFloat(Material* material,   int index, float value);
-void      MaterialSetMaterialPropertyVector(Material* material,  int index, Vec4 value);
-void      MaterialSetMaterialPropertyMatrix(Material* material,  int index, Mat4 value);
-void      MaterialSetMaterialPropertyTexture(Material* material, int index, int textureId);
-void      MaterialSetMaterialPropertyTexture(Material* material, int index, Texture* texture);
-int       MaterialGetPropertyIndex(Material* material, const char* materialPropertyName); // -1 on error
-
 void      MaterialDestroy(Material* victim);
+
+

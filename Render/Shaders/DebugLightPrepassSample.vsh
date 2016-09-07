@@ -9,9 +9,14 @@ uniform mat4 modelView;
 uniform mat4 project;
 
 in vec3 inPosition; // position attribute
+in vec2 inTexCoord;
+
+out vec2 texCoord;
 
 void main(void)
 {
     // Transform vertex by modelview projection matrix
     gl_Position = project * modelView * vec4(inPosition.xyz, 1.0);
+    
+    texCoord = inTexCoord;
 }

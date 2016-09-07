@@ -62,6 +62,8 @@ SHADER_SRCS += Render/Shaders/Planar.fsh
 SHADER_SRCS += Render/Shaders/Planar.vsh
 SHADER_SRCS += Render/Shaders/LightPrepass.fsh
 SHADER_SRCS += Render/Shaders/LightPrepass.vsh
+SHADER_SRCS += Render/Shaders/DebugLightPrepassSample.fsh
+SHADER_SRCS += Render/Shaders/DebugLightPrepassSample.vsh
 SHADER_TRANSFORMED := $(foreach src,$(SHADER_SRCS),$(call shaderOutName,$(src)))
 
 all: 2dVolumetricLighting

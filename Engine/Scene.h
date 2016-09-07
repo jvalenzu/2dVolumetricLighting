@@ -79,6 +79,8 @@ void         SceneDraw(Scene* scene, RenderContext* renderContext);
 void         SceneDraw(Scene* scene, RenderContext* renderContext, int groupId);
 void         SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject);
 
+void         SceneLightsUpdate(Scene* scene, RenderContext* renderContext);
+
 int          SceneGroupCreate(Scene* scene);
 void         SceneGroupDestroy(Scene* scene, int index);
 void         SceneGroupAdd(Scene* scene, int index, SceneObject* sceneObject);
@@ -87,8 +89,7 @@ void         SceneGroupRemove(Scene* scene, SceneObject* sceneObject);
 void         SceneGroupAddChild(SceneObject* parent, SceneObject* child);
 void         SceneGroupRemoveChild(SceneObject* parent, SceneObject* child);
 
-// SceneObject creation helper functions.  Things that require models/GL allocations also require a RenderContext, although most
-// don't use them.
+// SceneObject creation helper functions.  Things that require models/GL allocations also require a RenderContext, although most don't use them.
 SceneObject* SceneCreateLight(Scene* scene, const LightOptions& lightOptions);
 SceneObject* SceneCreateSprite(Scene* scene, RenderContext* renderContext, Material* material, const SpriteOptions& spriteOptions);
 SceneObject* SceneCreateSpriteFromFile(Scene* scene, RenderContext* renderContext, const char* fname);
@@ -98,6 +99,7 @@ SceneObject* SceneCreateSpriteFromMaterial(Scene* scene, RenderContext* renderCo
 SceneObject* SceneCreateCube(Scene* scene, RenderContext* renderContext, Material* material);
 SceneObject* SceneCreateEmpty(Scene* scene);
 
+// SceneObjectGetLight
 inline Light* SceneObjectGetLight(SceneObject* sceneObject)
 {
     if (sceneObject->m_Type == SceneObjectType::kLight)
@@ -106,8 +108,10 @@ inline Light* SceneObjectGetLight(SceneObject* sceneObject)
 }
 
 
+// SceneObjectDestroy
 void         SceneObjectDestroy(Scene* scene, SceneObject* sceneObject);
 
+// SceneGetSceneObjectsByType
 int          SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, SceneObjectType type);
 
 template <typename N>

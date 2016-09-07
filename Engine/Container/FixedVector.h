@@ -60,7 +60,7 @@ struct FixedVector
         return array[index];
     }
     
-    T operator[](size_t index)
+    T& operator[](size_t index)
     {
         T* array = Data();
         return array[index];
