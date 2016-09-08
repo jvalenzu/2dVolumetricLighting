@@ -386,6 +386,7 @@ struct Mat4
         m_W[0] = pos.m_X[0];
         m_W[1] = pos.m_X[1];
         m_W[2] = pos.m_X[2];
+        m_W[3] = 1.0f;
     }
     
     inline Mat4 operator/= (float f)
@@ -499,6 +500,7 @@ void MatrixCalculateDelta(Mat4* dest, const Mat4& current, const Mat4& prev);
 
 void MatrixScaleInsitu(Mat4* dest, float value);
 void MatrixScaleInsitu(Mat3* dest, float value);
+void MatrixScaleInsitu(Mat4* dest, const Vec3& value);
 
 void Vector3Dump(float v[3], const char* prefix);
 

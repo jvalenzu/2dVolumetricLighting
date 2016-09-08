@@ -1,5 +1,7 @@
 // -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
 
+#extension GL_EXT_gpu_shader4 : enable
+
 #ifdef GL_ES
 precision highp float;
 #endif
@@ -9,6 +11,7 @@ precision highp float;
 
 uniform sampler2D _MainTex;
 uniform sampler2D _PlanarTex;
+uniform usampler2D _LightPrepassTex;
 
 uniform mat4 project;
 uniform mat4 modelView;
@@ -30,10 +33,14 @@ void main (void)
     vec2 fragmentPos = screenPosition.xy / screenPosition.w;
     
     vec4 color = vec4(_AmbientLight.rgb, 1);
-    
+
+    uint mask = texture(_LightPrepassTex, toZeroOne(fragmentPos.xy)).x;
     for (int i=0; i<32; ++i)
     {
         PointLight pointLight = _PointLight[i];
+        if (((1U<<pointLight.m_Index) & mask) == 0U)
+            continue;
+        
         vec2 ray = normalize(pointLight.m_Position.xy - fragmentPos);
         float c0 = clamp(dot(t1.rg, ray), 0.0, 1);
         
@@ -47,6 +54,8 @@ void main (void)
     for (int i=0; i<32; ++i)
     {
         ConicalLight conicalLight = _ConicalLight[i];
+        if (((1U<<conicalLight.m_Index) & mask) == 0)
+            continue;
         
         vec2 ray = normalize(conicalLight.m_Position.xy - fragmentPos);
         float c0 = clamp(dot(t1.rg, ray), 0.0, 1);
@@ -64,6 +73,8 @@ void main (void)
     for (int i=0; i<32; ++i)
     {
         CylindricalLight cylindricalLight = _CylindricalLight[i];
+        if (((1U<<cylindricalLight.m_Index) & mask) == 0)
+            continue;
         
         // screenspace distance based attenuation squared
         float temp0 = pointOnLineSegmentT(cylindricalLight.m_Position.xy, cylindricalLight.m_Position1.xy, fragmentPos.xy);

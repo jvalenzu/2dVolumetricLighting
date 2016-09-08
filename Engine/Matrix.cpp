@@ -553,6 +553,16 @@ void MatrixScaleInsitu(Mat3* dest, float value)
     }
 }
 
+void MatrixScaleInsitu(Mat4* dest, const Vec3& value)
+{
+    for (int i=0; i<3; ++i)
+    {
+        dest->m_X[i] = value.m_X[0] * dest->m_X[i];
+        dest->m_Y[i] = value.m_X[1] * dest->m_Y[i];
+        dest->m_Z[i] = value.m_X[2] * dest->m_Z[i];
+    }
+}
+
 void MatrixInvert(Mat4* dest, const Mat4& a)
 {
     const float* vals = a.asFloat();
@@ -695,6 +705,18 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
         lambda3[0] = a.m_X[0];
         lambda3[1] = a.m_Y[1];
         lambda3[2] = a.m_Z[2];
+        
+        s->m_X[0] = 1.0f;
+        s->m_Y[0] = 0.0f;
+        s->m_Z[0] = 0.0f;
+        
+        s->m_X[1] = 0.0f;
+        s->m_Y[1] = 1.0f;
+        s->m_Z[1] = 0.0f;
+        
+        s->m_X[2] = 0.0f;
+        s->m_Y[2] = 0.0f;
+        s->m_Z[2] = 1.0f;
     }
     else
     {
@@ -725,30 +747,29 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
         lambda3[0] = q + 2.0f*p*cosf(phi);
         lambda3[2] = q + 2.0f*p*cosf(phi + (2.0f*float(M_PI)/3.0f));
         lambda3[1] = 3.0f * q - lambda3[0] - lambda3[2];
+        
+        // generate eigenvectors from lambdas
+        RMat* rma = (RMat*) RMAT_A(3, 3);
+        for (int i=0; i<9; ++i)
+            rma->m_Data[i] = a.asFloat()[i];
+        RVector* dest = RVectorAlloc(alloca(RVectorSize(3)), 3);
+        
+        RMatInvertIterate(dest, rma, lambda3[0]);
+        s->m_X[0] = dest->m_X[0];
+        s->m_Y[0] = dest->m_X[1];
+        s->m_Z[0] = dest->m_X[2];
+    
+        RMatInvertIterate(dest, rma, lambda3[1]);
+        s->m_X[1] = dest->m_X[0];
+        s->m_Y[1] = dest->m_X[1];
+        s->m_Z[1] = dest->m_X[2];
+        
+        RMatInvertIterate(dest, rma, lambda3[2]);
+        s->m_X[2] = dest->m_X[0];
+        s->m_Y[2] = dest->m_X[1];
+        s->m_Z[2] = dest->m_X[2];
+        
     }
-    
-    // generate eigenvectors from lambdas
-    RMat* rma = (RMat*) RMAT_A(3, 3);
-    for (int i=0; i<9; ++i)
-        rma->m_Data[i] = a.asFloat()[i];
-    RVector* dest = (RVector*) alloca(RVectorSize(3));
-    
-    RMatDump("rma", rma);
-    
-    RMatInvertIterate(dest, rma, lambda3[0]);
-    s->m_X[0] = dest->m_X[0];
-    s->m_Y[0] = dest->m_X[1];
-    s->m_Z[0] = dest->m_X[2];
-    
-    RMatInvertIterate(dest, rma, lambda3[1]);
-    s->m_X[1] = dest->m_X[0];
-    s->m_Y[1] = dest->m_X[1];
-    s->m_Z[1] = dest->m_X[2];
-    
-    RMatInvertIterate(dest, rma, lambda3[2]);
-    s->m_X[2] = dest->m_X[0];
-    s->m_Y[2] = dest->m_X[1];
-    s->m_Z[2] = dest->m_X[2];
     
     MatrixInvert(sInv, *s);
 }

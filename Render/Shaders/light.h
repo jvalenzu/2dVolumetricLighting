@@ -3,8 +3,8 @@
 struct PointLight
 {
     int m_TypePad;
+    uint m_Index;
     float m_Range;
-    int m_PadB;
     int m_PadC;
     vec4 m_Color;
     vec4 m_Position;
@@ -12,16 +12,21 @@ struct PointLight
 
 struct DirectionalLight
 {
-    vec4 m_Direction;
+    int m_TypePad;
+    int m_IndexPad;
+    int m_RangePad;
+    int m_Pad;
     vec4 m_Color;
+    vec4 m_PositionPad;
+    vec4 m_Direction;
 };
 
 struct ConicalLight
 {
     int m_TypePad;
+    uint m_Index;
     float m_Range;
     float m_Angle;
-    int m_Pad;
     vec4 m_Color;
     vec4 m_Position;
     vec4 m_Direction;
@@ -30,8 +35,8 @@ struct ConicalLight
 struct CylindricalLight
 {
     int m_TypePad;
+    uint m_Index;
     float m_Range;
-    int m_Pad;
     float m_Length;
     vec4 m_Color;
     vec2 m_Position;

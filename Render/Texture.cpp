@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #include "Render/Asset.h"
 #include "Render/Texture.h"
 #include "Render/Material.h"
@@ -49,12 +51,30 @@ Texture* TextureManager::CreateRenderTexture(int width, int height, int depth, T
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     
-    if (format == Texture::RenderTextureFormat::kRgb)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    else if (format == Texture::RenderTextureFormat::kFloat)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
-    else
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    texture->m_Format = format;
+    switch (format)
+    {
+        case Texture::RenderTextureFormat::kRgb:
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            break;
+        }
+        case Texture::RenderTextureFormat::kFloat:
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
+            break;
+        }
+        case Texture::RenderTextureFormat::kUInt:
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, width, height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, nullptr);
+            break;
+        }
+        default:
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            break;
+        }
+    }
     
     glBindTexture(GL_TEXTURE_2D, 0);
     
@@ -174,10 +194,10 @@ void TextureDestroy(Texture* victim)
     }
 }
 
-void TextureSetClearFlags(Texture* texture, Texture::RenderTextureFlags renderTextureFlags, float r, float g, float b, float z)
+void Texture::SetClearFlags(Texture::RenderTextureFlags renderTextureFlags, float r, float g, float b, float z)
 {
-    texture->m_RenderTextureFlags = renderTextureFlags;
-    VectorSet(&texture->m_ClearColor, r,g,b);
+    m_RenderTextureFlags = renderTextureFlags;
+    VectorSet(&m_ClearColor, r, g, b);
 }
 
 void TextureInit()

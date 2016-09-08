@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "Render/Private/Material.h"
+#include "Render/Private/Render.h"
 #include "Render/Render.h"
 #include "Engine/Matrix.h"
 #include "Render/Material.h"
@@ -354,6 +356,16 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     
     // cache a cube model for rendering OBBs
     renderContext->m_CubeModel = RenderGenerateCube(renderContext, 0.5f);
+
+#if 0
+    GLint n=0; 
+    glGetIntegerv(GL_NUM_EXTENSIONS, &n);
+    for (int i=0; i<n; i++)
+    {
+        const char* extension = (const char*) glGetStringi(GL_EXTENSIONS, i);
+        Printf("Ext %d: %s\n", i, extension); 
+    }
+#endif
 }
 
 // RenderContextDestroy
@@ -365,7 +377,7 @@ void RenderContextDestroy(RenderContext* renderContext)
     
     TextureDestroy(renderContext->m_WhiteTexture);
     renderContext->m_WhiteTexture = nullptr;
-
+    
     // teardown shader/texture singleton data structures
     ShaderFini();
     TextureFini();
@@ -399,12 +411,15 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, con
     MatrixInvert(&normalModel, localToWorld);
     MatrixTransposeInsitu(&normalModel);
     
-    RenderUseMaterial(renderContext, material);
+    // use material
+    int textureSlotItr = 1;
+    RenderUseMaterial(renderContext, &textureSlotItr, material);
     
-    GetGLError();
+    // global constants
+    RenderSetGlobalConstants(renderContext, &textureSlotItr, shader->m_ProgramName);
+    
     GLint pi = glGetUniformLocation(shader->m_ProgramName, "project");
     glUniformMatrix4fv(pi, 1, GL_FALSE, renderContext->m_Projection.asFloat());
-    GetGLError();
     
     GLint nmi = glGetUniformLocation(shader->m_ProgramName, "normalModel");
     glUniformMatrix4fv(nmi, 1, GL_FALSE, normalModel.asFloat());
@@ -448,6 +463,7 @@ void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* poi
         Vec3 screenPosition = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
         dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
         dest[i].m_Range = 1.0f / dest[i].m_Range;
+        dest[i].m_Index = pointLights[i].m_Index;
     }
     
 #if 0
@@ -481,6 +497,7 @@ void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight*
         Vec3 screenPosition = RenderGetScreenPos(renderContext, conicalLights[i].m_Position.xyz());
         dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
         dest[i].m_Range = 1.0f / dest[i].m_Range;
+        dest[i].m_Index = conicalLights[i].m_Index;
     }
     
     glUnmapBuffer(GL_UNIFORM_BUFFER);
@@ -501,6 +518,7 @@ void RenderUpdateCylindricalLights(RenderContext* renderContext, const Cylindric
         dest[i].m_Position.SetXY(Vec4(FromZeroOne(screenPosition), 1.0f).xy());
         dest[i].m_Position.SetZW(dest[i].m_Position.xy() + dest[i].m_Direction.xy().Normalized()*dest[i].m_Length);
         dest[i].m_Range = 1.0f / dest[i].m_Range;
+        dest[i].m_Index = cylindricalLights[i].m_Index;
     }
     
     glUnmapBuffer(GL_UNIFORM_BUFFER);
@@ -557,6 +575,7 @@ void RenderSetBlendMode(Material::BlendMode blendMode)
     {
         case Material::BlendMode::kOpaque:
         {
+            glDisable(GL_COLOR_LOGIC_OP);
             glDepthMask(GL_TRUE);
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_ZERO);
@@ -567,6 +586,7 @@ void RenderSetBlendMode(Material::BlendMode blendMode)
         case Material::BlendMode::kCutout:
         case Material::BlendMode::kBlend:
         {
+            glDisable(GL_COLOR_LOGIC_OP);
             glDepthMask(GL_FALSE);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -574,7 +594,21 @@ void RenderSetBlendMode(Material::BlendMode blendMode)
             
             break;
         }
+        case Material::BlendMode::kOr:
+        {
+            glDepthMask(GL_FALSE);
+            glDisable(GL_BLEND);
+            glEnable(GL_COLOR_LOGIC_OP);
+            glLogicOp(GL_OR);
+            
+            break;
+        }
     }
+}
+
+void RenderResetLightIndices(RenderContext* renderContext)
+{
+    renderContext->m_LightIndex = 0;
 }
 
 static inline void RenderUseProgram(const Shader* shader)
@@ -585,7 +619,7 @@ static inline void RenderUseProgram(const Shader* shader)
 
 // RenderUseMaterial
 //
-void RenderUseMaterial(RenderContext* renderContext, const Material* material)
+void RenderUseMaterial(RenderContext* renderContext, int* textureSlotItr, const Material* material)
 {
     GL_ERROR_SCOPE();
     
@@ -597,7 +631,7 @@ void RenderUseMaterial(RenderContext* renderContext, const Material* material)
         if (renderContext->m_CachedMaterial != material)
         {
             renderContext->m_CachedMaterial = material;
-            RenderSetMaterialConstants(renderContext, material);
+            RenderSetMaterialConstants(renderContext, textureSlotItr, material);
             RenderSetBlendMode(material->m_BlendMode);
         }
     }
@@ -607,16 +641,64 @@ void RenderUseMaterial(RenderContext* renderContext, const Material* material)
     }
 }
 
+// RenderSetGlobalConstants
+void RenderSetGlobalConstants(RenderContext* renderContext, int* textureSlotItr, int programName)
+{
+    for (int i=0; i<renderContext->m_MaterialProperties.kMaxSize; ++i)
+    {
+        const Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[i];
+        RenderSetMaterialProperty(textureSlotItr, programName, materialProperty);
+    }
+}
+
+// RenderSetMaterialConstants
+//
+void RenderSetMaterialConstants(RenderContext* renderContext, int* textureSlotItr, const Material* material)
+{
+    GL_ERROR_SCOPE();
+    
+    const Shader* shader = material->m_Shader;
+    
+    glActiveTexture(GL_TEXTURE0);
+    
+    if (material->m_Texture)
+        glBindTexture(GL_TEXTURE_2D, material->m_Texture->m_TextureId);
+    else
+        glBindTexture(GL_TEXTURE_2D, 0);
+    
+    GLint mainTextureSlot = glGetUniformLocation(shader->m_ProgramName, "_MainTex");
+    glProgramUniform1i(shader->m_ProgramName, mainTextureSlot, 0);
+    
+    GLint ambientLightColorSlot = glGetUniformLocation(shader->m_ProgramName, "_AmbientLight");
+    glProgramUniform4f(shader->m_ProgramName, ambientLightColorSlot, renderContext->m_AmbientLightColor.m_X[0], renderContext->m_AmbientLightColor.m_X[1], renderContext->m_AmbientLightColor.m_X[2], renderContext->m_AmbientLightColor.m_X[3]);
+    
+    for (int i=0; i<material->m_NumMaterialProperties; ++i)
+    {
+        const Material::MaterialProperty* materialProperty = &material->m_MaterialPropertyBlock[i];
+        RenderSetMaterialProperty(textureSlotItr, shader->m_ProgramName, materialProperty);
+    }
+}
+
+
 // RenderFrameInit
 //
 void RenderFrameInit(RenderContext* renderContext)
 {
     GL_ERROR_SCOPE();
+
+    GetGLError();
     
     glBindFramebuffer(GL_FRAMEBUFFER, renderContext->m_FrameBufferIds[0]);
+
+    GetGLError();
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    GetGLError();
+    
     glfwMakeContextCurrent(renderContext->m_Window);
+
+    GetGLError();
     
     float currentTime = (float) glfwGetTime();
     renderContext->m_FrameCount++;
@@ -693,7 +775,8 @@ void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int 
     
     RenderUseProgram(shader);
     
-    RenderSetMaterialConstants(renderContext, material);
+    int textureSlotItr = 1;
+    RenderSetMaterialConstants(renderContext, &textureSlotItr, material);
     RenderSetBlendMode(material->m_BlendMode);
     
     glActiveTexture(GL_TEXTURE0);
@@ -923,9 +1006,9 @@ SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOpti
     SimpleModel* simpleModel = new SimpleModel();
     simpleModel->m_Material = material;
     
-    int index = MaterialGetPropertyIndex(material, "TintColor");
-    if (index >= 0)
-        MaterialSetMaterialPropertyVector(material, index, spriteOptions.m_TintColor);
+    int tintColorIndex = material->GetPropertyIndex("TintColor");
+    if (tintColorIndex >= 0)
+        material->SetVector(tintColorIndex, spriteOptions.m_TintColor);
     
     // initialize the matrix position/orientation
     MatrixMakeIdentity(&simpleModel->m_Po);
@@ -1284,4 +1367,73 @@ void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
 void RenderSetAmbientLight(RenderContext* renderContext, Vec4 color)
 {
     renderContext->m_AmbientLightColor = color;
+}
+
+int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type)
+{
+    int index = -1;
+    for (int i=0; index==-1 && i<renderContext->m_MaterialProperties.kMaxSize; ++i)
+    {
+        if (renderContext->m_MaterialProperties[i].m_Type == Material::MaterialPropertyType::kUnused)
+            index = i;
+    }
+    
+    if (index>=0)
+    {
+        Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[index];
+        materialProperty->m_Type = type;
+        
+        strncpy(materialProperty->m_Key, materialPropertyName, sizeof materialProperty->m_Key-1);
+        materialProperty->m_Key[sizeof materialProperty->m_Key-1] = '\0';
+    }
+    
+    return index;
+}
+
+void RenderGlobalSetFloat(RenderContext* renderContext, int index, float value)
+{
+    assert(index < renderContext->m_MaterialProperties.kMaxSize);
+    Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[index];
+    assert(materialProperty->m_Type == Material::MaterialPropertyType::kFloat);
+    materialProperty->m_Float = value;
+}
+
+void RenderGlobalSetInt(RenderContext* renderContext, int index, int value)
+{
+    assert(index < renderContext->m_MaterialProperties.kMaxSize);
+    Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[index];
+    assert(materialProperty->m_Type == Material::MaterialPropertyType::kUInt);
+    materialProperty->m_Int = value;
+}
+
+void RenderGlobalSetVector(RenderContext* renderContext, int index, Vec4 value)
+{
+    assert(index < renderContext->m_MaterialProperties.kMaxSize);
+    Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[index];
+    assert(materialProperty->m_Type == Material::MaterialPropertyType::kVec4);
+    materialProperty->m_Vector = value;
+}
+
+void RenderGlobalSetMatrix(RenderContext* renderContext, int index, const Mat4& value)
+{
+    assert(index < renderContext->m_MaterialProperties.kMaxSize);
+    Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[index];
+    assert(materialProperty->m_Type == Material::MaterialPropertyType::kMat4);
+    materialProperty->m_Matrix = value;
+}
+
+void RenderGlobalSetTexture(RenderContext* renderContext, int index, int textureId)
+{
+    assert(index < renderContext->m_MaterialProperties.kMaxSize);
+    Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[index];
+    assert(materialProperty->m_Type == Material::MaterialPropertyType::kTexture);
+    materialProperty->m_TextureId = textureId;
+}
+
+void RenderGlobalSetTexture(RenderContext* renderContext, int index, Texture* texture)
+{
+    int textureId = 0;
+    if (texture != nullptr)
+        textureId = texture->m_TextureId;
+    RenderGlobalSetTexture(renderContext, index, textureId);
 }

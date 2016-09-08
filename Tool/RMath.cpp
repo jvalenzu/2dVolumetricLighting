@@ -1174,5 +1174,4 @@ void RMatInvertIterate(RVector* dest, const RMat* a, float lambda)
         RMatSolve(x, u, dest);
         RVectorNormalize(dest, x);
     }
-    RVectorNormalize(dest, x);
 }

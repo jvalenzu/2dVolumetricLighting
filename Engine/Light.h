@@ -19,27 +19,30 @@ struct Light
     enum { kMaxLights = 8 };
     
     LightType m_Type;
+    uint32_t m_Index;
 };
 
 struct PointLight : Light
 {
     float m_Range;
-    int m_Pad[2];
+    int m_Pad[1];
     Vec4 m_Color;
     Vec4 m_Position;
 };
 
 struct DirectonalLight : Light
 {
-    int m_Pad[3];
+    int m_RangePad;
+    int m_Pad;
     Vec4 m_Color;
+    Vec4 m_PadE;
+    Vec4 m_Direction;    
 };
 
 struct ConicalLight : Light
 {
     float m_Range;
     float m_CosAngle;
-    int m_Pad;
     Vec4 m_Color;
     Vec4 m_Position;
     Vec4 m_Direction; // actually 'right', but I'm trying to keep this simple.
@@ -49,7 +52,6 @@ struct CylindricalLight : Light
 {
     float m_Range;
     float m_Length;
-    int m_Pad;
     Vec4 m_Color;
     Vec4 m_Position;
     Vec4 m_Direction;
