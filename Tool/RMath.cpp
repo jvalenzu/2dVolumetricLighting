@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 // todo
 
 #include "Tool/RMath.h"
@@ -294,9 +296,9 @@ static float getSingleRoot(const Poly* a)
     const float a1 = a->m_X[order-1];
     const float an = a->m_X[0];
     
-    float rootEstimate = n * fabs(a0/a1);
+    float rootEstimate = n * fabsf(a0/a1);
     if (an)
-        rootEstimate = minf(rootEstimate, powf(fabs(a0 / an), 1.0/n));
+        rootEstimate = minf(rootEstimate, powf(fabsf(a0 / an), 1.0/n));
     
     // calculate derivative
     char* buf = (char*) alloca(PolySize(order-1));
@@ -417,7 +419,7 @@ float PolyErrorEvaluate(const Poly* poly, float (*f)(float x), float x0)
 // PolyErrorDerivativeAt
 float PolyErrorDerivativeAt(const Poly* poly, float (*f)(float x), float x)
 {
-    const float h = 0.01;
+    const float h = 0.01f;
     
     const float abscissa0 = x-2*h;
     const float abscissa1 = x-h;
@@ -435,7 +437,7 @@ float PolyErrorDerivativeAt(const Poly* poly, float (*f)(float x), float x)
 // PolyErrorPrimeDerivativeAt
 float PolyErrorPrimeDerivativeAt(const Poly* poly, float (*f)(float x), float x)
 {
-    const float h = 0.01;
+    const float h = 0.01f;
     
     const float abscissa0 = x-2*h;
     const float abscissa1 = x-h;
@@ -578,7 +580,7 @@ void RVectorDump(const char* label, const RVector* a)
     for (int i=0; i<order; ++i)
     {
         const float coeff = a->m_X[i];
-        const float aCoeff = fabs(coeff);
+        const float aCoeff = fabsf(coeff);
         
         const char* end = i==order-1 ? "" : " ";
         Printf("%.2f%s", coeff, end);
@@ -797,7 +799,7 @@ void RMatDump(const char* label, const RMat* a, const RMat* b)
             
             const char* end = lastColumn ? "" : "";
             const float val = RMatGetData(a, r, c);
-            const float aVal = fabs(val);
+            const float aVal = fabsf(val);
             const char* signSpacer = RMatGetData(a, r, c+1)>=0 ? (lastColumn ? "" : ", ") : " "; // jiv fixme
             Printf("%+.10lf%s%s", val, signSpacer, end);
         }
@@ -983,7 +985,7 @@ void ChebyshevRoots(float* dest, int dim, float a, float b)
     const float bias  = 0.5f * (a + b);
     const float scale = 0.5f * (b - a);
     
-    const float twoN = M_PI / (2.0f * dim);
+    const float twoN = float(M_PI) / (2.0f * dim);
     
     for (int k=0; k<dim; ++k)
     {
@@ -998,11 +1000,11 @@ void ChebyshevExtrema(float* dest, int dim, float a, float b)
     const float bias  = 0.5f * (a + b);
     const float scale = 0.5f * (b - a);
     
-    const float twoN = M_PI / (2.0f * dim);
+    const float twoN = float(M_PI) / (2.0f * dim);
     
     for (int k=0; k<dim; ++k)
     {
-        const float cf = -cosf((k*M_PI)/(dim-1));
+        const float cf = -cosf((k*float(M_PI))/(dim-1));
         dest[k] = bias + scale * cf;
     }
 }
@@ -1165,6 +1167,10 @@ void RMatInvertIterate(RVector* dest, const RMat* a, float lambda)
     RVector* x = RVectorAlloc(alloca(RVectorSize(a->m_Rows)), a->m_Rows);
     for (int i=0; i<10; ++i)
     {
+        char buf[32];
+        sprintf(buf, "u%d", i);
+        RMatDump(buf, u);
+        
         RMatSolve(x, u, dest);
         RVectorNormalize(dest, x);
     }

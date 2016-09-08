@@ -723,7 +723,7 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
             phi = acosf(r) / 3.0f;
         
         lambda3[0] = q + 2.0f*p*cosf(phi);
-        lambda3[2] = q + 2.0f*p*cosf(phi + (2.0f*M_PI/3.0f));
+        lambda3[2] = q + 2.0f*p*cosf(phi + (2.0f*float(M_PI)/3.0f));
         lambda3[1] = 3.0f * q - lambda3[0] - lambda3[2];
     }
     
@@ -732,6 +732,8 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
     for (int i=0; i<9; ++i)
         rma->m_Data[i] = a.asFloat()[i];
     RVector* dest = (RVector*) alloca(RVectorSize(3));
+    
+    RMatDump("rma", rma);
     
     RMatInvertIterate(dest, rma, lambda3[0]);
     s->m_X[0] = dest->m_X[0];

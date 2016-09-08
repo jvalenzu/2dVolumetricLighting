@@ -1,8 +1,14 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #pragma once
 
 #include <assert.h>
 #include <stdint.h>
 #include <stddef.h>
+
+#pragma warning(push)
+#pragma warning (disable:4200)
+
 
 struct RVector;
 
@@ -167,3 +173,5 @@ size_t RMatSize(const Mat3* mat3);
 
 void RMatCopy(RMat* dest, const Mat4* mat4);
 void RMatCopy(RMat* dest, const Mat3* mat3);
+
+#pragma warning(pop)
