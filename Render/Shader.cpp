@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #include "Engine/Matrix.h"
 #include "Render/Model.h"
 #include "Render/Render.h"

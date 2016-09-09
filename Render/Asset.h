@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #pragma once
 
 #include <stdint.h>
@@ -177,7 +179,7 @@ struct SimpleAssetManager
     void         DestroyAsset(T* victim);
     int          Find(uint32_t crc); // index on success, -1 on error
     
-    void         CheckInvariant();
+    virtual void CheckInvariant() { }
     void         Dump(int num=-1);
     virtual void DumpTitle() { }
     virtual void DumpInternal(const T* victim) { }

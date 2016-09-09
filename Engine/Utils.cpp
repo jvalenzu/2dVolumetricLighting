@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #include <stdio.h>
 #include <sys/stat.h>
 #include <stdarg.h>

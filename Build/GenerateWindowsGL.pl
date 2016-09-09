@@ -17,6 +17,7 @@ while (<DATA>)
 
 open (HEADER, '>', "../Render/WindowsGL.h") or die $!;
 
+print HEADER "// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-\n";
 print HEADER "#pragma once\n\n\n\n";
 
 foreach my $func (sort keys %funcs)
@@ -25,10 +26,13 @@ foreach my $func (sort keys %funcs)
   print HEADER "extern PFN$ucFunc"."PROC $func;\n";
 }
 
+print HEADER "\n\n\nvoid WindowsGLInit();\n";
+
 close HEADER;
 
 open (SOURCE, '>', "../Render/WindowsGL.cpp") or die $!;
 
+print SOURCE "// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-\n";
 print SOURCE "#include \"Render/GL.h\"\n";
 
 
@@ -226,4 +230,4 @@ __DATA__
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(870): error C3861: 'glDeleteBuffers': identifier not found
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(871): error C3861: 'glDeleteBuffers': identifier not found
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(872): error C3861: 'glDeleteVertexArrays': identifier not found
-
+1>c:\users\jvalenzu\source\2dvolumetriclighting\render\material.cpp(74): error C3861: 'glUniform1ui': identifier not found

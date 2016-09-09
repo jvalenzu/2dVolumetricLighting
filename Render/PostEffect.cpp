@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #include "Render/PostEffect.h"
 #include "Render/Texture.h"
 #include "Render/Material.h"

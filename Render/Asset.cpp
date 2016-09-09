@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #include "Render/Asset.h"
 #include "Render/Shader.h"
 #include "Render/Texture.h"
