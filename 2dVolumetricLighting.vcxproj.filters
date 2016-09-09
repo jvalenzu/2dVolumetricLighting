@@ -176,21 +176,21 @@
     <CustomBuild Include="Render\Shaders\SimpleTransparent.vsh">
       <Filter>Render\Shaders</Filter>
     </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Render\Shaders\ShadowMap1dConical.fsh">
+    <CustomBuild Include="Render\Shaders\ShadowMap1dConical.fsh" />
+    <CustomBuild Include="Render\Shaders\ShadowMap1dPoint.fsh" />
+    <CustomBuild Include="Render\Shaders\ShadowMap1dConical.vsh" />
+    <CustomBuild Include="Render\Shaders\ShadowMap1dPoint.vsh" />
+    <CustomBuild Include="Render\Shaders\DebugLightPrepassSample.fsh">
       <Filter>Render\Shaders</Filter>
-    </None>
-    <None Include="Render\Shaders\ShadowMap1dPoint.fsh">
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\DebugLightPrepassSample.vsh">
       <Filter>Render\Shaders</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Render\Shaders\ShadowMap1dConical.vsh">
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\LightPrepass.fsh">
       <Filter>Render\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Render\Shaders\ShadowMap1dPoint.vsh">
+    </CustomBuild>
+    <CustomBuild Include="Render\Shaders\LightPrepass.vsh">
       <Filter>Render\Shaders</Filter>
-    </FxCompile>
+    </CustomBuild>
   </ItemGroup>
 </Project>

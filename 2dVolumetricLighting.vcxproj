@@ -248,7 +248,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>	
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
     </CustomBuild>
     <CustomBuild Include="Render\Shaders\ShadowMap1dPoint.fsh">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
@@ -274,7 +274,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>	
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
     </CustomBuild>
     <CustomBuild Include="Render\Shaders\ShadowMap1dPoint.vsh">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
@@ -287,6 +287,58 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
+    </CustomBuild>
+
+    <CustomBuild Include="Render\Shaders\DebugLightPrepassSample.fsh">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
+    </CustomBuild>
+
+    <CustomBuild Include="Render\Shaders\DebugLightPrepassSample.vsh">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>	
+    </CustomBuild>
+
+    <CustomBuild Include="Render\Shaders\LightPrepass.fsh">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>	
+    </CustomBuild>	
+
+    <CustomBuild Include="Render\Shaders\LightPrepass.vsh">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>	
     </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">

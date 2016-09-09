@@ -54,7 +54,7 @@ void main (void)
     for (int i=0; i<32; ++i)
     {
         ConicalLight conicalLight = _ConicalLight[i];
-        if (((1U<<conicalLight.m_Index) & mask) == 0)
+        if (((1U<<conicalLight.m_Index) & mask) == 0U)
             continue;
         
         vec2 ray = normalize(conicalLight.m_Position.xy - fragmentPos);
@@ -73,7 +73,7 @@ void main (void)
     for (int i=0; i<32; ++i)
     {
         CylindricalLight cylindricalLight = _CylindricalLight[i];
-        if (((1U<<cylindricalLight.m_Index) & mask) == 0)
+        if (((1U<<cylindricalLight.m_Index) & mask) == 0U)
             continue;
         
         // screenspace distance based attenuation squared

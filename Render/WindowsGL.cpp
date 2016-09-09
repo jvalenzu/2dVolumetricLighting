@@ -1,7 +1,6 @@
-#include "Render/GL.h"
-#include <Wingdi.h>
-#include <stdio.h>
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
 
+#include "Render/GL.h"
 PFNGLACTIVETEXTUREPROC glActiveTexture;
 PFNGLATTACHSHADERPROC glAttachShader;
 PFNGLBINDATTRIBLOCATIONPROC glBindAttribLocation;
@@ -36,6 +35,7 @@ PFNGLPROGRAMUNIFORM1IPROC glProgramUniform1i;
 PFNGLPROGRAMUNIFORM4FPROC glProgramUniform4f;
 PFNGLSHADERSOURCEPROC glShaderSource;
 PFNGLUNIFORM1FPROC glUniform1f;
+PFNGLUNIFORM1UIPROC glUniform1ui;
 PFNGLUNIFORM4FPROC glUniform4f;
 PFNGLUNIFORMBLOCKBINDINGPROC glUniformBlockBinding;
 PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
@@ -43,6 +43,8 @@ PFNGLUNMAPBUFFERPROC glUnmapBuffer;
 PFNGLUSEPROGRAMPROC glUseProgram;
 PFNGLVALIDATEPROGRAMPROC glValidateProgram;
 PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
+
+
 
 void WindowsGLInit()
 {
@@ -80,6 +82,7 @@ void WindowsGLInit()
     glProgramUniform4f = (PFNGLPROGRAMUNIFORM4FPROC) wglGetProcAddress("glProgramUniform4f");
     glShaderSource = (PFNGLSHADERSOURCEPROC) wglGetProcAddress("glShaderSource");
     glUniform1f = (PFNGLUNIFORM1FPROC) wglGetProcAddress("glUniform1f");
+    glUniform1ui = (PFNGLUNIFORM1UIPROC) wglGetProcAddress("glUniform1ui");
     glUniform4f = (PFNGLUNIFORM4FPROC) wglGetProcAddress("glUniform4f");
     glUniformBlockBinding = (PFNGLUNIFORMBLOCKBINDINGPROC) wglGetProcAddress("glUniformBlockBinding");
     glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC) wglGetProcAddress("glUniformMatrix4fv");

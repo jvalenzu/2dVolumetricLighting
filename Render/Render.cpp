@@ -356,7 +356,7 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     
     // cache a cube model for rendering OBBs
     renderContext->m_CubeModel = RenderGenerateCube(renderContext, 0.5f);
-
+    
 #if 0
     GLint n=0; 
     glGetIntegerv(GL_NUM_EXTENSIONS, &n);
@@ -643,7 +643,7 @@ void RenderUseMaterial(RenderContext* renderContext, int* textureSlotItr, const 
 
 // RenderSetGlobalConstants
 void RenderSetGlobalConstants(RenderContext* renderContext, int* textureSlotItr, int programName)
-{
+{    
     for (int i=0; i<renderContext->m_MaterialProperties.kMaxSize; ++i)
     {
         const Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[i];
@@ -685,20 +685,12 @@ void RenderSetMaterialConstants(RenderContext* renderContext, int* textureSlotIt
 void RenderFrameInit(RenderContext* renderContext)
 {
     GL_ERROR_SCOPE();
-
-    GetGLError();
     
     glBindFramebuffer(GL_FRAMEBUFFER, renderContext->m_FrameBufferIds[0]);
-
-    GetGLError();
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    GetGLError();
     
     glfwMakeContextCurrent(renderContext->m_Window);
-
-    GetGLError();
     
     float currentTime = (float) glfwGetTime();
     renderContext->m_FrameCount++;
@@ -1372,19 +1364,15 @@ void RenderSetAmbientLight(RenderContext* renderContext, Vec4 color)
 int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type)
 {
     int index = -1;
-    for (int i=0; index==-1 && i<renderContext->m_MaterialProperties.kMaxSize; ++i)
-    {
-        if (renderContext->m_MaterialProperties[i].m_Type == Material::MaterialPropertyType::kUnused)
-            index = i;
-    }
     
-    if (index>=0)
+    Material::MaterialProperty* materialProperty = renderContext->m_MaterialProperties.alloc();
+    if (materialProperty)
     {
-        Material::MaterialProperty* materialProperty = &renderContext->m_MaterialProperties[index];
         materialProperty->m_Type = type;
-        
         strncpy(materialProperty->m_Key, materialPropertyName, sizeof materialProperty->m_Key-1);
         materialProperty->m_Key[sizeof materialProperty->m_Key-1] = '\0';
+        
+        index = renderContext->m_MaterialProperties.indexOf(materialProperty);
     }
     
     return index;

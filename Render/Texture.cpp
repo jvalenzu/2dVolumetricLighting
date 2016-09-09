@@ -18,7 +18,7 @@ struct TextureManager : SimpleAssetManager<Texture>
     Texture* CreateTexture(const char* fname, uint32_t crc);
     Texture* CreateRenderTexture(int width, int height, int depth, Texture::RenderTextureFormat format);
     void DestroyTexture(Texture* victim);
-    
+
     virtual void DumpTitle();
     virtual void DumpInternal(const Texture* t);
 };

@@ -298,11 +298,11 @@ static float getSingleRoot(const Poly* a)
     
     float rootEstimate = n * fabsf(a0/a1);
     if (an)
-        rootEstimate = minf(rootEstimate, powf(fabsf(a0 / an), 1.0/n));
+        rootEstimate = minf(rootEstimate, powf(fabsf(a0 / an), 1.0f/n));
     
     // calculate derivative
-    char* buf = (char*) alloca(PolySize(order-1));
-    Poly* dPoly = PolyAlloc(buf, order-1);
+    char* buf = (char*) alloca(PolySize((int)order-1));
+    Poly* dPoly = PolyAlloc(buf, (int)order-1);
     PolyDerivative(dPoly, a);
     
     float eRoot = 1000;
@@ -373,7 +373,7 @@ int PolyRoots(float* realRoots, const Poly* a)
         }
     }
     
-    int retVal = realRoots - saveRealRoots;
+    int retVal = (int) (realRoots - saveRealRoots);
     realRoots = saveRealRoots;
     
     // exclude non-real roots.
@@ -431,7 +431,7 @@ float PolyErrorDerivativeAt(const Poly* poly, float (*f)(float x), float x)
     const float x2 = +8*PolyErrorEvaluate(poly, f, abscissa2);
     const float x3 = -1*PolyErrorEvaluate(poly, f, abscissa3);
     
-    return (x0 + x1 + x2 + x3) / (12.0*h);
+    return (x0 + x1 + x2 + x3) / (12.0f*h);
 }
 
 // PolyErrorPrimeDerivativeAt
@@ -645,7 +645,7 @@ void RMatPermuteIdentity(RMat* dest, int* p)
     for (int i=0; i<dest->m_Rows; ++i)
     {
         float* dFloat = RMatGetRow(dest, i);
-        memset(dFloat, 0.0f, sizeof(float)*dest->m_Columns);
+        memset(dFloat, 0, sizeof(float)*dest->m_Columns);
         dFloat[p[i]] = 1.0f;
     }
 }

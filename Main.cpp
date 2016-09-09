@@ -196,8 +196,6 @@ static void MainLoop(RenderContext* renderContext)
     for (int i=0; i<2; ++i)
         renderTextureTemp[i] = TextureCreateRenderTexture(512, 512, 0);
     
-    Texture* renderTextureInt = TextureCreateRenderTexture(512, 512, 0, Texture::RenderTextureFormat::kUInt);
-    
     Shader* shaderBlurX = ShaderCreate("obj/Shader/BlurX");
     Shader* shaderBlurY = ShaderCreate("obj/Shader/BlurY");
     
@@ -234,15 +232,19 @@ static void MainLoop(RenderContext* renderContext)
     
     Shader* sampleShadowMapShader = ShaderCreate("obj/Shader/SampleShadowMap");
     
+    // show map stuff
     Material* shadowMapSampleMaterial = MaterialCreate(sampleShadowMapShader, nullptr);
     shadowMapSampleMaterial->m_BlendMode = Material::BlendMode::kBlend;
     shadowMapSampleMaterial->ReserveProperties(2);
     int shadowMapLightPosition = shadowMapSampleMaterial->SetPropertyType("_LightPosition", Material::MaterialPropertyType::kVec4);
     int shadowMapLightColor = shadowMapSampleMaterial->SetPropertyType("_LightColor", Material::MaterialPropertyType::kVec4);
     
+    // light prepass stuff
     Shader* lightPrepassShader = ShaderCreate("obj/Shader/LightPrepass");
     int lightBitmaskIndex = RenderAddGlobalProperty(renderContext, "_LightBitmask", Material::MaterialPropertyType::kUInt);
     int lightPrepassTextureIndex = RenderAddGlobalProperty(renderContext, "_LightPrepassTex", Material::MaterialPropertyType::kTexture);
+    Texture* renderTextureInt = TextureCreateRenderTexture(512, 512, 0, Texture::RenderTextureFormat::kUInt);
+    RenderGlobalSetTexture(renderContext, lightPrepassTextureIndex, renderTextureInt);
     
     Shader* debugLightPrepassSampleShader = ShaderCreate("obj/Shader/DebugLightPrepassSample");
     
@@ -383,9 +385,6 @@ static void MainLoop(RenderContext* renderContext)
             RenderSetReplacementShader(renderContext, nullptr);
             RenderSetRenderTarget(renderContext, nullptr);
             renderTextureInt->SetClearFlags(Texture::RenderTextureFlags::kClearNone);
-            
-            // light prepass texture
-            RenderGlobalSetTexture(renderContext, lightPrepassTextureIndex, renderTextureInt);
         }
 
         // upload light data
