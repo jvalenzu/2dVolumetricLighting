@@ -1,3 +1,5 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
+
 #pragma once
 
 #include <new>
@@ -40,14 +42,22 @@ struct FixedVector
     {
         if (m_Index == maxSize)
             return nullptr;
-        T* ret = m_Raw[m_Index++ * sizeof(T)];
+        T* ret = (T*)&m_Raw[m_Index++ * sizeof(T)];
         new (ret) T();
         return ret;
     }
     
+    int indexOf(const T* data)
+    {
+        int index = (int) (data - (T*)&m_Raw[0]);
+        if (index <0 || index >= maxSize)
+            return -1;
+        return index;
+    }
+    
     void erase(T* victim)
     {
-        int index = victim - (T*)m_Raw[0];
+        int index = victim - (T*)&m_Raw[0];
         if (index >= maxSize)
             return;
         // victim->~T();
