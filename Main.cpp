@@ -1,7 +1,6 @@
 // -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
 // baseline 11.76ms
 
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -353,7 +352,7 @@ static void MainLoop(RenderContext* renderContext)
                 RenderDrawFullscreen(renderContext, shaderBlurY, renderTextureTemp[textureIndex]);
             }
         }
-
+        
         // light prepass
         if (true)
         {
@@ -386,7 +385,7 @@ static void MainLoop(RenderContext* renderContext)
             RenderSetRenderTarget(renderContext, nullptr);
             renderTextureInt->SetClearFlags(Texture::RenderTextureFlags::kClearNone);
         }
-
+        
         // upload light data
         SceneLightsUpdate(&scene, renderContext);
         
@@ -412,14 +411,8 @@ static void MainLoop(RenderContext* renderContext)
                 s_SceneObject->m_Flags |= SceneObject::Flags::kDirty;
             }
         }
-
-        GetGLError();
-        
         
         running = RenderFrameEnd(renderContext);
-
-        GetGLError();
-        
     }
     
     // scene destroy
