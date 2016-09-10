@@ -1,7 +1,7 @@
 // -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
 
 #extension GL_ARB_explicit_attrib_location : enable
-#extension GL_EXT_gpu_shader5 : enable
+#extension GL_ARB_gpu_shader5 : enable
 
 #include "shader.h"
 
