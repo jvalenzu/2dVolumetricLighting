@@ -63,6 +63,7 @@
 [ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
 [ ] Aspect ratio is incorrect
 [ ] Better method of finding eigenvectors in Obb tool
+[ ] Less fond of RMath design over time, remove it for Obb generation
 
 ------------------------------------------------
 PUBLISH
@@ -96,3 +97,4 @@ PUBLISH
 [ ] Hundreds of sprites
 [ ] FIXME:
   [ ] // duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
+[ ] Need to spell out how the FromZeroOne functions result in non-cartesean reactions in the 1d mapping functions
