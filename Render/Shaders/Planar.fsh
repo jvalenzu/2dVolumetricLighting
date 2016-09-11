@@ -29,11 +29,10 @@ void main (void)
     vec4 t0 = texture(_MainTex, texCoord);
     vec4 t1 = texture(_PlanarTex, texCoord);
     t1 = fromZeroOne(t1);
-    
-    vec2 fragmentPos = screenPosition.xy / screenPosition.w;
-    
-    vec4 color = vec4(_AmbientLight.rgb, 1);
 
+    vec2 fragmentPos = screenPosition.xy / screenPosition.w;
+    vec4 color = vec4(_AmbientLight.rgb, 1);
+    
     uint mask = texture(_LightPrepassTex, toZeroOne(fragmentPos.xy)).x;
     for (int i=0; i<32; ++i)
     {
@@ -42,13 +41,13 @@ void main (void)
             continue;
         
         vec2 ray = normalize(pointLight.m_Position.xy - fragmentPos);
-        float c0 = clamp(dot(t1.rg, ray), 0.0, 1);
+        float c0 = clamp(dot(t1.rg, ray), 0.0f, 1.0f);
         
         // screenspace distance based attenuation squared
         float d0 = distance(pointLight.m_Position.xy, fragmentPos.xy);
         float d1 = clamp((d0*d0) * pointLight.m_Range, 0.0f, 1.0f);
         
-        color.rgb += (1-d1)*c0*pointLight.m_Color.rgb;
+        color.rgb += (1.0f-d1)*c0*pointLight.m_Color.rgb;
     }
     
     for (int i=0; i<32; ++i)

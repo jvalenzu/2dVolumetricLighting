@@ -115,6 +115,13 @@ static void MainLoop(RenderContext* renderContext)
     int planarTex = treeAppleMaterial->SetPropertyType("_PlanarTex", Material::MaterialPropertyType::kTexture);
     treeAppleMaterial->SetTexture(planarTex, treeAppleNormal);
     
+    // debug material/shader
+    Texture* whiteTexture = TextureCreateFromFile("white.png");
+    Material* debugMaterial = MaterialCreate(outlineLightShader, whiteTexture);
+    debugMaterial->ReserveProperties(1);
+    int debugPlanarTex = debugMaterial->SetPropertyType("_PlanarTex", Material::MaterialPropertyType::kTexture);
+    debugMaterial->SetTexture(debugPlanarTex, whiteTexture);
+    
     SceneObject* sceneObjects[4] = { 0 };
     for (int i=0; i<4; ++i)
     {
@@ -394,6 +401,7 @@ static void MainLoop(RenderContext* renderContext)
         
         // debug: draw fullscreen
         // RenderDrawFullscreen(renderContext, debugLightPrepassSampleShader, renderTextureInt);
+        // RenderDrawFullscreen(renderContext, debugMaterial, whiteTexture);
         
         if (true)
         {
@@ -450,6 +458,8 @@ static void MainLoop(RenderContext* renderContext)
     
     ShaderDestroy(lightPrepassShader);
     ShaderDestroy(debugLightPrepassSampleShader);
+
+    MaterialDestroy(debugMaterial);
     
     // PostEffectDestroy(postEffect0);
     // PostEffectDestroy(postEffect1);
@@ -464,7 +474,7 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
 {
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
-        float step = 2.0f;
+        float step = 1.0f;
         
         float x=0.0f, y=0.0f, z=0.0f;
         

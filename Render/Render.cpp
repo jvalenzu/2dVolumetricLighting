@@ -774,6 +774,9 @@ void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureId);
     
+    // global constants
+    RenderSetGlobalConstants(renderContext, &textureSlotItr, shader->m_ProgramName);
+    
     Mat4 identity;
     MatrixMakeIdentity(&identity);
     
@@ -813,12 +816,16 @@ void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, int text
 {
     GL_ERROR_SCOPE();
     
-    RenderFullscreenSetVertexAttributes(renderContext);
-    
     RenderUseProgram(shader);
+    
+    RenderFullscreenSetVertexAttributes(renderContext);
     
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureId);
+    
+    // global constants
+    int textureSlotItr=1;
+    RenderSetGlobalConstants(renderContext, &textureSlotItr, shader->m_ProgramName);
     
     Mat4 identity;
     MatrixMakeIdentity(&identity);
