@@ -1,5 +1,4 @@
 // -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
-
 #include "Render/GL.h"
 PFNGLACTIVETEXTUREPROC glActiveTexture;
 PFNGLATTACHSHADERPROC glAttachShader;
@@ -23,6 +22,7 @@ PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
 PFNGLGENBUFFERSPROC glGenBuffers;
 PFNGLGENFRAMEBUFFERSPROC glGenFramebuffers;
 PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
+PFNGLGETACTIVEUNIFORMPROC glGetActiveUniform;
 PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
 PFNGLGETPROGRAMIVPROC glGetProgramiv;
 PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
@@ -35,6 +35,7 @@ PFNGLPROGRAMUNIFORM1IPROC glProgramUniform1i;
 PFNGLPROGRAMUNIFORM4FPROC glProgramUniform4f;
 PFNGLSHADERSOURCEPROC glShaderSource;
 PFNGLUNIFORM1FPROC glUniform1f;
+PFNGLUNIFORM1IPROC glUniform1i;
 PFNGLUNIFORM1UIPROC glUniform1ui;
 PFNGLUNIFORM4FPROC glUniform4f;
 PFNGLUNIFORMBLOCKBINDINGPROC glUniformBlockBinding;
@@ -70,6 +71,7 @@ void WindowsGLInit()
     glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
     glGenFramebuffers = (PFNGLGENFRAMEBUFFERSPROC) wglGetProcAddress("glGenFramebuffers");
     glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC) wglGetProcAddress("glGenVertexArrays");
+    glGetActiveUniform = (PFNGLGETACTIVEUNIFORMPROC) wglGetProcAddress("glGetActiveUniform");
     glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC) wglGetProcAddress("glGetProgramInfoLog");
     glGetProgramiv = (PFNGLGETPROGRAMIVPROC) wglGetProcAddress("glGetProgramiv");
     glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC) wglGetProcAddress("glGetShaderInfoLog");
@@ -82,6 +84,7 @@ void WindowsGLInit()
     glProgramUniform4f = (PFNGLPROGRAMUNIFORM4FPROC) wglGetProcAddress("glProgramUniform4f");
     glShaderSource = (PFNGLSHADERSOURCEPROC) wglGetProcAddress("glShaderSource");
     glUniform1f = (PFNGLUNIFORM1FPROC) wglGetProcAddress("glUniform1f");
+    glUniform1i = (PFNGLUNIFORM1IPROC) wglGetProcAddress("glUniform1i");
     glUniform1ui = (PFNGLUNIFORM1UIPROC) wglGetProcAddress("glUniform1ui");
     glUniform4f = (PFNGLUNIFORM4FPROC) wglGetProcAddress("glUniform4f");
     glUniformBlockBinding = (PFNGLUNIFORMBLOCKBINDINGPROC) wglGetProcAddress("glUniformBlockBinding");

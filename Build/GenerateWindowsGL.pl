@@ -231,3 +231,5 @@ __DATA__
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(871): error C3861: 'glDeleteBuffers': identifier not found
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(872): error C3861: 'glDeleteVertexArrays': identifier not found
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\material.cpp(74): error C3861: 'glUniform1ui': identifier not found
+1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(755): error C3861: 'glGetActiveUniform': identifier not found
+1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(792): error C3861: 'glUniform1i': identifier not found
