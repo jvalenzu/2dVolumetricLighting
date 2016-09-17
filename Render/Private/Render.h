@@ -3,3 +3,6 @@
 #pragma once
 
 void RenderSetGlobalConstants(RenderContext* renderContext, int* textureSlotItr, int programName);
+void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader);
+
+float RenderWorldToScreenDistance(RenderContext* renderContext, float worldDistance);

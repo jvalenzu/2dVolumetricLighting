@@ -15,6 +15,7 @@
 #include "Render/Render.h"
 #include "Render/PostEffect.h"
 #include "Render/Material.h"
+#include "Tool/Utils.h"
 #include "Tool/Test.h"
 
 #define kNumFramesStep 40
@@ -160,7 +161,7 @@ static void MainLoop(RenderContext* renderContext)
     SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(10.0f, 0.0f, -1.0f),
                                                                                   Vec3( 0.0f, 1.0f,  0.0f),
                                                                                   spriteOptions.m_TintColor,
-                                                                                  45.0f,
+                                                                                  30.0f,
                                                                                   20.0f));
     light0->m_DebugName = "ConicalLight";
     SceneGroupAddChild(lightSprite0, light0);
@@ -360,9 +361,10 @@ static void MainLoop(RenderContext* renderContext)
             }
         }
         
-        // light prepass
         if (true)
         {
+            // light prepass
+            
             // setup one of the temporary render texture targets to receive the light pass.  We'll render
             // out each light as an opaque OBB which approximates (conservatively) their area of influence
             renderTextureInt->SetClearFlags(Texture::RenderTextureFlags::kClearColor, 0,0,0,1);
@@ -372,6 +374,7 @@ static void MainLoop(RenderContext* renderContext)
             // RenderSetReplacementShader resets this for now
             RenderSetBlendMode(Material::BlendMode::kOr);
             
+            // save projection matrix
             FixedVector<SceneObject*,32> lights;
             SceneGetSceneObjectsByType(&lights, &scene, SceneObjectType::kLight);
             for (int i=0,n=lights.Count(); i<n; ++i)

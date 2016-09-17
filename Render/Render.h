@@ -53,6 +53,9 @@ struct RenderContext
     GLuint m_PointLightUbo;
     GLuint m_CylindricalLightUbo;
     GLuint m_ConicalLightUbo;
+    int m_NumPointLights;
+    int m_NumCylindricalLights;
+    int m_NumConicalLights;
     
     Vec4 m_AmbientLightColor;
     
@@ -222,29 +225,29 @@ const char * GetGLErrorString(GLenum error);
 #if defined(WINDOWS)
 #include <stdlib.h>
 
-#define GetGLError()                                            \
+#define _GetGLError(f,l)                                        \
 {                                                               \
     GLenum err = glGetError();                                  \
     int errCount =  0;                                          \
     while (err != GL_NO_ERROR) {                                \
-        fprintf(stderr, "[%s:%d] GLError %s set in\n",          \
-                __FILE__,                                       \
-                __LINE__,                                       \
+        FPrintf(stderr, "[%s:%d] GLError %s\n",                 \
+                (f),(l),                                        \
                 GetGLErrorString(err));                         \
         err = glGetError();                                     \
         errCount++;                                             \
     }                                                           \
     if (errCount) { DebugBreak(); exit(1); }    \
 }
+
 #else
-#define GetGLError()                                            \
+
+#define _GetGLError(f,l)                                        \
 {                                                               \
     GLenum err = glGetError();                                  \
     int errCount =  0;                                          \
     while (err != GL_NO_ERROR) {                                \
-        fprintf(stderr, "[%s:%d] GLError %s set in\n",          \
-                __FILE__,                                       \
-                __LINE__,                                       \
+        FPrintf(stderr, "[%s:%d] GLError %s\n",                 \
+                (f),(l),                                        \
                 GetGLErrorString(err));                         \
         err = glGetError();                                     \
         errCount++;                                             \
@@ -253,14 +256,19 @@ const char * GetGLErrorString(GLenum error);
 }
 #endif
 
+#define GetGLError() _GetGLError(__FILE__, __LINE__)
+
 class GLErrorScope
 {
+    const char* m_File;
+    int m_Line;
+    
 public:
-    GLErrorScope();
+    GLErrorScope(const char* file, int line);
     ~GLErrorScope();
 };
 
-#define GL_ERROR_SCOPE() GLErrorScope errorScope
+#define GL_ERROR_SCOPE() GLErrorScope errorScope(__FILE__, __LINE__)
 
 #else
 #define GetGLError()

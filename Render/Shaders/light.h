@@ -58,3 +58,7 @@ layout (std140) uniform ConicalLightData
 {
     ConicalLight _ConicalLight[32];
 };
+
+uniform int numPointLights;
+uniform int numCylindricalLights;
+uniform int numConicalLights;

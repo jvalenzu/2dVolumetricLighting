@@ -201,6 +201,13 @@ inline Vec3 operator+ (const Vec3& a, const Vec3& b)
     return ret;
 }
 
+inline Vec3 operator* (float v, const Vec3& a)
+{
+    Vec3 ret(a);
+    ret *= v;
+    return ret;
+}
+
 struct Vec4
 {
     float m_X[4];

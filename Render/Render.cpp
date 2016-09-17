@@ -78,14 +78,15 @@ const char* GetGLErrorString(GLenum error)
 }
 
 #ifndef NDEBUG
-GLErrorScope::GLErrorScope()
+GLErrorScope::GLErrorScope(const char* file, int line)
+    : m_File(file), m_Line(line)
 {
-    GetGLError();
+    _GetGLError(file, line);
 }
 
 GLErrorScope::~GLErrorScope()
 {
-    GetGLError();
+    _GetGLError(m_File, m_Line);
 }
 #endif
 
@@ -237,7 +238,7 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     if (renderOptions.m_CameraType == RenderOptions::kPerspective)
         ToolLoadPerspective(&renderContext->m_Projection, 45.0f, aspectRatio, 1.0f, 16777216.0f);
     else
-        ToolLoadPerspective(&renderContext->m_Projection, 45.0f, aspectRatio, 1.0f, 16777216.0f);
+        ToolLoadPerspective(&renderContext->m_Projection, 45.0f, aspectRatio, 1.0f, 16777216.0f); // jiv fixme
     
     // initialize shader
     ShaderInit();
@@ -433,17 +434,7 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, con
     GLint viewIndex = glGetUniformLocation(shader->m_ProgramName, "view");
     glUniformMatrix4fv(viewIndex, 1, GL_FALSE, renderContext->m_View.asFloat());
     
-    GLuint pointLightsBlockIndex = shader->m_PointLightBlockIndex;
-    if (pointLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, pointLightsBlockIndex, kPointLightBinding);
-    
-    GLuint cylindricalLightsBlockIndex = shader->m_CylindricalLightBlockIndex;
-    if (cylindricalLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, cylindricalLightsBlockIndex, kCylindricalLightBinding);
-    
-    GLuint conicalLightsBlockIndex = shader->m_ConicalLightBlockIndex;
-    if (conicalLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, conicalLightsBlockIndex, kConicalLightBinding);
+    RenderSetLightConstants(renderContext, shader);
     
     SimpleModelSetVertexAttributes(model);
     
@@ -452,6 +443,8 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, con
 
 void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* pointLights, int numPointLights)
 {
+    renderContext->m_NumPointLights = numPointLights;
+    
     glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_PointLightUbo);
     glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(PointLight), nullptr, GL_DYNAMIC_DRAW);
     GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT);
@@ -460,25 +453,14 @@ void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* poi
     PointLight* dest = (PointLight*)p;
     for (int i=0; i<numPointLights; ++i)
     {
-        Vec3 screenPosition = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
+        const float range = pointLights[i].m_Range;
+        const Vec3 screenPosition = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
+        const Vec3 screenPosition2 = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz() + Vec3(range, range, 0.0f));
+        const float screenRange = (screenPosition - screenPosition2).Length();
         dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
-        dest[i].m_Range = 1.0f / dest[i].m_Range;
+        dest[i].m_Range = 1.0f / screenRange;
         dest[i].m_Index = pointLights[i].m_Index;
     }
-    
-#if 0
-    Printf("------------------\n");
-    Printf("numPointLights: %d\n", numPointLights);
-    for (int i=0; i<numPointLights; ++i)
-    {
-        Vec3 screenPos = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
-        Printf("[%d] screenPosition: %f %f %f -> %f %f\n",
-               i,
-               pointLights[i].m_Position.m_X[0], pointLights[i].m_Position.m_X[1], pointLights[i].m_Position.m_X[2],
-               screenPos.m_X[0], screenPos.m_X[1]);
-        DumpLight(pointLights[i]);
-    }
-#endif
     
     glUnmapBuffer(GL_UNIFORM_BUFFER);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -486,6 +468,8 @@ void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* poi
 
 void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight* conicalLights, int numConicalLights)
 {
+    renderContext->m_NumConicalLights = numConicalLights;
+    
     glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_ConicalLightUbo);
     glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(PointLight), nullptr, GL_DYNAMIC_DRAW);
     GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT);
@@ -494,9 +478,12 @@ void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight*
     ConicalLight* dest = (ConicalLight*)p;
     for (int i=0; i<numConicalLights; ++i)
     {
-        Vec3 screenPosition = RenderGetScreenPos(renderContext, conicalLights[i].m_Position.xyz());
+        const float range = conicalLights[i].m_Range;
+        const Vec3 screenPosition = RenderGetScreenPos(renderContext, conicalLights[i].m_Position.xyz());
+        const Vec3 screenPosition2 = RenderGetScreenPos(renderContext, conicalLights[i].m_Position.xyz() + Vec3(range, range, 0.0f));
+        const float screenRange = (screenPosition - screenPosition2).Length();
         dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
-        dest[i].m_Range = 1.0f / dest[i].m_Range;
+        dest[i].m_Range = 1.0f/screenRange;
         dest[i].m_Index = conicalLights[i].m_Index;
     }
     
@@ -506,6 +493,8 @@ void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight*
 
 void RenderUpdateCylindricalLights(RenderContext* renderContext, const CylindricalLight* cylindricalLights, int numCylindricalLights)
 {
+    renderContext->m_NumCylindricalLights = numCylindricalLights;
+    
     glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_CylindricalLightUbo);
     glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(PointLight), nullptr, GL_DYNAMIC_DRAW);
     GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT);
@@ -754,6 +743,61 @@ void RenderSetProcessKeysCallback(RenderContext* context, ProcessKeysCallback (*
     glfwSetKeyCallback(context->m_Window, (GLFWkeyfun) processKeysCallback);
 }
 
+void RenderDumpUniforms(RenderContext* renderContext, const Shader* shader)
+{
+    const int program_id = shader->m_ProgramName;
+    
+    int max= 0;
+    glGetIntegerv(GL_MAX_UNIFORM_LOCATIONS, &max);
+    Printf("JIV MAX %d\n", max);
+    
+    // http://stackoverflow.com/questions/4783912/how-can-i-find-a-list-of-all-the-uniforms-in-opengl-es-2-0-vertex-shader-pro
+    int total = -1;
+    glGetProgramiv(program_id, GL_ACTIVE_UNIFORMS, &total);
+    for (int i=0; i<total; ++i)
+    {
+        int name_len=-1, num=-1;
+        GLenum type = GL_ZERO;
+        char name[128];
+        glGetActiveUniform(program_id, GLuint(i), sizeof(name)-1, &name_len, &num, &type, name);
+        name[name_len] = 0;
+        GLuint location = glGetUniformLocation(program_id, name);
+        Printf("JIV %s %d\n", name, location);
+    }    
+}
+
+void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader)
+{
+    GLuint pointLightsBlockIndex = shader->m_PointLightBlockIndex;
+    if (pointLightsBlockIndex != GL_INVALID_INDEX)
+    {
+        glUniformBlockBinding(shader->m_ProgramName, pointLightsBlockIndex, kPointLightBinding);
+        
+        GLint numPointLightsIndex = glGetUniformLocation(shader->m_ProgramName, "numPointLights");
+        if (numPointLightsIndex != GL_INVALID_INDEX)
+            glUniform1i(numPointLightsIndex, renderContext->m_NumPointLights);
+    }
+    
+    GLuint cylindricalLightsBlockIndex = shader->m_CylindricalLightBlockIndex;
+    if (cylindricalLightsBlockIndex != GL_INVALID_INDEX)
+    {
+        glUniformBlockBinding(shader->m_ProgramName, cylindricalLightsBlockIndex, kCylindricalLightBinding);
+        
+        GLint numCylindricalLightsIndex = glGetUniformLocation(shader->m_ProgramName, "numCylindricalLights");
+        if (numCylindricalLightsIndex != GL_INVALID_INDEX)
+            glUniform1i(numCylindricalLightsIndex, renderContext->m_NumCylindricalLights);
+    }
+    
+    GLuint conicalLightsBlockIndex = shader->m_ConicalLightBlockIndex;
+    if (conicalLightsBlockIndex != GL_INVALID_INDEX)
+    {
+        glUniformBlockBinding(shader->m_ProgramName, conicalLightsBlockIndex, kConicalLightBinding);
+        
+        GLint numConicalLightsIndex = glGetUniformLocation(shader->m_ProgramName, "numConicalLights");
+        glUniform1i(numConicalLightsIndex, renderContext->m_NumConicalLights);
+    }
+}
+
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int textureId)
 {
     GL_ERROR_SCOPE();
@@ -795,17 +839,9 @@ void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int 
     GLint mainTextureSlot = glGetUniformLocation(shader->m_ProgramName, "_MainTex");
     glProgramUniform1i(shader->m_ProgramName, mainTextureSlot, 0);
     
-    GLuint pointLightsBlockIndex = shader->m_PointLightBlockIndex;
-    if (pointLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, pointLightsBlockIndex, kPointLightBinding);
+    // RenderDumpUniforms(renderContext, shader);
     
-    GLuint cylindricalLightsBlockIndex = shader->m_CylindricalLightBlockIndex;
-    if (cylindricalLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, cylindricalLightsBlockIndex, kCylindricalLightBinding);
-    
-    GLuint conicalLightsBlockIndex = shader->m_ConicalLightBlockIndex;
-    if (conicalLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, conicalLightsBlockIndex, kConicalLightBinding);
+    RenderSetLightConstants(renderContext, shader);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -845,17 +881,7 @@ void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, int text
     GLint mainTextureSlot = glGetUniformLocation(shader->m_ProgramName, "_MainTex");
     glProgramUniform1i(shader->m_ProgramName, mainTextureSlot, 0);
     
-    GLuint pointLightsBlockIndex = shader->m_PointLightBlockIndex;
-    if (pointLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, pointLightsBlockIndex, kPointLightBinding);
-    
-    GLuint cylindricalLightsBlockIndex = shader->m_CylindricalLightBlockIndex;
-    if (cylindricalLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, cylindricalLightsBlockIndex, kCylindricalLightBinding);
-    
-    GLuint conicalLightsBlockIndex = shader->m_ConicalLightBlockIndex;
-    if (conicalLightsBlockIndex != GL_INVALID_INDEX)
-        glUniformBlockBinding(shader->m_ProgramName, conicalLightsBlockIndex, kConicalLightBinding);
+    RenderSetLightConstants(renderContext, shader);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }

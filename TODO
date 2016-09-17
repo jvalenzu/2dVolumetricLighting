@@ -34,6 +34,7 @@
   [ ] 2nd: texture array?
 [✓] light prepass optimization
   [ ] Light prepass doesn't match falloff exactly, leading to sharp edge.
+  [ ] Maybe orthographic projection?
 [ ] directional light
 [x] Add member function for MaterialReserveMaterialProperties
 [x] Add member function for MaterialSetMaterialPropertyType
@@ -98,3 +99,8 @@ PUBLISH
 [ ] FIXME:
   [ ] // duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
 [ ] Need to spell out how the FromZeroOne functions result in non-cartesean reactions in the 1d mapping functions
+
+
+------------------------------------------------------------------
+
+Rework conical attenuation.  Calculate two ranges, along facing and parallel to.  Parallel attenuation is squared.

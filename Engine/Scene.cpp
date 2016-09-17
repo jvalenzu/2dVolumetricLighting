@@ -539,16 +539,30 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
     localToWorld.SetRot(sceneObject->m_Obb.m_Axes);
     localToWorld.SetTranslation(sceneObject->m_LocalToWorld.GetTranslation());
     
+    const float aspectRatio = (float) renderContext->m_Width/renderContext->m_Height;
+    
     if (sceneObject->m_Type == SceneObjectType::kLight)
     {
         const Light* light = (Light*) &sceneObject->m_LightData[0];
         switch (light->m_Type)
         {
             default:
+            {
+                break;
+            }
             case LightType::kPoint:
             {
-                PointLight* pointLight = (PointLight*) light;
-                MatrixScaleInsitu(&localToWorld, Vec3(pointLight->m_Range, pointLight->m_Range, pointLight->m_Range));
+                const PointLight* pointLight = (PointLight*) light;
+                const float range = pointLight->m_Range;
+                MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range, range));
+                break;
+            }
+            case LightType::kConical:
+            {
+                const ConicalLight* conicalLight = (ConicalLight*) light;
+                const float range = conicalLight->m_Range;
+                MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range, range));
+                break;
             }
         }
     }
