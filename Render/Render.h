@@ -53,9 +53,9 @@ struct RenderContext
     GLuint m_PointLightUbo;
     GLuint m_CylindricalLightUbo;
     GLuint m_ConicalLightUbo;
-    int m_NumPointLights;
-    int m_NumCylindricalLights;
-    int m_NumConicalLights;
+    uint32_t m_PointLightMask;
+    uint32_t m_CylindricalLightMask;
+    uint32_t m_ConicalLightMask;
     
     Vec4 m_AmbientLightColor;
     
@@ -200,9 +200,9 @@ void RenderDumpModel(const SimpleModel* model);
 void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a);
 void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model);
 
-void RenderUpdatePointLights(RenderContext* renderContext, const PointLight* pointLights, int numPointLights);
-void RenderUpdateConicalLights(RenderContext* renderContext, const ConicalLight* conicalLights, int numConicalLights);
-void RenderUpdateCylindricalLights(RenderContext* renderContext, const CylindricalLight* cylindricalLights, int numCylindricalLights);
+void RenderUpdatePointLights(RenderContext* renderContext, const Light* pointLights, int numPointLights);
+void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conicalLights, int numConicalLights);
+void RenderUpdateCylindricalLights(RenderContext* renderContext, const Light* cylindricalLights, int numCylindricalLights);
 
 // global properties
 int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type);
