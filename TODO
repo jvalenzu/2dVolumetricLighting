@@ -32,8 +32,9 @@
   Simplest way for non-point lights would be to do attentuation in the 1d phase.
   [x] 1st: multipass
   [ ] 2nd: texture array?
-[✓] light prepass optimization
-  [ ] Light prepass doesn't match falloff exactly, leading to sharp edge.
+[ ] Rework conical attenuation.  Calculate two ranges, along facing and parallel to.  Parallel attenuation is squared.
+[ ] imgui layer to describe keys, toggle options like disabling lights and changing resolution
+[x] light prepass optimization
 [ ] directional light
 [x] Add member function for MaterialReserveMaterialProperties
 [x] Add member function for MaterialSetMaterialPropertyType
@@ -42,26 +43,14 @@
 [x] Add member function for MaterialSetMaterialPropertyTexture
 [ ] ARTIFACT: The volumetric shadow has lines in it
 [ ] ARTIFACT: Dealing with lsp embedded in occluder
-[✓] Windows port
-  [x] OpenGL
-  [ ] DirectX 11 or 12.
-[✓] shader preprocessing
-  [ ] Deal with different configurations (DEBUG, RELEASE, OSX, ETC)
-  [ ] shader variations
-  [ ] suppress MCPP warning from unrecognized #extension directive
+[ ] Ghost shadow?
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
-[ ] Relocate asset file paths
-[ ] SceneObject reference count
-[ ] sprite asset
-[ ] Material assets
-  [ ] Include normal data for SDF
 [x] ambient parameterization
-[ ] imgui layer to describe keys, toggle options like disabling lights and changing resolution
 [x] Query the default resolution to create an appropriately sized window.
 [ ] Black screen after resize
 [ ] Remove Obb?  There's probably too many cached local to world matrices about
 [ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
-[ ] Aspect ratio is incorrect
+[ ] Aspect ratio is incorrect, want square
 [ ] Better method of finding eigenvectors in Obb tool
 [ ] Less fond of RMath design over time, remove it for Obb generation
 
@@ -69,6 +58,18 @@
 PUBLISH
 ------------------------------------------------
 
+[✓] Windows port
+  [x] OpenGL
+  [ ] DirectX 11 or 12.
+[✓] shader preprocessing
+  [ ] Deal with different configurations (DEBUG, RELEASE, OSX, ETC)
+  [ ] shader variations
+  [ ] suppress MCPP warning from unrecognized #extension directive
+[ ] Relocate asset file paths
+[ ] SceneObject reference count
+[ ] sprite asset
+[ ] Material assets
+  [ ] Include normal data for SDF
 [ ] UI describing keys
 [ ] Add member function for vec3 for destructive operations
 [ ] movement less jerky

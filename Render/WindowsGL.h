@@ -1,5 +1,4 @@
 // -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
-
 #pragma once
 
 
@@ -26,6 +25,7 @@ extern PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
 extern PFNGLGENBUFFERSPROC glGenBuffers;
 extern PFNGLGENFRAMEBUFFERSPROC glGenFramebuffers;
 extern PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
+extern PFNGLGETACTIVEUNIFORMPROC glGetActiveUniform;
 extern PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
 extern PFNGLGETPROGRAMIVPROC glGetProgramiv;
 extern PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
@@ -38,6 +38,7 @@ extern PFNGLPROGRAMUNIFORM1IPROC glProgramUniform1i;
 extern PFNGLPROGRAMUNIFORM4FPROC glProgramUniform4f;
 extern PFNGLSHADERSOURCEPROC glShaderSource;
 extern PFNGLUNIFORM1FPROC glUniform1f;
+extern PFNGLUNIFORM1IPROC glUniform1i;
 extern PFNGLUNIFORM1UIPROC glUniform1ui;
 extern PFNGLUNIFORM4FPROC glUniform4f;
 extern PFNGLUNIFORMBLOCKBINDINGPROC glUniformBlockBinding;

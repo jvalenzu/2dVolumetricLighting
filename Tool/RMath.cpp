@@ -457,8 +457,8 @@ float PolyErrorGetRoot(const Poly* poly, float (*f)(float x), float a, float b, 
 {
     float x = x0;
     
-    float oldValue = nan(nullptr);
-    float currentValue = nan(nullptr);
+    float oldValue = nanf(nullptr);
+    float currentValue = nanf(nullptr);
     
     while (floatDist(oldValue, currentValue) > kSmallEpsilon)
     {
@@ -483,8 +483,8 @@ float PolyErrorGetExtremaAbscissa(const Poly* poly, float (*f)(float x), float a
 {
     float x = x0;
     
-    float oldValue = nan(nullptr);
-    float currentValue = nan(nullptr);
+    float oldValue = nanf(nullptr);
+    float currentValue = nanf(nullptr);
     
     while (floatDist(oldValue, currentValue) > kSmallEpsilon)
     {
@@ -1167,9 +1167,9 @@ void RMatInvertIterate(RVector* dest, const RMat* a, float lambda)
     RVector* x = RVectorAlloc(alloca(RVectorSize(a->m_Rows)), a->m_Rows);
     for (int i=0; i<10; ++i)
     {
-        char buf[32];
-        sprintf(buf, "u%d", i);
-        RMatDump(buf, u);
+        // char buf[32];
+        // sprintf(buf, "u%d", i);
+        // RMatDump(buf, u);
         
         RMatSolve(x, u, dest);
         RVectorNormalize(dest, x);

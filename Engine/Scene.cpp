@@ -134,15 +134,14 @@ void SceneUpdate(Scene* scene)
         
         if (sceneObject->m_Type == SceneObjectType::kLight)
         {
-            Light* light = (Light*) &sceneObject->m_LightData[0];
+            const Light* light = &sceneObject->m_Light;
             if (light->m_Type == LightType::kPoint)
             {
                 if (scene->m_NumPointLights == Light::kMaxLights)
                     continue;
                 
-                PointLight* source = (PointLight*) light;
-                PointLight* dest = &scene->m_PointLights[scene->m_NumPointLights++];
-                *dest = *source;
+                Light* dest = &scene->m_PointLights[scene->m_NumPointLights++];
+                *dest = *light;
                 
                 // transform position
                 dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
@@ -153,9 +152,8 @@ void SceneUpdate(Scene* scene)
                 if (scene->m_NumConicalLights == Light::kMaxLights)
                     continue;
                 
-                ConicalLight* source = (ConicalLight*) light;
-                ConicalLight* dest = &scene->m_ConicalLights[scene->m_NumConicalLights++];
-                *dest = *source;
+                Light* dest = &scene->m_ConicalLights[scene->m_NumConicalLights++];
+                *dest = *light;
                 
                 // transform position
                 dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
@@ -169,16 +167,15 @@ void SceneUpdate(Scene* scene)
                 if (scene->m_NumCylindricalLights == Light::kMaxLights)
                     continue;
                 
-                CylindricalLight* source = (CylindricalLight*) light;
-                CylindricalLight* dest = &scene->m_CylindricalLights[scene->m_NumCylindricalLights++];
-                *dest = *source;
+                Light* dest = &scene->m_CylindricalLights[scene->m_NumCylindricalLights++];
+                *dest = *light;
                 
                 // transform position
                 dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
                 
                 // jiv fixme: it's in world space, shouldn't be
                 // dest->m_Direction = Mat4GetRight(sceneObject->m_LocalToWorld);
-            }            
+            }
         }
     }
     
@@ -211,7 +208,7 @@ static SceneObject* SceneObjectAllocate(Scene* scene, SceneObjectType type)
     {
         sceneObject->m_Type = type;
         sceneObject->m_SceneIndex = sceneIndex;
-        sceneObject->m_Flags = 0;
+        sceneObject->m_Flags = SceneObject::kEnabled;
         sceneObject->m_DebugName = nullptr;
         sceneObject->m_Next = nullptr;
         sceneObject->m_Prev = nullptr;
@@ -250,7 +247,7 @@ SceneObject* SceneCreateLight(Scene* scene, const LightOptions& lightOptions)
     if (sceneObject)
     {
         sceneObject->m_ModelInstance = nullptr;
-        LightInitialize((Light*)&sceneObject->m_LightData[0], lightOptions);
+        LightInitialize(&sceneObject->m_Light, lightOptions);
         
         Mat4ApplyTranslation(&sceneObject->m_LocalToWorld, lightOptions.m_Position.xyz());
         
@@ -324,6 +321,8 @@ void SceneDraw(Scene* scene, RenderContext* renderContext)
         SceneObject* sceneObject = scene->m_SceneObjects[index];
         if (sceneObject->m_ModelInstance == nullptr)
             continue;
+        if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
+            continue;
         
         Vec3 pos = Mat4GetTranslation(sceneObject->m_ModelInstance->m_Po);
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
@@ -342,11 +341,15 @@ void SceneDraw(Scene* scene, RenderContext* renderContext, int groupId)
         SceneObject* sceneObject = scene->m_SceneObjects[index];
         
         SceneObject* itr = scene->m_SceneGroups[groupId];
+        
         bool found = itr == sceneObject;
         while (!found && itr)
             found = (itr=LinkyListNext(itr)) == sceneObject;
         
         if (!found)
+            continue;
+        
+        if ((itr->m_Flags & SceneObject::kEnabled) == 0)
             continue;
         
         Vec3 pos = Mat4GetTranslation(sceneObject->m_ModelInstance->m_Po);
@@ -533,22 +536,37 @@ int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, Scene
 // SceneDrawObb
 void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject)
 {
+    if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
+        return;
+    
     Mat4 localToWorld;
     MatrixMakeZero(&localToWorld);
     
     localToWorld.SetRot(sceneObject->m_Obb.m_Axes);
     localToWorld.SetTranslation(sceneObject->m_LocalToWorld.GetTranslation());
     
+    const float aspectRatio = (float) renderContext->m_Width/renderContext->m_Height;
+    
     if (sceneObject->m_Type == SceneObjectType::kLight)
     {
-        const Light* light = (Light*) &sceneObject->m_LightData[0];
-        switch (light->m_Type)
+        const Light& light = sceneObject->m_Light;
+        switch (light.m_Type)
         {
             default:
+            {
+                break;
+            }
             case LightType::kPoint:
             {
-                PointLight* pointLight = (PointLight*) light;
-                MatrixScaleInsitu(&localToWorld, Vec3(pointLight->m_Range, pointLight->m_Range, pointLight->m_Range));
+                const float range = light.m_Range;
+                MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range, range));
+                break;
+            }
+            case LightType::kConical:
+            {
+                const float range = light.m_Range;
+                MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range, range));
+                break;
             }
         }
     }

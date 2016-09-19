@@ -15,6 +15,7 @@
 #include "Render/Render.h"
 #include "Render/PostEffect.h"
 #include "Render/Material.h"
+#include "Tool/Utils.h"
 #include "Tool/Test.h"
 
 #define kNumFramesStep 40
@@ -134,7 +135,7 @@ static void MainLoop(RenderContext* renderContext)
         
         SceneGroupAdd(&scene, shadowCasterGroupId, sprite1);
     }
-    
+
     // create and attach a light to our mover
     spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
     spriteOptions.m_Scale = Vec2(0.5f, 0.5f);
@@ -156,11 +157,11 @@ static void MainLoop(RenderContext* renderContext)
         MatrixMultiply(&t1, rot, lightSprite0->m_LocalToWorld);
         MatrixCopy(&lightSprite0->m_LocalToWorld, t1);
     }
-    
+
     SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(10.0f, 0.0f, -1.0f),
                                                                                   Vec3( 0.0f, 1.0f,  0.0f),
                                                                                   spriteOptions.m_TintColor,
-                                                                                  45.0f,
+                                                                                  30.0f,
                                                                                   20.0f));
     light0->m_DebugName = "ConicalLight";
     SceneGroupAddChild(lightSprite0, light0);
@@ -174,13 +175,15 @@ static void MainLoop(RenderContext* renderContext)
         lightSprite1 = SceneCreateSpriteFromFile(&scene, renderContext, "Bulb.png", pointLightSpriteOptions);
         Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, -10, 0, -1);
         lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
-        SceneGroupAddChild(s_SceneObject, lightSprite1);
         
-        SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), pointLightSpriteOptions.m_TintColor, 4.0f));
+        SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), // position
+                                                                                    pointLightSpriteOptions.m_TintColor, // color
+                                                                                    8.0f)); // range
         light1->m_DebugName = "PointLight";
+        SceneGroupAddChild(s_SceneObject, lightSprite1);
         SceneGroupAddChild(lightSprite1, light1);
     }
-    
+
     // cylindrical light
     spriteOptions.m_TintColor = Vec4(0.25f, 0.25f, 1.0f, 1.0f);
     
@@ -254,6 +257,8 @@ static void MainLoop(RenderContext* renderContext)
     
     Shader* debugLightPrepassSampleShader = ShaderCreate("obj/Shader/DebugLightPrepassSample");
     
+    // SceneSetEnabled(lightSprite1, false);
+    
     bool running = true;
     while (running)
     {
@@ -308,7 +313,7 @@ static void MainLoop(RenderContext* renderContext)
                 // sample the 1d raycast texture.  Point/Spotlight sample based on light position to fragment, cylinder lights need to
                 // raycast to the nearest intersection point
                 shadowMapSampleMaterial->SetVector(shadowMapLightPosition, screenPos);
-                shadowMapSampleMaterial->SetVector(shadowMapLightColor, ((PointLight*)light)->m_Color);
+                shadowMapSampleMaterial->SetVector(shadowMapLightColor, light->m_Color);
                 
                 // set light position in screen space.  Relying on initialization order instead of explicit index
                 shadow1dMaterial->SetVector(0, screenPos);
@@ -316,7 +321,7 @@ static void MainLoop(RenderContext* renderContext)
                 if (light->m_Type == LightType::kConical)
                 {
                     Vec4 direction = Mat4GetRight(lightObject->m_LocalToWorld);
-                    direction.m_X[3] = ((ConicalLight*)light)->m_CosAngle;
+                    direction.m_X[3] = light->m_CosAngleOrLength;
                     shadow1dMaterial->SetVector(1, direction);
                 }
                 
@@ -360,9 +365,10 @@ static void MainLoop(RenderContext* renderContext)
             }
         }
         
-        // light prepass
         if (true)
         {
+            // light prepass
+            
             // setup one of the temporary render texture targets to receive the light pass.  We'll render
             // out each light as an opaque OBB which approximates (conservatively) their area of influence
             renderTextureInt->SetClearFlags(Texture::RenderTextureFlags::kClearColor, 0,0,0,1);
@@ -372,6 +378,7 @@ static void MainLoop(RenderContext* renderContext)
             // RenderSetReplacementShader resets this for now
             RenderSetBlendMode(Material::BlendMode::kOr);
             
+            // save projection matrix
             FixedVector<SceneObject*,32> lights;
             SceneGetSceneObjectsByType(&lights, &scene, SceneObjectType::kLight);
             for (int i=0,n=lights.Count(); i<n; ++i)
@@ -453,12 +460,13 @@ static void MainLoop(RenderContext* renderContext)
     
     TextureDestroy(treeAppleTexture);
     TextureDestroy(treeAppleNormal);
+    TextureDestroy(whiteTexture);
     ShaderDestroy(outlineLightShader);
     MaterialDestroy(treeAppleMaterial);
     
     ShaderDestroy(lightPrepassShader);
     ShaderDestroy(debugLightPrepassSampleShader);
-
+    
     MaterialDestroy(debugMaterial);
     
     // PostEffectDestroy(postEffect0);

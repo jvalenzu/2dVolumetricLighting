@@ -29,13 +29,14 @@ struct SceneObject
     enum Flags : uint32_t
     {
         kDirty = 1,
-        kUpdatedOnce = 2
+        kUpdatedOnce = 2,
+        kEnabled = 4
     };
     Mat4 m_PrevLocalToWorld;
     Mat4 m_LocalToWorld;
     SimpleModel* m_ModelInstance;
     Obb m_Obb;
-    char m_LightData[sizeof(LightUnion)];
+    Light m_Light;
     Texture* m_Shadow1dMap;
     uint32_t m_Flags;
     const char* m_DebugName;
@@ -62,13 +63,13 @@ struct Scene
     SceneObject* m_SceneGroups[kGroupMax];
     bool m_SceneGroupAllocated[kGroupMax];
     
-    PointLight m_PointLights[Light::kMaxLights];
+    Light m_PointLights[Light::kMaxLights];
     int m_NumPointLights;
     
-    ConicalLight m_ConicalLights[Light::kMaxLights];
+    Light m_ConicalLights[Light::kMaxLights];
     int m_NumConicalLights;
     
-    CylindricalLight m_CylindricalLights[Light::kMaxLights];
+    Light m_CylindricalLights[Light::kMaxLights];
     int m_NumCylindricalLights;
 };
 
@@ -103,7 +104,7 @@ SceneObject* SceneCreateEmpty(Scene* scene);
 inline Light* SceneObjectGetLight(SceneObject* sceneObject)
 {
     if (sceneObject->m_Type == SceneObjectType::kLight)
-        return (Light*)sceneObject->m_LightData;
+        return &sceneObject->m_Light;
     return nullptr;
 }
 
@@ -119,4 +120,11 @@ inline void SceneGetSceneObjectsByType(N* dest, Scene* scene, SceneObjectType ty
 {
     int ret = SceneGetSceneObjectsByType(dest->Data(), N::kMaxSize, scene, type);
     dest->SetCount(ret);
+}
+
+inline void SceneSetEnabled(SceneObject* sceneObject, bool value)
+{
+    sceneObject->m_Flags &= ~SceneObject::kEnabled;
+    if (value)
+        sceneObject->m_Flags |= SceneObject::kEnabled;
 }
