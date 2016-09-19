@@ -7,7 +7,7 @@
 #include <stddef.h>
 
 #pragma warning(push)
-#pragma warning (disable:4200)
+#pragma warning(disable:4200)
 
 
 struct RVector;
@@ -25,7 +25,7 @@ struct RVector;
 struct Poly
 {
     int32_t m_Order;
-    float m_X[]; // in reverse order.  m_X[0] = x^0
+    float m_X[]; // in reverse order.  m_X[0] is the constant term.
 };
 
 size_t  PolySize(int order);
