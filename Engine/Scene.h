@@ -29,7 +29,8 @@ struct SceneObject
     enum Flags : uint32_t
     {
         kDirty = 1,
-        kUpdatedOnce = 2
+        kUpdatedOnce = 2,
+        kEnabled = 4
     };
     Mat4 m_PrevLocalToWorld;
     Mat4 m_LocalToWorld;
@@ -119,4 +120,11 @@ inline void SceneGetSceneObjectsByType(N* dest, Scene* scene, SceneObjectType ty
 {
     int ret = SceneGetSceneObjectsByType(dest->Data(), N::kMaxSize, scene, type);
     dest->SetCount(ret);
+}
+
+inline void SceneSetEnabled(SceneObject* sceneObject, bool value)
+{
+    sceneObject->m_Flags &= ~SceneObject::kEnabled;
+    if (value)
+        sceneObject->m_Flags |= SceneObject::kEnabled;
 }

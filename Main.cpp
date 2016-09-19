@@ -175,12 +175,12 @@ static void MainLoop(RenderContext* renderContext)
         lightSprite1 = SceneCreateSpriteFromFile(&scene, renderContext, "Bulb.png", pointLightSpriteOptions);
         Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, -10, 0, -1);
         lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
-        SceneGroupAddChild(s_SceneObject, lightSprite1);
         
         SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), // position
                                                                                     pointLightSpriteOptions.m_TintColor, // color
                                                                                     8.0f)); // range
         light1->m_DebugName = "PointLight";
+        SceneGroupAddChild(s_SceneObject, lightSprite1);
         SceneGroupAddChild(lightSprite1, light1);
     }
 
@@ -256,6 +256,8 @@ static void MainLoop(RenderContext* renderContext)
     RenderGlobalSetTexture(renderContext, lightPrepassTextureIndex, renderTextureInt);
     
     Shader* debugLightPrepassSampleShader = ShaderCreate("obj/Shader/DebugLightPrepassSample");
+    
+    // SceneSetEnabled(lightSprite1, false);
     
     bool running = true;
     while (running)

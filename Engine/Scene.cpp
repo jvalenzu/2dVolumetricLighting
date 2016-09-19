@@ -208,7 +208,7 @@ static SceneObject* SceneObjectAllocate(Scene* scene, SceneObjectType type)
     {
         sceneObject->m_Type = type;
         sceneObject->m_SceneIndex = sceneIndex;
-        sceneObject->m_Flags = 0;
+        sceneObject->m_Flags = SceneObject::kEnabled;
         sceneObject->m_DebugName = nullptr;
         sceneObject->m_Next = nullptr;
         sceneObject->m_Prev = nullptr;
@@ -321,6 +321,8 @@ void SceneDraw(Scene* scene, RenderContext* renderContext)
         SceneObject* sceneObject = scene->m_SceneObjects[index];
         if (sceneObject->m_ModelInstance == nullptr)
             continue;
+        if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
+            continue;
         
         Vec3 pos = Mat4GetTranslation(sceneObject->m_ModelInstance->m_Po);
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
@@ -339,11 +341,15 @@ void SceneDraw(Scene* scene, RenderContext* renderContext, int groupId)
         SceneObject* sceneObject = scene->m_SceneObjects[index];
         
         SceneObject* itr = scene->m_SceneGroups[groupId];
+        
         bool found = itr == sceneObject;
         while (!found && itr)
             found = (itr=LinkyListNext(itr)) == sceneObject;
         
         if (!found)
+            continue;
+        
+        if ((itr->m_Flags & SceneObject::kEnabled) == 0)
             continue;
         
         Vec3 pos = Mat4GetTranslation(sceneObject->m_ModelInstance->m_Po);
@@ -530,6 +536,9 @@ int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, Scene
 // SceneDrawObb
 void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject)
 {
+    if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
+        return;
+    
     Mat4 localToWorld;
     MatrixMakeZero(&localToWorld);
     
