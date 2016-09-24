@@ -233,3 +233,8 @@ __DATA__
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\material.cpp(74): error C3861: 'glUniform1ui': identifier not found
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(755): error C3861: 'glGetActiveUniform': identifier not found
 1>c:\users\jvalenzu\source\2dvolumetriclighting\render\render.cpp(792): error C3861: 'glUniform1i': identifier not found
+1>c:\users\jvalenzu\source\2dvolumetriclighting\engine\debugui.cpp(109): error C3861: 'glBlendEquationSeparate': identifier not found
+1>c:\users\jvalenzu\source\2dvolumetriclighting\engine\debugui.cpp(237): error C3861: 'glGetAttribLocation': identifier not found
+1>c:\users\jvalenzu\source\2dvolumetriclighting\engine\debugui.cpp(272): error C3861: 'glDetachShader': identifier not found
+1>c:\users\jvalenzu\source\2dvolumetriclighting\engine\debugui.cpp(273): error C3861: 'glDeleteShader': identifier not found
+1>c:\users\jvalenzu\source\2dvolumetriclighting\engine\debugui.cpp(280): error C3861: 'glDeleteProgram': identifier not found

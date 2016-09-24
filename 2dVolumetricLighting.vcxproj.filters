@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="lodepng.c" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Render\Asset.cpp">
       <Filter>Render</Filter>
@@ -48,9 +47,20 @@
     <ClCompile Include="Render\WindowsGL.cpp">
       <Filter>Render</Filter>
     </ClCompile>
+    <ClCompile Include="External\src\imgui\imgui.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\src\imgui\imgui_draw.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\DebugUi.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="External\src\lodepng\lodepng.c">
+      <Filter>External\lodepng</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="lodepng.h" />
     <ClInclude Include="Render\asset.h">
       <Filter>Render</Filter>
     </ClInclude>
@@ -115,6 +125,10 @@
     <ClInclude Include="Render\Shaders\shader.h">
       <Filter>Render\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\DebugUI.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="External\src\lodepng\lodepng.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Render">
@@ -131,6 +145,18 @@
     </Filter>
     <Filter Include="Render\Shaders">
       <UniqueIdentifier>{663fcf24-5e8f-47de-9bcc-2deb566ac0a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WindowsExternal">
+      <UniqueIdentifier>{186d067e-9ebf-4c02-81cb-bb6a7c8adbfd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{186d067e-9ebf-4c02-81cb-bb6a7c8adbfe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\imgui">
+      <UniqueIdentifier>{9e263777-29c9-4118-a977-bd85b6b2b4b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\lodepng">
+      <UniqueIdentifier>{afa3d3ac-9244-4692-b4f8-33e5d68c9eac}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

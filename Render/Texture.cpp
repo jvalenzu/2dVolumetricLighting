@@ -7,7 +7,7 @@
 #include "Engine/Utils.h"
 #include "Render/GL.h"
 
-#include "lodepng.h"
+#include "lodepng/lodepng.h"
 
 #if !defined(WINDOWS)
 #include <execinfo.h>
