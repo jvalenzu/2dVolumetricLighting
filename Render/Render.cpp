@@ -771,6 +771,7 @@ void RenderSetProcessKeysCallback(RenderContext* context, ProcessKeysCallback (*
 
 void RenderDumpUniforms(RenderContext* renderContext, const Shader* shader)
 {
+#if 0
     const int program_id = shader->m_ProgramName;
     
     int max= 0;
@@ -789,7 +790,8 @@ void RenderDumpUniforms(RenderContext* renderContext, const Shader* shader)
         name[name_len] = 0;
         GLuint location = glGetUniformLocation(program_id, name);
         Printf("JIV %s %d\n", name, location);
-    }    
+    }
+#endif
 }
 
 void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader)

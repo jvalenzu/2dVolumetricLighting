@@ -607,10 +607,20 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#if 0 // jiv begin
 #include "imgui.h"
+#else
+#include "imgui/imgui.h"
+#endif // jiv end
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_PLACEMENT_NEW
+
+#if 0 // jiv begin
 #include "imgui_internal.h"
+#else
+#include "imgui/imgui_internal.h"
+#endif // jiv end
 
 #include <ctype.h>      // toupper, isprint
 #include <stdlib.h>     // NULL, malloc, free, qsort, atoi
@@ -7484,7 +7494,12 @@ static bool STB_TEXTEDIT_INSERTCHARS(STB_TEXTEDIT_STRING* obj, int pos, const Im
 #define STB_TEXTEDIT_K_SHIFT        0x20000
 
 #define STB_TEXTEDIT_IMPLEMENTATION
+
+#if 0 // jiv begin
 #include "stb_textedit.h"
+#else
+#include "imgui/stb_textedit.h"
+#endif // jiv end
 
 }
 

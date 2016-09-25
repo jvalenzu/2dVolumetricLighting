@@ -15,6 +15,7 @@ CPPFLAGS += -D_DEBUG=1
 endif
 
 CPPFLAGS += -std=c++11 -stdlib=libc++ -Wno-parentheses
+INCLUDES += -IExternal/include
 INCLUDES += -I/usr/local/include
 
 LDFLAGS += -Wc++11-extensions -L/usr/local/lib 
@@ -23,6 +24,7 @@ LIBRARIES += -lglfw3 -framework Cocoa -framework OpenGL -framework IOKit -framew
 CLC = /System/Library/Frameworks/OpenCL.framework/Libraries/openclc
 
 # C++ source code to object files
+SRCS += Engine/DebugUI.cpp
 SRCS += Engine/Light.cpp
 SRCS += Engine/Matrix.cpp
 SRCS += Engine/Obb.cpp
@@ -38,7 +40,9 @@ SRCS += Tool/RMath.cpp
 SRCS += Tool/Utils.cpp
 SRCS += Tool/Test.cpp
 SRCS += Main.cpp
-SRCS += lodepng.c
+SRCS += External/src/imgui/imgui.cpp
+SRCS += External/src/imgui/imgui_draw.cpp
+SRCS += External/src/lodepng/lodepng.c
 OBJS := $(foreach src,$(SRCS),$(call outName,$(src)))
 
 # Shader code preprocessing

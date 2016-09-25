@@ -5,7 +5,7 @@
 #include "Render/Render.h"
 
 // mostly copied from imgui_impl_glfw_gl3
-#include <imgui.h>
+#include "imgui/imgui.h"
 
 // Data
 static GLFWwindow*  g_Window = NULL;
@@ -20,8 +20,8 @@ static unsigned int g_VboHandle = 0, g_VaoHandle = 0, g_ElementsHandle = 0;
 
 namespace DebugUi
 {
-    const char* GetClipboardText();
-    void SetClipboardText(const char* text);
+    static const char* GetClipboardText();
+    static void SetClipboardText(const char* text);
 }
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
