@@ -1,6 +1,6 @@
 # make -k -C /Users/jvalenzu/Source/2dVolumetricLighting -f /Users/jvalenzu/Source/2dVolumetricLighting/Makefile
 
-include rules.mk
+include Build/rules.mk
 
 CPPFLAGS += -fstack-protector-strong
 CPPFLAGS += -DGLFW_INCLUDE_GLCOREARB=1
@@ -82,4 +82,4 @@ $(foreach src,$(SHADER_SRCS),$(eval $(call shaderSrcToObj,$(src))))
 
 CLEAN += 2dVolumetricLighting
 
-include rules2.mk
+include Build/rules2.mk
