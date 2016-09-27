@@ -124,7 +124,24 @@ inline void SceneGetSceneObjectsByType(N* dest, Scene* scene, SceneObjectType ty
 
 inline void SceneSetEnabled(SceneObject* sceneObject, bool value)
 {
-    sceneObject->m_Flags &= ~SceneObject::kEnabled;
-    if (value)
-        sceneObject->m_Flags |= SceneObject::kEnabled;
+    if (sceneObject != nullptr)
+    {
+        sceneObject->m_Flags &= ~SceneObject::kEnabled;
+        if (value)
+            sceneObject->m_Flags |= SceneObject::kEnabled;
+    }
+}
+
+inline void SceneSetEnabledRecursive(SceneObject* sceneObject, bool value)
+{
+    SceneSetEnabled(sceneObject, value);
+    if (sceneObject)
+        SceneSetEnabledRecursive(sceneObject->m_Child, value);
+}
+
+inline bool SceneGetEnabled(const SceneObject* sceneObject)
+{
+    if (sceneObject && sceneObject->m_Flags & SceneObject::kEnabled)
+        return true;
+    return false;
 }

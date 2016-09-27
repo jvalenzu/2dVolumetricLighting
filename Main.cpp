@@ -141,65 +141,71 @@ static void MainLoop(RenderContext* renderContext)
     spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
     spriteOptions.m_Scale = Vec2(0.5f, 0.5f);
     
-    // conical light
-    spriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
-    SceneObject* lightSprite0 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", spriteOptions);
-    Mat4ApplyTranslation(&lightSprite0->m_LocalToWorld, 10, 0, -1);
-    lightSprite0->m_Flags |= SceneObject::Flags::kDirty;
-    SceneGroupAddChild(s_SceneObject, lightSprite0);
-    
-    // rotate lightSprite0 so it's more obvious what directory it's casting.
-    {
-        Mat4 rot;
-        float uvw[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-        MatrixSetRotAboutAxis(&rot, uvw, 1.5707963268f);
-        
-        Mat4 t1;
-        MatrixMultiply(&t1, rot, lightSprite0->m_LocalToWorld);
-        MatrixCopy(&lightSprite0->m_LocalToWorld, t1);
-    }
-    
-    SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(10.0f, 0.0f, -1.0f),
-                                                                                  Vec3( 0.0f, 1.0f,  0.0f),
-                                                                                  spriteOptions.m_TintColor,
-                                                                                  30.0f,
-                                                                                  20.0f));
-    light0->m_DebugName = "ConicalLight";
-    SceneGroupAddChild(lightSprite0, light0);
-    
     // point light
-    SceneObject* lightSprite1;
+    SceneObject* lightSprite0;
     {
         SpriteOptions pointLightSpriteOptions = spriteOptions;
         pointLightSpriteOptions.m_TintColor = Vec4(1.0f, 1.0f, 0.25f, 1.0f);
         pointLightSpriteOptions.ResetPivot();
-        lightSprite1 = SceneCreateSpriteFromFile(&scene, renderContext, "Bulb.png", pointLightSpriteOptions);
-        Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, -10, 0, -1);
-        lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
+        lightSprite0 = SceneCreateSpriteFromFile(&scene, renderContext, "Bulb.png", pointLightSpriteOptions);
         
-        SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(-10.0f, 0.0f, -1.0f), // position
+        Mat4ApplyTranslation(&lightSprite0->m_LocalToWorld, 0, 5.0f, -1);
+        lightSprite0->m_Flags |= SceneObject::Flags::kDirty;
+        
+        SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(0.0f, 5.0f, -1.0f), // position
                                                                                     pointLightSpriteOptions.m_TintColor, // color
                                                                                     8.0f)); // range
         light1->m_DebugName = "PointLight";
-        SceneGroupAddChild(s_SceneObject, lightSprite1);
-        SceneGroupAddChild(lightSprite1, light1);
+        SceneGroupAddChild(s_SceneObject, lightSprite0);
+        SceneGroupAddChild(lightSprite0, light1);
     }
-
-    // cylindrical light
-    spriteOptions.m_TintColor = Vec4(0.25f, 0.25f, 1.0f, 1.0f);
     
-    SceneObject* lightSprite2 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", spriteOptions);
-    Mat4ApplyTranslation(&lightSprite2->m_LocalToWorld, 0.0f, 5.0f, -1.0f);
-    lightSprite2->m_Flags |= SceneObject::Flags::kDirty;
-    SceneGroupAddChild(s_SceneObject, lightSprite2);
-    
-    SceneObject* light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3(0.0f, 5.0f, -1.0f),
-                                                                                      Vec3(0.0f, 1.0f,  0.0f),
+    // conical light
+    SceneObject* lightSprite1 = nullptr;
+    {
+        spriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
+        lightSprite1 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", spriteOptions);
+        Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, 0, 5.0f, -1);
+        lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
+        SceneGroupAddChild(s_SceneObject, lightSprite1);
+        
+        SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(0.0f, 5.0f, -1.0f),
+                                                                                      Vec3(1.0f, 0.0f, 0.0f),
                                                                                       spriteOptions.m_TintColor,
-                                                                                      0.5f,
-                                                                                      10.0f));
-    light2->m_DebugName = "Cylindrical Light";
-    SceneGroupAddChild(lightSprite2, light2);
+                                                                                      30.0f,
+                                                                                      20.0f));
+        
+        // rotate light0 to align with direction
+        Mat4 rot;
+        float uvw[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+        MatrixSetRotAboutAxis(&rot, uvw, -1.5707963268f);
+        
+        Mat4 t1;
+        MatrixMultiply(&t1, rot, light0->m_LocalToWorld);
+        MatrixCopy(&light0->m_LocalToWorld, t1);
+        
+        light0->m_DebugName = "ConicalLight";
+        SceneGroupAddChild(lightSprite1, light0);
+    }
+    
+    // cylindrical light
+    SceneObject* lightSprite2 = nullptr;
+    {
+        spriteOptions.m_TintColor = Vec4(0.25f, 0.25f, 1.0f, 1.0f);
+        
+        lightSprite2 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", spriteOptions);
+        Mat4ApplyTranslation(&lightSprite2->m_LocalToWorld, 0.0f, 5.0f, -1.0f);
+        lightSprite2->m_Flags |= SceneObject::Flags::kDirty;
+        SceneGroupAddChild(s_SceneObject, lightSprite2);
+        
+        SceneObject* light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3(0.0f, 5.0f, -1.0f),
+                                                                                          Vec3(0.0f, 1.0f,  0.0f),
+                                                                                          spriteOptions.m_TintColor,
+                                                                                          0.5f,
+                                                                                          10.0f));
+        light2->m_DebugName = "Cylindrical Light";
+        SceneGroupAddChild(lightSprite2, light2);
+    }
     
     // blur temp textures
     Texture* renderTextureTemp[2];
@@ -258,29 +264,61 @@ static void MainLoop(RenderContext* renderContext)
     
     Shader* debugLightPrepassSampleShader = ShaderCreate("obj/Shader/DebugLightPrepassSample");
 
-    // SceneSetEnabled(lightSprite1, false);
+    enum LightState
+    {
+        kPoint,
+        kConical,
+        kCylindrical,
+        kCount
+    };
+    const char* light_state_labels[] =
+    {
+        "point",
+        "conical",
+        "cylindrical"
+    };
+    int state = 0;
     
-    DebugUi::Init(renderContext, false);    
+    DebugUi::Init(renderContext, false);
     
     bool running = true;
     while (running)
     {
         RenderFrameInit(renderContext);
         DebugUi::NewFrame();
-
-        // 1. Show a simple window
-        // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
+        
         {
-            static float f = 0.0f;
-            static ImVec4 clear_color = ImColor(114, 144, 154);
-            static bool show_test_window = true;
-            static bool show_another_window = false;
+            if (ImGui::Button(light_state_labels[state]))
+            {
+                if (++state == LightState::kCount)
+                    state = LightState::kPoint;
+            }
             
-            ImGui::Text("Hello, world!");
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-            ImGui::ColorEdit3("clear color", (float*)&clear_color);
-            if (ImGui::Button("Test Window")) show_test_window ^= 1;
-            if (ImGui::Button("Another Window")) show_another_window ^= 1;
+            switch (state)
+            {
+                case LightState::kPoint:
+                {
+                    SceneSetEnabledRecursive(lightSprite0, true);
+                    SceneSetEnabledRecursive(lightSprite1, false);
+                    SceneSetEnabledRecursive(lightSprite2, false);
+                    break;
+                }
+                case LightState::kConical:
+                {
+                    SceneSetEnabledRecursive(lightSprite0, false);
+                    SceneSetEnabledRecursive(lightSprite1, true);
+                    SceneSetEnabledRecursive(lightSprite2, false);
+                    break;
+                }
+                case LightState::kCylindrical:
+                {
+                    SceneSetEnabledRecursive(lightSprite0, false);
+                    SceneSetEnabledRecursive(lightSprite1, false);
+                    SceneSetEnabledRecursive(lightSprite2, true);
+                    break;
+                }
+            };
+            
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         }
         
@@ -319,6 +357,9 @@ static void MainLoop(RenderContext* renderContext)
             for (int i=0,n=lights.Count(); i<n; ++i)
             {
                 SceneObject* lightObject = lights[i];
+                if (!SceneGetEnabled(lightObject))
+                    continue;
+                
                 Light* light = SceneObjectGetLight(lightObject);
                 if (light == nullptr)
                     continue;
@@ -404,6 +445,9 @@ static void MainLoop(RenderContext* renderContext)
             for (int i=0,n=lights.Count(); i<n; ++i)
             {
                 SceneObject* lightObject = lights[i];
+                if (!SceneGetEnabled(lightObject))
+                    continue;
+                
                 Light* light = SceneObjectGetLight(lightObject);
                 if (light == nullptr)
                     continue;
