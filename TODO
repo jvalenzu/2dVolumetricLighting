@@ -33,7 +33,10 @@
   [x] 1st: multipass
   [ ] 2nd: texture array?
 [✓] imgui layer to describe keys, toggle options like disabling lights and changing resolution
-  [ ] Add support to toggle individual lights.  Maybe just enable one at a time.
+  [x] Add support to toggle individual lights.  Maybe just enable one at a time.
+  [ ] Change radius, color of point light
+  [ ] Change length, color of cylinder
+  [ ] Change length, color, angle of conical light
 [ ] Rework conical attenuation.  Calculate two ranges, along facing and parallel to.  Parallel attenuation is squared.
 [x] light prepass optimization
 [ ] directional light
@@ -100,3 +103,4 @@ PUBLISH
 [ ] FIXME:
   [ ] // duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
 [ ] Need to spell out how the FromZeroOne functions result in non-cartesean reactions in the 1d mapping functions
+[ ] glLogicOp can't be the best way to or in light bits
