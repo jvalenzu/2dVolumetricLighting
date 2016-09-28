@@ -34,9 +34,11 @@
   [ ] 2nd: texture array?
 [✓] imgui layer to describe keys, toggle options like disabling lights and changing resolution
   [x] Add support to toggle individual lights.  Maybe just enable one at a time.
-  [ ] Change radius, color of point light
-  [ ] Change length, color of cylinder
-  [ ] Change length, color, angle of conical light
+  [x] Change radius of point light
+  [x] Change color of point light
+  [x] Change color of cylinder
+  [x] Change length of cylinder
+  [x] Change length, color, angle of conical light
 [ ] Rework conical attenuation.  Calculate two ranges, along facing and parallel to.  Parallel attenuation is squared.
 [x] light prepass optimization
 [ ] directional light

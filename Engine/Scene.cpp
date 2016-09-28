@@ -135,6 +135,9 @@ void SceneUpdate(Scene* scene)
         if (sceneObject->m_Type == SceneObjectType::kLight)
         {
             const Light* light = &sceneObject->m_Light;
+            if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
+                continue;
+            
             if (light->m_Type == LightType::kPoint)
             {
                 if (scene->m_NumPointLights == Light::kMaxLights)
@@ -566,6 +569,12 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
             {
                 const float range = light.m_Range;
                 MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range, range));
+                break;
+            }
+            case LightType::kCylindrical:
+            {
+                const float range = light.m_Range;
+                MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range * light.m_CosAngleOrLength, range));
                 break;
             }
         }

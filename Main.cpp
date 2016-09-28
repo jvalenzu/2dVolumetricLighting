@@ -143,6 +143,7 @@ static void MainLoop(RenderContext* renderContext)
     
     // point light
     SceneObject* lightSprite0;
+    SceneObject* light0;
     {
         SpriteOptions pointLightSpriteOptions = spriteOptions;
         pointLightSpriteOptions.m_TintColor = Vec4(1.0f, 1.0f, 0.25f, 1.0f);
@@ -152,16 +153,17 @@ static void MainLoop(RenderContext* renderContext)
         Mat4ApplyTranslation(&lightSprite0->m_LocalToWorld, 0, 5.0f, -1);
         lightSprite0->m_Flags |= SceneObject::Flags::kDirty;
         
-        SceneObject* light1 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(0.0f, 5.0f, -1.0f), // position
-                                                                                    pointLightSpriteOptions.m_TintColor, // color
-                                                                                    8.0f)); // range
-        light1->m_DebugName = "PointLight";
+        light0 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(0.0f, 5.0f, -1.0f), // position
+                                                                       pointLightSpriteOptions.m_TintColor, // color
+                                                                       8.0f)); // range
+        light0->m_DebugName = "PointLight";
         SceneGroupAddChild(s_SceneObject, lightSprite0);
-        SceneGroupAddChild(lightSprite0, light1);
+        SceneGroupAddChild(lightSprite0, light0);
     }
     
     // conical light
     SceneObject* lightSprite1 = nullptr;
+    SceneObject* light1 = nullptr;
     {
         spriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
         lightSprite1 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", spriteOptions);
@@ -169,27 +171,26 @@ static void MainLoop(RenderContext* renderContext)
         lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
         SceneGroupAddChild(s_SceneObject, lightSprite1);
         
-        SceneObject* light0 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(0.0f, 5.0f, -1.0f),
-                                                                                      Vec3(1.0f, 0.0f, 0.0f),
-                                                                                      spriteOptions.m_TintColor,
-                                                                                      30.0f,
-                                                                                      20.0f));
+        light1 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(0.0f, 5.0f, -1.0f),
+                                                                         Vec3(0.0f, 1.0f, 0.0f),
+                                                                         spriteOptions.m_TintColor, 30.0f, 20.0f));
         
-        // rotate light0 to align with direction
+        // rotate light1 to align with direction
         Mat4 rot;
         float uvw[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
         MatrixSetRotAboutAxis(&rot, uvw, -1.5707963268f);
         
         Mat4 t1;
-        MatrixMultiply(&t1, rot, light0->m_LocalToWorld);
-        MatrixCopy(&light0->m_LocalToWorld, t1);
+        MatrixMultiply(&t1, rot, light1->m_LocalToWorld);
+        MatrixCopy(&light1->m_LocalToWorld, t1);
         
-        light0->m_DebugName = "ConicalLight";
-        SceneGroupAddChild(lightSprite1, light0);
+        light1->m_DebugName = "ConicalLight";
+        SceneGroupAddChild(lightSprite1, light1);
     }
     
     // cylindrical light
     SceneObject* lightSprite2 = nullptr;
+    SceneObject* light2;
     {
         spriteOptions.m_TintColor = Vec4(0.25f, 0.25f, 1.0f, 1.0f);
         
@@ -198,11 +199,11 @@ static void MainLoop(RenderContext* renderContext)
         lightSprite2->m_Flags |= SceneObject::Flags::kDirty;
         SceneGroupAddChild(s_SceneObject, lightSprite2);
         
-        SceneObject* light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3(0.0f, 5.0f, -1.0f),
-                                                                                          Vec3(0.0f, 1.0f,  0.0f),
-                                                                                          spriteOptions.m_TintColor,
-                                                                                          0.5f,
-                                                                                          10.0f));
+        light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3(0.0f, 5.0f, -1.0f),
+                                                                             Vec3(0.0f, 1.0f,  0.0f),
+                                                                             spriteOptions.m_TintColor,
+                                                                             0.5f,
+                                                                             10.0f));
         light2->m_DebugName = "Cylindrical Light";
         SceneGroupAddChild(lightSprite2, light2);
     }
@@ -263,7 +264,7 @@ static void MainLoop(RenderContext* renderContext)
     RenderGlobalSetTexture(renderContext, lightPrepassTextureIndex, renderTextureInt);
     
     Shader* debugLightPrepassSampleShader = ShaderCreate("obj/Shader/DebugLightPrepassSample");
-
+    
     enum LightState
     {
         kPoint,
@@ -281,10 +282,17 @@ static void MainLoop(RenderContext* renderContext)
     
     DebugUi::Init(renderContext, false);
     
+    // point light enabled by default
+    SceneSetEnabledRecursive(lightSprite0, true);
+    SceneSetEnabledRecursive(lightSprite1, false);
+    SceneSetEnabledRecursive(lightSprite2, false);
+    
     bool running = true;
     while (running)
     {
         RenderFrameInit(renderContext);
+        
+        // IMGUI
         DebugUi::NewFrame();
         
         {
@@ -292,33 +300,64 @@ static void MainLoop(RenderContext* renderContext)
             {
                 if (++state == LightState::kCount)
                     state = LightState::kPoint;
+            
+                switch (state)
+                {
+                    case LightState::kPoint:
+                    {
+                        SceneSetEnabledRecursive(lightSprite0, true);
+                        SceneSetEnabledRecursive(lightSprite1, false);
+                        SceneSetEnabledRecursive(lightSprite2, false);
+                        break;
+                    }
+                    case LightState::kConical:
+                    {
+                        SceneSetEnabledRecursive(lightSprite0, false);
+                        SceneSetEnabledRecursive(lightSprite1, true);
+                        SceneSetEnabledRecursive(lightSprite2, false);
+                        break;
+                    }
+                    case LightState::kCylindrical:
+                    {
+                        SceneSetEnabledRecursive(lightSprite0, false);
+                        SceneSetEnabledRecursive(lightSprite1, false);
+                        SceneSetEnabledRecursive(lightSprite2, true);
+                        break;
+                    }
+                };
             }
             
             switch (state)
             {
                 case LightState::kPoint:
                 {
-                    SceneSetEnabledRecursive(lightSprite0, true);
-                    SceneSetEnabledRecursive(lightSprite1, false);
-                    SceneSetEnabledRecursive(lightSprite2, false);
+                    Light* light = SceneObjectGetLight(light0);
+                    ImGui::DragFloat("range", &light->m_Range, 0.1, 0.0f, 80.0f);
+                    ImGui::ColorEdit3("color", light->m_Color.asFloat());
                     break;
                 }
                 case LightState::kConical:
                 {
-                    SceneSetEnabledRecursive(lightSprite0, false);
-                    SceneSetEnabledRecursive(lightSprite1, true);
-                    SceneSetEnabledRecursive(lightSprite2, false);
+                    Light* light = SceneObjectGetLight(light1);
+                    
+                    float angle = light->m_CosAngleOrLength * 180.0f / float(M_PI);
+                    ImGui::DragFloat("range", &light->m_Range, 0.1, 0.0f, 80.0f);
+                    ImGui::ColorEdit3("color", light->m_Color.asFloat());
+                    if (ImGui::DragFloat("angle", &angle, 0.1, 0.0f, 90.0f))
+                        light->m_CosAngleOrLength = angle * float(M_PI)/180.0f;
                     break;
                 }
                 case LightState::kCylindrical:
                 {
-                    SceneSetEnabledRecursive(lightSprite0, false);
-                    SceneSetEnabledRecursive(lightSprite1, false);
-                    SceneSetEnabledRecursive(lightSprite2, true);
+                    Light* light = SceneObjectGetLight(light2);
+                    ImGui::DragFloat("range", &light->m_Range, 0.1, 0.0f, 80.0f);
+                    ImGui::ColorEdit3("color", light->m_Color.asFloat());
+                    ImGui::DragFloat("length", &light->m_CosAngleOrLength, 0.1, 0.0f, 80.0f);
+                    
                     break;
                 }
-            };
-            
+            }
+                
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         }
         
@@ -588,7 +627,7 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
             
             Mat4 rot;
             float uvw[4] = { 0.0f, 0.0f, -1.0f, 0.0f };
-            MatrixSetRotAboutAxis(&rot, uvw, sign*0.0436332312998f);
+            MatrixSetRotAboutAxis(&rot, uvw, sign*0.0872664625996f);
             
             Mat4 t1;
             MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);

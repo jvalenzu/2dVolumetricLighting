@@ -38,5 +38,5 @@ layout (std140) uniform ConicalLightData
 };
 
 uniform uint pointLightMask;
-uniform uint cylindricalLightMask;
 uniform uint conicalLightMask;
+uniform uint cylindricalLightMask;

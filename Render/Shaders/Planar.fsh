@@ -35,8 +35,8 @@ void main (void)
     uint mask = texture(_LightPrepassTex, toZeroOne(fragmentPos.xy)).x;
     
     uint pointMask = mask & pointLightMask;
-    uint cylindricalMask = mask & cylindricalLightMask;
     uint conicalMask = mask & conicalLightMask;
+    uint cylindricalMask = mask & cylindricalLightMask;
     
     while (pointMask != 0U)
     {
@@ -86,7 +86,7 @@ void main (void)
         cylindricalMask &= ~bit;
         
         Light cylindricalLight = _CylindricalLight[index];
-
+        
         // screenspace distance based attenuation squared
         float temp0 = pointOnLineSegmentT(cylindricalLight.m_Position.xy, cylindricalLight.m_Position.zw, fragmentPos.xy);
         vec2 p0 = pointOnLineSegment(temp0, cylindricalLight.m_Position.xy, cylindricalLight.m_Position.zw);

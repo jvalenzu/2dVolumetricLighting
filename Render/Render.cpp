@@ -827,6 +827,13 @@ void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader)
         if (conicalLightMaskIndex != GL_INVALID_INDEX)
             glUniform1ui(conicalLightMaskIndex, renderContext->m_ConicalLightMask);
     }
+    
+#if 0
+    printf("mask: point 0x%x cylinder 0x%x conical 0x%x\n",
+           renderContext->m_PointLightMask,
+           renderContext->m_CylindricalLightMask,
+           renderContext->m_ConicalLightMask);
+#endif
 }
 
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int textureId)
@@ -1484,6 +1491,7 @@ void RenderGlobalSetTexture(RenderContext* renderContext, int index, int texture
     materialProperty->m_TextureId = textureId;
 }
 
+// RenderGlobalSetTexture
 void RenderGlobalSetTexture(RenderContext* renderContext, int index, Texture* texture)
 {
     int textureId = 0;
