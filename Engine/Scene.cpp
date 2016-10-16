@@ -99,6 +99,7 @@ void SceneUpdate(Scene* scene)
     scene->m_NumPointLights = 0;
     scene->m_NumConicalLights = 0;
     scene->m_NumCylindricalLights = 0;
+    scene->m_NumDirectionalLights = 0;
     
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
     
@@ -162,7 +163,7 @@ void SceneUpdate(Scene* scene)
                 dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
                 
                 // jiv fixme: it's in world space, shouldn't be
-                dest->m_Direction = Mat4GetRight(sceneObject->m_LocalToWorld);
+                dest->m_Direction = sceneObject->m_LocalToWorld.GetUp();
             }
             
             if (light->m_Type == LightType::kCylindrical)
@@ -175,9 +176,15 @@ void SceneUpdate(Scene* scene)
                 
                 // transform position
                 dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
+            }
+            
+            if (light->m_Type == LightType::kDirectional)
+            {
+                if (scene->m_NumDirectionalLights == Light::kMaxLights)
+                    continue;
                 
-                // jiv fixme: it's in world space, shouldn't be
-                // dest->m_Direction = Mat4GetRight(sceneObject->m_LocalToWorld);
+                Light* dest = &scene->m_DirectionalLights[scene->m_NumDirectionalLights++];
+                *dest = *light;
             }
         }
     }
@@ -313,6 +320,7 @@ void SceneLightsUpdate(Scene* scene, RenderContext* renderContext)
     RenderUpdatePointLights(renderContext, scene->m_PointLights, scene->m_NumPointLights);
     RenderUpdateConicalLights(renderContext, scene->m_ConicalLights, scene->m_NumConicalLights);
     RenderUpdateCylindricalLights(renderContext, scene->m_CylindricalLights, scene->m_NumCylindricalLights);
+    RenderUpdateDirectionalLights(renderContext, scene->m_DirectionalLights, scene->m_NumDirectionalLights);
 }
 
 void SceneDraw(Scene* scene, RenderContext* renderContext)
@@ -542,10 +550,13 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
     if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
         return;
     
+    Mat4 temp;
+    MatrixMakeZero(&temp);
+    temp.SetRot(sceneObject->m_Obb.m_Axes);
+    
     Mat4 localToWorld;
     MatrixMakeZero(&localToWorld);
-    
-    localToWorld.SetRot(sceneObject->m_Obb.m_Axes);
+    MatrixMultiply(&localToWorld, sceneObject->m_LocalToWorld, temp);
     localToWorld.SetTranslation(sceneObject->m_LocalToWorld.GetTranslation());
     
     const float aspectRatio = (float) renderContext->m_Width/renderContext->m_Height;
@@ -568,7 +579,11 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
             case LightType::kConical:
             {
                 const float range = light.m_Range;
-                MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range, range));
+                const float half_range = light.m_Range * 0.5f;
+                Vec3 offset = half_range * localToWorld.GetUp();
+                localToWorld.AddTranslation(offset);
+                
+                MatrixScaleInsitu(&localToWorld, Vec3(half_range, range, half_range));
                 break;
             }
             case LightType::kCylindrical:

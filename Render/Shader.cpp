@@ -199,6 +199,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
     ret->m_PointLightBlockIndex = glGetUniformBlockIndex(ret->m_ProgramName, "PointLightData");
     ret->m_CylindricalLightBlockIndex = glGetUniformBlockIndex(ret->m_ProgramName, "CylindricalLightData");
     ret->m_ConicalLightBlockIndex = glGetUniformBlockIndex(ret->m_ProgramName, "ConicalLightData");
+    ret->m_DirectionalLightBlockIndex = glGetUniformBlockIndex(ret->m_ProgramName, "DirectionalLightData");
     
     return ret;
 }

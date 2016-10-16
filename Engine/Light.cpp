@@ -15,7 +15,9 @@ void DumpLight(const Light& light)
     {
         case LightType::kDirectional:
         {
-            assert(false);
+            puts("DirectionalLight:\n");
+            Printf("m_Color: %f %f %f %f\n", light.m_Color.m_X[0],    light.m_Color.m_X[1],    light.m_Color.m_X[2], light.m_Color.m_X[3]);
+            Printf("m_Position: %f %f %f\n", light.m_Position.m_X[0], light.m_Position.m_X[1], light.m_Position.m_X[2]);
             break;
         }
         case LightType::kPoint:
@@ -42,7 +44,7 @@ void DumpLight(const Light& light)
             Printf("m_Color: %f %f %f %f\n", light.m_Color.m_X[0], light.m_Color.m_X[1], light.m_Color.m_X[2], light.m_Color.m_X[3]);
             Printf("m_Position: %f %f %f\n", light.m_Position.m_X[0], light.m_Position.m_X[1], light.m_Position.m_X[2]);
             break;
-        }        
+        }
     }
 }
 
@@ -51,6 +53,13 @@ void LightInitialize(Light* light, const LightOptions& lightOptions)
 {
     switch (lightOptions.m_Type)
     {
+        case LightType::kDirectional:
+        {
+            light->m_Type = LightType::kDirectional;
+            light->m_Color = lightOptions.m_Color;
+            light->m_Direction = lightOptions.m_Direction;
+            break;
+        }
         case LightType::kPoint:
         {
             light->m_Type = LightType::kPoint;
@@ -63,6 +72,7 @@ void LightInitialize(Light* light, const LightOptions& lightOptions)
         {
             light->m_Type = LightType::kConical;
             light->m_CosAngleOrLength = cosf(float(M_PI) * lightOptions.m_Angle / 360.0f);
+            assert(light->m_CosAngleOrLength>=0.0f);
             light->m_Range = lightOptions.m_Range;
             light->m_Color = lightOptions.m_Color;
             light->m_Position = lightOptions.m_Position;

@@ -154,7 +154,13 @@ struct Vec3
         ret -= value;
         return ret;
     }
-
+    
+    inline Vec3 operator- () const
+    {
+        Vec3 ret(-m_X[0], -m_X[1], -m_X[2]);
+        return ret;
+    }
+    
     inline Vec3& operator/= (float f)
     {
         m_X[0] /= f;
@@ -349,7 +355,7 @@ struct Mat3
     
     float* asFloat() { return &m_X[0]; }
     const float* asFloat() const { return &m_X[0]; }
-
+    
     inline Mat3 operator/= (float f)
     {
         const float rf = 1.0f / f;
@@ -386,6 +392,29 @@ struct Mat4
     inline Vec3 GetTranslation() const
     {
         return Vec3(m_W[0], m_W[1], m_W[2]);
+    }
+    
+    inline Vec3 GetUp() const
+    {
+        return Vec3(m_Y[0], m_Y[1], m_Y[2]);
+    }
+    
+    inline Vec3 GetRight() const
+    {
+        return -Vec3(m_X[0], m_X[1], m_X[2]);
+    }
+    
+    inline Vec3 GetForward() const
+    {
+        return Vec3(m_Z[0], m_Z[1], m_Z[2]);
+    }
+    
+    inline void AddTranslation(Vec3 pos)
+    {
+        m_W[0] += pos.m_X[0];
+        m_W[1] += pos.m_X[1];
+        m_W[2] += pos.m_X[2];
+        m_W[3] = 1.0f;
     }
     
     inline void SetTranslation(Vec3 pos)

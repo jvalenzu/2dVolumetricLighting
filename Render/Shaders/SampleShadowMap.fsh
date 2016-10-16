@@ -13,6 +13,7 @@ out     vec4      fragColor;
 #include "shader.h"
 
 #define kShadowBlendFactor 0.5f
+#define kDarkenFactor      0.5f
 
 void main(void)
 {
@@ -24,7 +25,7 @@ void main(void)
     vec4 d = texture(_MainTex, vec2(theta, 0));
     float lr = length(ray);
     if (d.r <= lr)
-        fragColor = vec4(_LightColor.rgb,kShadowBlendFactor);
+        fragColor = vec4(_LightColor.rgb*kDarkenFactor, kShadowBlendFactor);
     else
         fragColor = vec4(0,0,0,0.0f);
 }

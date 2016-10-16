@@ -51,13 +51,14 @@ struct RenderContext
     Vec3 m_ClearColor;
     
     GLuint m_PointLightUbo;
-    GLuint m_CylindricalLightUbo;
     GLuint m_ConicalLightUbo;
+    GLuint m_CylindricalLightUbo;
+    GLuint m_DirectionalLightUbo;
+    
     uint32_t m_PointLightMask;
     uint32_t m_CylindricalLightMask;
     uint32_t m_ConicalLightMask;
-    
-    Vec4 m_AmbientLightColor;
+    uint32_t m_NumDirectionalLights;
     
     Texture* m_WhiteTexture;
     
@@ -170,7 +171,6 @@ void RenderContextDestroy(RenderContext* renderContext);
 
 void RenderFrameInit(RenderContext* context);
 bool RenderFrameEnd(RenderContext* context);
-void RenderSetAmbientLight(RenderContext* context, Vec4 color);
 void RenderUseMaterial(RenderContext* context, int* textureSlotItr, const Material* material);
 void RenderSetMaterialConstants(RenderContext* renderContext, int* textureSlotItr, const Material* material);
 
@@ -203,6 +203,7 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model);
 void RenderUpdatePointLights(RenderContext* renderContext, const Light* pointLights, int numPointLights);
 void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conicalLights, int numConicalLights);
 void RenderUpdateCylindricalLights(RenderContext* renderContext, const Light* cylindricalLights, int numCylindricalLights);
+void RenderUpdateDirectionalLights(RenderContext* renderContext, const Light* directionalLights, int numDirectionalLights);
 
 // global properties
 int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type);

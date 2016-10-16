@@ -19,6 +19,7 @@
 #define kPointLightBinding 2
 #define kCylindricalLightBinding 3
 #define kConicalLightBinding 4
+#define kDirectionalLightBinding 5
 
 const char* GetGLErrorString(GLenum error)
 {
@@ -338,6 +339,12 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(Light), nullptr, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, kPointLightBinding, renderContext->m_PointLightUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glGenBuffers(1, &renderContext->m_ConicalLightUbo);
+    glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_ConicalLightUbo);
+    glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(Light), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, kConicalLightBinding, renderContext->m_ConicalLightUbo);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
     
     glGenBuffers(1, &renderContext->m_CylindricalLightUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_CylindricalLightUbo);
@@ -345,13 +352,11 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     glBindBufferBase(GL_UNIFORM_BUFFER, kCylindricalLightBinding, renderContext->m_CylindricalLightUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     
-    glGenBuffers(1, &renderContext->m_ConicalLightUbo);
-    glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_ConicalLightUbo);
+    glGenBuffers(1, &renderContext->m_DirectionalLightUbo);
+    glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_DirectionalLightUbo);
     glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(Light), nullptr, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, kConicalLightBinding, renderContext->m_ConicalLightUbo);
+    glBindBufferBase(GL_UNIFORM_BUFFER, kDirectionalLightBinding, renderContext->m_DirectionalLightUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    
-    renderContext->m_AmbientLightColor = Vec4(0,0,0,0);
     
     renderContext->m_WhiteTexture = TextureCreateFromFile("white.png");
     
@@ -476,6 +481,9 @@ void RenderUpdatePointLights(RenderContext* renderContext, const Light* pointLig
     renderContext->m_PointLightMask = pointLightMask;
 }
 
+// void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conicalLights, int numConicalLights)
+//
+// 
 void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conicalLights, int numConicalLights)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_ConicalLightUbo);
@@ -496,7 +504,7 @@ void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conica
         
         const float range = source->m_Range;
         const Vec3 screenPosition = RenderGetScreenPos(renderContext, source->m_Position.xyz());
-        const Vec3 screenPosition2 = RenderGetScreenPos(renderContext, source->m_Position.xyz() + Vec3(range, range, 0.0f));
+        const Vec3 screenPosition2 = RenderGetScreenPos(renderContext, source->m_Position.xyz() + range*source->m_Direction.xyz());
         const float screenRange = (screenPosition - screenPosition2).Length();
         dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
         dest[i].m_Range = 1.0f/screenRange;
@@ -538,6 +546,21 @@ void RenderUpdateCylindricalLights(RenderContext* renderContext, const Light* cy
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     renderContext->m_CylindricalLightMask = cylindricalLightMask;
+}
+
+// RenderUpdateDirectionalLights
+void RenderUpdateDirectionalLights(RenderContext* renderContext, const Light* directionalLights, int numDirectionalLights)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_DirectionalLightUbo);
+    glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(Light), nullptr, GL_DYNAMIC_DRAW);
+    
+    GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT);
+    memcpy(p, directionalLights, numDirectionalLights*sizeof(Light));
+    
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    
+    renderContext->m_NumDirectionalLights = numDirectionalLights;
 }
 
 void RenderOptionsInit(RenderOptions* renderOptions, int width, int height)
@@ -595,7 +618,6 @@ void RenderSetBlendMode(Material::BlendMode blendMode)
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_ZERO);
             glBlendEquation(GL_FUNC_ADD);
-            
             break;
         }
         case Material::BlendMode::kCutout:
@@ -621,6 +643,10 @@ void RenderSetBlendMode(Material::BlendMode blendMode)
     }
 }
 
+// RenderResetLightIndices
+//
+// Each frame, we generate light indices for all our lights.  It requires we reset
+// them before we do our frame-ly iteration
 void RenderResetLightIndices(RenderContext* renderContext)
 {
     renderContext->m_LightIndex = 0;
@@ -684,16 +710,12 @@ void RenderSetMaterialConstants(RenderContext* renderContext, int* textureSlotIt
     GLint mainTextureSlot = glGetUniformLocation(shader->m_ProgramName, "_MainTex");
     glProgramUniform1i(shader->m_ProgramName, mainTextureSlot, 0);
     
-    GLint ambientLightColorSlot = glGetUniformLocation(shader->m_ProgramName, "_AmbientLight");
-    glProgramUniform4f(shader->m_ProgramName, ambientLightColorSlot, renderContext->m_AmbientLightColor.m_X[0], renderContext->m_AmbientLightColor.m_X[1], renderContext->m_AmbientLightColor.m_X[2], renderContext->m_AmbientLightColor.m_X[3]);
-    
     for (int i=0; i<material->m_NumMaterialProperties; ++i)
     {
         const Material::MaterialProperty* materialProperty = &material->m_MaterialPropertyBlock[i];
         RenderSetMaterialProperty(textureSlotItr, shader->m_ProgramName, materialProperty);
     }
 }
-
 
 // RenderFrameInit
 //
@@ -808,6 +830,16 @@ void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader)
             glUniform1ui(pointLightMaskIndex, renderContext->m_PointLightMask);
     }
     
+    GLuint conicalLightsBlockIndex = shader->m_ConicalLightBlockIndex;
+    if (conicalLightsBlockIndex != GL_INVALID_INDEX)
+    {
+        glUniformBlockBinding(shader->m_ProgramName, conicalLightsBlockIndex, kConicalLightBinding);
+        
+        GLint conicalLightMaskIndex = glGetUniformLocation(shader->m_ProgramName, "conicalLightMask");
+        if (conicalLightMaskIndex != GL_INVALID_INDEX)
+            glUniform1ui(conicalLightMaskIndex, renderContext->m_ConicalLightMask);
+    }
+    
     GLuint cylindricalLightsBlockIndex = shader->m_CylindricalLightBlockIndex;
     if (cylindricalLightsBlockIndex != GL_INVALID_INDEX)
     {
@@ -818,14 +850,15 @@ void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader)
             glUniform1ui(cylindricalLightMaskIndex, renderContext->m_CylindricalLightMask);
     }
     
-    GLuint conicalLightsBlockIndex = shader->m_ConicalLightBlockIndex;
-    if (conicalLightsBlockIndex != GL_INVALID_INDEX)
+    GLuint directionalLightsBlockIndex = shader->m_DirectionalLightBlockIndex;
+    if (directionalLightsBlockIndex != GL_INVALID_INDEX)
     {
-        glUniformBlockBinding(shader->m_ProgramName, conicalLightsBlockIndex, kConicalLightBinding);
+        glUniformBlockBinding(shader->m_ProgramName, directionalLightsBlockIndex, kDirectionalLightBinding);
+
+        GLint direcitonalLightNumIndex = glGetUniformLocation(shader->m_ProgramName, "numDirectionalLights");
+        if (direcitonalLightNumIndex != GL_INVALID_INDEX)
+            glUniform1ui(direcitonalLightNumIndex, renderContext->m_NumDirectionalLights);
         
-        GLint conicalLightMaskIndex = glGetUniformLocation(shader->m_ProgramName, "conicalLightMask");
-        if (conicalLightMaskIndex != GL_INVALID_INDEX)
-            glUniform1ui(conicalLightMaskIndex, renderContext->m_ConicalLightMask);
     }
     
 #if 0
@@ -935,6 +968,7 @@ void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, Texture*
     RenderDrawFullscreen(renderContext, shader, textureId);
 }
 
+// RenderDrawFullscreen
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, Texture* texture)
 {
     GL_ERROR_SCOPE();
@@ -1367,7 +1401,6 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
 
 // SimpleModelDestroy(SimpleModel* simpleModel)
 void SimpleModelDestroy(SimpleModel* simpleModel)
-
 {
     if (simpleModel == nullptr)
         return;
@@ -1427,11 +1460,6 @@ void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
                           BUFFER_OFFSETOF(SimpleVertex, m_Uv));       // offset in buffer data
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, simpleModel->m_IndexBufferName);
-}
-
-void RenderSetAmbientLight(RenderContext* renderContext, Vec4 color)
-{
-    renderContext->m_AmbientLightColor = color;
 }
 
 int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type)

@@ -16,6 +16,7 @@ struct Shader
     GLuint m_PointLightBlockIndex;
     GLuint m_ConicalLightBlockIndex;
     GLuint m_CylindricalLightBlockIndex;
+    GLuint m_DirectionalLightBlockIndex;
     
     Shader() : m_RefCount(0), m_Crc(0)
     {

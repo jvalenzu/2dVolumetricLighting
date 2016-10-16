@@ -84,8 +84,6 @@ static void MainLoop(RenderContext* renderContext)
     sprite0->m_Flags |= SceneObject::Flags::kDirty;
     sprite0->m_DebugName = "lsp";
     
-    RenderSetAmbientLight(renderContext, Vec4(0.5f, 0.5f, 0.5f, 0.5f));
-    
     // initialize target
     s_Target = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
     VectorSplat(&s_Dir, 0.0f);
@@ -165,24 +163,18 @@ static void MainLoop(RenderContext* renderContext)
     SceneObject* lightSprite1 = nullptr;
     SceneObject* light1 = nullptr;
     {
-        spriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
-        lightSprite1 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", spriteOptions);
+        SpriteOptions localSpriteOptions = spriteOptions;
+        
+        localSpriteOptions.m_Scale = Vec2(0.25f, 0.25f);
+        localSpriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
+        lightSprite1 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", localSpriteOptions);
         Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, 0, 5.0f, -1);
         lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
         SceneGroupAddChild(s_SceneObject, lightSprite1);
         
         light1 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(0.0f, 5.0f, -1.0f),
                                                                          Vec3(0.0f, 1.0f, 0.0f),
-                                                                         spriteOptions.m_TintColor, 30.0f, 20.0f));
-        
-        // rotate light1 to align with direction
-        Mat4 rot;
-        float uvw[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-        MatrixSetRotAboutAxis(&rot, uvw, -1.5707963268f);
-        
-        Mat4 t1;
-        MatrixMultiply(&t1, rot, light1->m_LocalToWorld);
-        MatrixCopy(&light1->m_LocalToWorld, t1);
+                                                                         localSpriteOptions.m_TintColor, 30.0f, 40.0f));
         
         light1->m_DebugName = "ConicalLight";
         SceneGroupAddChild(lightSprite1, light1);
@@ -199,13 +191,19 @@ static void MainLoop(RenderContext* renderContext)
         lightSprite2->m_Flags |= SceneObject::Flags::kDirty;
         SceneGroupAddChild(s_SceneObject, lightSprite2);
         
-        light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3(0.0f, 5.0f, -1.0f),
-                                                                             Vec3(0.0f, 1.0f,  0.0f),
-                                                                             spriteOptions.m_TintColor,
-                                                                             0.5f,
-                                                                             10.0f));
+        light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3(0.0f, 5.0f, -1.0f), Vec3(0.0f, 1.0f, 0.0f),
+                                                                             spriteOptions.m_TintColor, 0.5f, 10.0f));
         light2->m_DebugName = "Cylindrical Light";
         SceneGroupAddChild(lightSprite2, light2);
+    }
+    
+    // directional light
+    SceneObject* dirLights[4];
+    {
+        dirLights[0] = SceneCreateLight(&scene, LightOptions::MakeDirectionalLight(Vec3( 1.0f, 0.0f, 0.0f), Vec4(0.50f, 0.50f, 0.50f, 0.0f)));
+        dirLights[1] = SceneCreateLight(&scene, LightOptions::MakeDirectionalLight(Vec3(-1.0f, 0.0f, 0.0f), Vec4(0.25f, 0.25f, 0.25f, 0.0f)));
+        dirLights[2] = SceneCreateLight(&scene, LightOptions::MakeDirectionalLight(Vec3( 0.0f, 1.0f, 0.0f), Vec4(0.25f, 0.25f, 0.25f, 0.0f)));
+        dirLights[3] = SceneCreateLight(&scene, LightOptions::MakeDirectionalLight(Vec3( 0.0f,-1.0f, 0.0f), Vec4(0.50f, 0.50f, 0.50f, 0.0f)));
     }
     
     // blur temp textures
@@ -215,13 +213,6 @@ static void MainLoop(RenderContext* renderContext)
     
     Shader* shaderBlurX = ShaderCreate("obj/Shader/BlurX");
     Shader* shaderBlurY = ShaderCreate("obj/Shader/BlurY");
-    
-    // blur post effects
-    // PostEffect* postEffect0 = PostEffectInit(ShaderCreate("Render/Shaders/BlurX"));
-    // PostEffect* postEffect1 = PostEffectInit(ShaderCreate("Render/Shaders/BlurY"));
-    
-    // RenderAttachPostEffect(renderContext, postEffect0);
-    // RenderAttachPostEffect(renderContext, postEffect1);
     
     float dir[3] = { 1, 0, 0 };
     
@@ -279,6 +270,14 @@ static void MainLoop(RenderContext* renderContext)
         "cylindrical"
     };
     int state = 0;
+
+    const char* render_mode_debug_labels[]
+    {
+        "normal",
+        "coverage mask",
+        "fullframe"
+    };
+    int render_mode = 0;
     
     DebugUi::Init(renderContext, false);
     
@@ -287,6 +286,9 @@ static void MainLoop(RenderContext* renderContext)
     SceneSetEnabledRecursive(lightSprite1, false);
     SceneSetEnabledRecursive(lightSprite2, false);
     
+    // do we enable directional mode or not?
+    int directional_mode = 0;
+    
     bool running = true;
     while (running)
     {
@@ -294,6 +296,20 @@ static void MainLoop(RenderContext* renderContext)
         
         // IMGUI
         DebugUi::NewFrame();
+        
+        {
+            const char* directional[] =
+            {
+                "direction on",
+                "direction off"
+            };
+            if (ImGui::Button(directional[directional_mode]))
+            {
+                directional_mode = (directional_mode+1) & 1;
+                for (int i=0; i<ELEMENTSOF(dirLights); ++i)
+                    SceneSetEnabled(dirLights[i], directional_mode==0);
+            }
+        }
         
         {
             if (ImGui::Button(light_state_labels[state]))
@@ -357,7 +373,14 @@ static void MainLoop(RenderContext* renderContext)
                     break;
                 }
             }
-                
+            
+            // render mode debug
+            if (ImGui::Button(render_mode_debug_labels[render_mode]))
+            {
+                render_mode++;
+                render_mode %= 3;
+            }
+            
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         }
         
@@ -403,6 +426,9 @@ static void MainLoop(RenderContext* renderContext)
                 if (light == nullptr)
                     continue;
                 
+                if (light->m_Type == LightType::kDirectional)
+                    continue;
+                
                 // calculate the sceen position of our light source
                 // jiv fixme: we already calculate this and cache it via SceneDraw
                 Vec4 screenPos = RenderGetScreenPos(renderContext, Mat4GetTranslation(lightObject->m_LocalToWorld));
@@ -420,7 +446,7 @@ static void MainLoop(RenderContext* renderContext)
                 
                 if (light->m_Type == LightType::kConical)
                 {
-                    Vec4 direction = Mat4GetRight(lightObject->m_LocalToWorld);
+                    Vec4 direction = lightObject->m_LocalToWorld.GetUp();
                     direction.m_X[3] = light->m_CosAngleOrLength;
                     shadow1dMaterial->SetVector(1, direction);
                 }
@@ -510,8 +536,19 @@ static void MainLoop(RenderContext* renderContext)
         SceneDraw(&scene, renderContext);
         
         // debug: draw fullscreen
-        // RenderDrawFullscreen(renderContext, debugLightPrepassSampleShader, renderTextureInt);
-        // RenderDrawFullscreen(renderContext, debugMaterial, whiteTexture);
+        switch (render_mode)
+        {
+            case 1:
+            {
+                RenderDrawFullscreen(renderContext, debugLightPrepassSampleShader, renderTextureInt);
+                break;
+            }
+            case 2:
+            {
+                RenderDrawFullscreen(renderContext, debugMaterial, whiteTexture);
+                break;
+            }
+        }
         
         if (true)
         {

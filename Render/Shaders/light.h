@@ -27,15 +27,21 @@ layout (std140) uniform PointLightData
     Light _PointLight[32];
 };
 
+layout (std140) uniform ConicalLightData
+{
+    Light _ConicalLight[32];
+};
+
 layout (std140) uniform CylindricalLightData
 {
     Light _CylindricalLight[32];
 };
 
-layout (std140) uniform ConicalLightData
+layout (std140) uniform DirectionalLightData
 {
-    Light _ConicalLight[32];
+    Light _DirectionalLight[32];
 };
+uniform uint numDirectionalLights;
 
 uniform uint pointLightMask;
 uniform uint conicalLightMask;

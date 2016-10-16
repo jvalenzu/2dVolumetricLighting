@@ -47,7 +47,7 @@ struct LightOptions
     float m_Range;
     float m_Angle;
     
-    static LightOptions MakeDirectionalLight(Vec4 direction, Vec4 color, float range)
+    static LightOptions MakeDirectionalLight(Vec4 direction, Vec4 color)
     {
         LightOptions ret;
         ret.m_Type = kDirectional;

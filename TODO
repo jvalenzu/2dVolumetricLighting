@@ -39,9 +39,9 @@
   [x] Change color of cylinder
   [x] Change length of cylinder
   [x] Change length, color, angle of conical light
-[ ] Rework conical attenuation.  Calculate two ranges, along facing and parallel to.  Parallel attenuation is squared.
+[x] Rework conical attenuation.  Calculate two ranges, along facing and parallel to.  Parallel attenuation is squared.
 [x] light prepass optimization
-[ ] directional light
+[x] directional light
 [x] Add member function for MaterialReserveMaterialProperties
 [x] Add member function for MaterialSetMaterialPropertyType
 [x] Add member function for MaterialSetMaterialPropertyVector
