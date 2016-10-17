@@ -14,7 +14,6 @@
 #include "Engine/Utils.h"
 #include "Render/Asset.h"
 #include "Render/Render.h"
-#include "Render/PostEffect.h"
 #include "Render/Material.h"
 #include "Tool/Utils.h"
 #include "Tool/Test.h"
@@ -134,7 +133,7 @@ static void MainLoop(RenderContext* renderContext)
         
         SceneGroupAdd(&scene, shadowCasterGroupId, sprite1);
     }
-
+    
     // create and attach a light to our mover
     spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
     spriteOptions.m_Scale = Vec2(0.5f, 0.5f);
@@ -270,7 +269,7 @@ static void MainLoop(RenderContext* renderContext)
         "cylindrical"
     };
     int state = 0;
-
+    
     const char* render_mode_debug_labels[]
     {
         "normal",
@@ -288,6 +287,8 @@ static void MainLoop(RenderContext* renderContext)
     
     // do we enable directional mode or not?
     int directional_mode = 0;
+
+    int blur_mode = 0;
     
     bool running = true;
     while (running)
@@ -312,11 +313,21 @@ static void MainLoop(RenderContext* renderContext)
         }
         
         {
+            const char* blur_labels[] =
+            {
+                "blur on",
+                "blur off"
+            };
+            if (ImGui::Button(blur_labels[blur_mode]))
+                blur_mode = (blur_mode+1) & 1;
+        }
+        
+        {
             if (ImGui::Button(light_state_labels[state]))
             {
                 if (++state == LightState::kCount)
                     state = LightState::kPoint;
-            
+                
                 switch (state)
                 {
                     case LightState::kPoint:
@@ -463,7 +474,7 @@ static void MainLoop(RenderContext* renderContext)
         
         // Run multiple blur passes on the current framebuffer, which just now consists only of the shadowed portions.
         // 3ms
-        if (true)
+        if (blur_mode == 0)
         {
             // ping pong blur buffers
             RenderSetRenderTarget(renderContext, renderTextureTemp[0]);
@@ -613,9 +624,6 @@ static void MainLoop(RenderContext* renderContext)
     
     MaterialDestroy(debugMaterial);
     
-    // PostEffectDestroy(postEffect0);
-    // PostEffectDestroy(postEffect1);
-
     SceneDestroy(&scene);
 }
 
@@ -647,9 +655,9 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
         Vec3 temp;
         VectorSet(&temp, x, y, z);
         
-        Vec3 mask  = VectorSign(temp);
-        Vec3 maskL = VectorSign(s_LastDir);
-        int popCount = VectorEqual(mask, maskL);
+        const Vec3 mask  = VectorSign(temp);
+        const Vec3 maskL = VectorSign(s_LastDir);
+        const int popCount = VectorEqual(mask, maskL);
         if (popCount < 3)
             s_Strength = 0;
         else

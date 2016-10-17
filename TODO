@@ -53,7 +53,7 @@
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
 [x] ambient parameterization
 [x] Query the default resolution to create an appropriately sized window.
-[ ] Black screen after resize
+[x] Black screen after resize
 [ ] Remove Obb?  There's probably too many cached local to world matrices about
 [ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
 [ ] Aspect ratio is incorrect, want square

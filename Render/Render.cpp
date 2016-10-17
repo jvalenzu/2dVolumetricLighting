@@ -154,6 +154,50 @@ static bool s_CgInit(RenderContext* renderContext)
     return true;
 }
 
+// ResetFrameBufferTextureBuffers
+//
+static void ResetFrameBufferTextureBuffers(RenderContext* renderContext)
+{
+    for (int i=0; i<2; ++i)
+    {
+        glBindTexture(GL_TEXTURE_2D, renderContext->m_FrameBufferColorIds[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, renderContext->m_Width, renderContext->m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        glBindTexture(GL_TEXTURE_2D, 0);
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, renderContext->m_FrameBufferIds[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderContext->m_FrameBufferColorIds[i], 0);
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+// s_WindowSizeCallback
+//
+// Called when framebuffer resizes
+static void s_WindowSizeCallback(GLFWwindow* window, int width, int height)
+{
+    RenderContext* renderContext = (RenderContext*) glfwGetWindowUserPointer(window);
+    renderContext->m_Width = width;
+    renderContext->m_Height = height;
+    
+    glViewport(0, 0, width, height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    ResetFrameBufferTextureBuffers(renderContext);
+    
+    const float aspectRatio = (float) renderContext->m_Width/renderContext->m_Height;
+    
+    // initialize perspective matrix
+    ToolLoadPerspective(&renderContext->m_Projection, 45.0f, aspectRatio, 1.0f, 16777216.0f);
+}
+
 void RenderInit(RenderContext* renderContext, int width, int height)
 {
     RenderOptions renderOptions;
@@ -216,14 +260,18 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     WindowsGLInit();
 #endif
     
+    // view setup
     glfwGetFramebufferSize(renderContext->m_Window, &width, &height);
     renderContext->m_Width = width;
     renderContext->m_Height = height;
-    
     glViewport(0, 0, renderContext->m_Width, renderContext->m_Height);
     
+    // set clear color
     VectorSet(&renderContext->m_ClearColor, 0.5f, 0.5f, 0.5f);
     glClearColor(renderContext->m_ClearColor.m_X[0], renderContext->m_ClearColor.m_X[1], renderContext->m_ClearColor.m_X[2], 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // set initial window position
     glfwSetWindowPos(renderContext->m_Window, 10, 10);
     glfwShowWindow(renderContext->m_Window);
     
@@ -244,10 +292,6 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     // initialize shader
     ShaderInit();
     TextureInit();
-    
-    // view setup
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0, 0, renderContext->m_Width, renderContext->m_Height);
     
     // enable depth test
     glEnable(GL_DEPTH_TEST);
@@ -303,27 +347,10 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     
     // generate frame buffer
     glGenFramebuffers(2, renderContext->m_FrameBufferIds);
-    
     glGenTextures(2, renderContext->m_FrameBufferColorIds);
     
-    for (int i=0; i<2; ++i)
-    {
-        glBindTexture(GL_TEXTURE_2D, renderContext->m_FrameBufferColorIds[i]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        
-        glBindTexture(GL_TEXTURE_2D, 0);
-        
-        glBindFramebuffer(GL_FRAMEBUFFER, renderContext->m_FrameBufferIds[i]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderContext->m_FrameBufferColorIds[i], 0);
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // generate the relevant color data for frame buffers
+    ResetFrameBufferTextureBuffers(renderContext);
     
     // posteffects
     renderContext->m_NumPostEffects = 0;
@@ -339,7 +366,7 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(Light), nullptr, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, kPointLightBinding, renderContext->m_PointLightUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
+    
     glGenBuffers(1, &renderContext->m_ConicalLightUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_ConicalLightUbo);
     glBufferData(GL_UNIFORM_BUFFER, Light::kMaxLights*sizeof(Light), nullptr, GL_DYNAMIC_DRAW);
@@ -358,10 +385,14 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     glBindBufferBase(GL_UNIFORM_BUFFER, kDirectionalLightBinding, renderContext->m_DirectionalLightUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     
+    // white texture, mostly for debugging
     renderContext->m_WhiteTexture = TextureCreateFromFile("white.png");
     
     // cache a cube model for rendering OBBs
     renderContext->m_CubeModel = RenderGenerateCube(renderContext, 0.5f);
+    
+    glfwSetFramebufferSizeCallback(renderContext->m_Window, s_WindowSizeCallback);
+    glfwSetWindowUserPointer(renderContext->m_Window, renderContext);
     
 #if 0
     GLint n=0; 
