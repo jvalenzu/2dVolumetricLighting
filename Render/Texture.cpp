@@ -1,5 +1,6 @@
 // -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
 
+#include "slib/Common/Util.h"
 #include "Render/Asset.h"
 #include "Render/Texture.h"
 #include "Render/Material.h"

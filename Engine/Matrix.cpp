@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "slib/Common/Util.h"
 #include "Engine/Platform.h"
 #include "Engine/Matrix.h"
 #include "Engine/Utils.h"

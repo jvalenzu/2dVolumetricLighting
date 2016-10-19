@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "slib/Common/Util.h"
 #include "Render/Private/Material.h"
 #include "Render/Private/Render.h"
 #include "Render/Render.h"
@@ -1497,14 +1498,14 @@ int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPr
 {
     int index = -1;
     
-    Material::MaterialProperty* materialProperty = renderContext->m_MaterialProperties.alloc();
+    Material::MaterialProperty* materialProperty = renderContext->m_MaterialProperties.Alloc();
     if (materialProperty)
     {
         materialProperty->m_Type = type;
         strncpy(materialProperty->m_Key, materialPropertyName, sizeof materialProperty->m_Key-1);
         materialProperty->m_Key[sizeof materialProperty->m_Key-1] = '\0';
         
-        index = renderContext->m_MaterialProperties.indexOf(materialProperty);
+        index = renderContext->m_MaterialProperties.IndexOf(materialProperty);
     }
     
     return index;

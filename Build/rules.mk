@@ -1,9 +1,27 @@
 # can't define any targets in here, just macros
 
+empty:=
 slash=/
 underscore=_
 slash_to_underscore = $(subst $(slash),$(underscore),$1)
+space:=$(empty) $(empty)
+first_dot = $(subst $(space),.,$(wordlist 1, 2,$(subst ., ,$(1))))
 
+CPPFLAGS += -Wno-deprecated-declarations
+CPPFLAGS += -Wc++11-extensions
+
+ifeq ($(BUILD_TYPE),Release)
+CPPFLAGS += -O2
+CPPFLAGS += -DNDEBUG=1
+else
+CPPFLAGS += -fstack-protector-strong
+CPPFLAGS += -g -O0
+CPPFLAGS += -D_DEBUG=1
+endif
+
+CPPFLAGS += -std=c++11 -stdlib=libc++ -Wno-parentheses
+
+LDFLAGS += -Wc++11-extensions
 
 # C++ generated code with dependencies
 outName = obj/$(basename $(call slash_to_underscore,$1)).o

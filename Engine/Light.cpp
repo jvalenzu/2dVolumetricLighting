@@ -1,5 +1,6 @@
 // -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
 
+#include "slib/Common/Util.h"
 #include "Engine/Light.h"
 #include "Engine/Utils.h"
 #include "Tool/Utils.h"

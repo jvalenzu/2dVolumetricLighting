@@ -2,23 +2,13 @@
 
 include Build/rules.mk
 
-CPPFLAGS += -fstack-protector-strong
 CPPFLAGS += -DGLFW_INCLUDE_GLCOREARB=1
-CPPFLAGS += -Wc++11-extensions
 
-ifeq ($(BUILD_TYPE),Release)
-CPPFLAGS += -O2
-CPPFLAGS += -DNDEBUG=1
-else
-CPPFLAGS += -g -O0
-CPPFLAGS += -D_DEBUG=1
-endif
-
-CPPFLAGS += -std=c++11 -stdlib=libc++ -Wno-parentheses
+INCLUDES += -IExternal
 INCLUDES += -IExternal/include
 INCLUDES += -I/usr/local/include
 
-LDFLAGS += -Wc++11-extensions -L/usr/local/lib 
+LDFLAGS += -L/usr/local/lib 
 LIBRARIES += -lglfw3 -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo -framework OpenCL
 
 CLC = /System/Library/Frameworks/OpenCL.framework/Libraries/openclc
@@ -72,8 +62,8 @@ SHADER_TRANSFORMED := $(foreach src,$(SHADER_SRCS),$(call shaderOutName,$(src)))
 
 all: 2dVolumetricLighting
 
-2dVolumetricLighting : $(OBJS) $(SHADER_TRANSFORMED)
-	$(CXX) -o $@ $(OBJS) -I$(CURDIR) -I/usr/local/include $(LDFLAGS) $(LIBRARIES)
+2dVolumetricLighting : $(OBJS) $(SHADER_TRANSFORMED) Makefile
+	$(CXX) -o $@ $(OBJS) -I$(CURDIR) $(LDFLAGS) $(LIBRARIES)
 
 shaders : $(SHADER_TRANSFORMED)
 
