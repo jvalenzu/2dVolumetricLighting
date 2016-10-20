@@ -1,6 +1,7 @@
 // -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
 // baseline 11.76ms
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -360,7 +361,7 @@ static void MainLoop(RenderContext* renderContext)
                 case LightState::kPoint:
                 {
                     Light* light = SceneObjectGetLight(light0);
-                    ImGui::DragFloat("range", &light->m_Range, 0.1, 0.0f, 80.0f);
+                    ImGui::DragFloat("range", &light->m_Range, 0.1f, 0.0f, 80.0f);
                     ImGui::ColorEdit3("color", light->m_Color.asFloat());
                     break;
                 }
@@ -369,18 +370,18 @@ static void MainLoop(RenderContext* renderContext)
                     Light* light = SceneObjectGetLight(light1);
                     
                     float angle = light->m_CosAngleOrLength * 180.0f / float(M_PI);
-                    ImGui::DragFloat("range", &light->m_Range, 0.1, 0.0f, 80.0f);
+                    ImGui::DragFloat("range", &light->m_Range, 0.1f, 0.0f, 80.0f);
                     ImGui::ColorEdit3("color", light->m_Color.asFloat());
-                    if (ImGui::DragFloat("angle", &angle, 0.1, 0.0f, 90.0f))
+                    if (ImGui::DragFloat("angle", &angle, 0.1f, 0.0f, 90.0f))
                         light->m_CosAngleOrLength = angle * float(M_PI)/180.0f;
                     break;
                 }
                 case LightState::kCylindrical:
                 {
                     Light* light = SceneObjectGetLight(light2);
-                    ImGui::DragFloat("range", &light->m_Range, 0.1, 0.0f, 80.0f);
+                    ImGui::DragFloat("range", &light->m_Range, 0.1f, 0.0f, 80.0f);
                     ImGui::ColorEdit3("color", light->m_Color.asFloat());
-                    ImGui::DragFloat("length", &light->m_CosAngleOrLength, 0.1, 0.0f, 80.0f);
+                    ImGui::DragFloat("length", &light->m_CosAngleOrLength, 0.1f, 0.0f, 80.0f);
                     
                     break;
                 }
