@@ -958,6 +958,8 @@ void Mat3InvertIterate(Vec3* dest, const Mat3& a, float lambda)
     }
 }
 
+//  Mat3Solve
+//    
 // lower columns = upper rows
 // lower rows = a rows
 // upper columns = a columns
@@ -1000,6 +1002,8 @@ void Mat3Solve(Vec3* dest, const Mat3& a, const Vec3& b)
     }
 }
 
+// Mat3DecomposeLdu
+//
 void Mat3DecomposeLdu(Mat3* _lower, Mat3* _diagonal, Mat3* _upper, int p[3], const Mat3& a)
 {
     // keep around pointer function arguments for descriptive purposes, but it's more convenient to use references because of operator overloading
@@ -1105,5 +1109,26 @@ bool Mat3Test()
     Mat3Solve(&dest, a, b);
 
     Vec3 c{3.5f, 1.5f, 3.0f};
-    return VectorDistanceSquared(b, c) < kVerySmallEpsilon;
+    if (VectorDistanceSquared(dest, c) > kVerySmallEpsilon)
+        return false;
+    
+    Mat3 s;
+    Mat3 aInv;
+    float lambdas[3];
+    Mat3Diagonalize(&s, lambdas, &aInv, a);
+    
+    int seen_count = 0;
+    for (int i=0; i<3; ++i)
+    {
+        if (FloatDistance(lambdas[i], 1.6180338859558105f) < kVerySmallEpsilon)
+            seen_count++;
+        if (FloatDistance(lambdas[i], 0.5f) < kVerySmallEpsilon)
+            seen_count++;
+        if (FloatDistance(lambdas[i], -0.6180338859558105f) < kVerySmallEpsilon)
+            seen_count++;
+    }
+    if (seen_count != 3)
+        return false;
+    
+    return true;
 }

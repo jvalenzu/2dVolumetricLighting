@@ -583,8 +583,6 @@ void Vector3Dump(float v[3], const char* prefix);
 void MatrixDump(const Mat4& m, const char* prefix);
 void MatrixDump(const Mat3& m, const char* prefix);
 
-void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a);
-
 float MatrixDeterminant(const Mat3& m);
 
 // FLOAT
@@ -663,6 +661,9 @@ inline bool operator!=(const Vec2& a, const Vec2& b)
     return ret;
 }
 
+// mat3 diagonalize
+void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a);
+
 // given an eigenvalue lambda, calculate eigenvector
 void Mat3InvertIterate(Vec3* dest, const Mat3& a, float lambda);
 
@@ -671,3 +672,7 @@ void Mat3Solve(Vec3* dest, const Mat3& a, const Vec3& b);
 // diagonal can be null
 void Mat3DecomposeLdu(Mat3* l, Mat3* d, Mat3* u, int p[3], const Mat3& a);
 
+inline float FloatDistance(float a, float b)
+{
+    return fabsf(a - b);
+}
