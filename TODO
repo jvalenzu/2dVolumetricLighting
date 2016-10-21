@@ -52,18 +52,20 @@
 [ ] Ghost shadow?
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
 [x] ambient parameterization
+  - Removed ambient in favor of directional lights, might want it back.
 [x] Query the default resolution to create an appropriately sized window.
 [x] Black screen after resize
-[ ] Remove Obb?  There's probably too many cached local to world matrices about
+[ ] Pare down RMath to just the stuff we need to generate Obb, then fix the types to R3
 [ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
 [ ] Aspect ratio is incorrect, want square
 [ ] Better method of finding eigenvectors in Obb tool
-[ ] Less fond of RMath design over time, remove it for Obb generation
+[ ] Debug cylindrical attenuation
 
 ------------------------------------------------
 PUBLISH
 ------------------------------------------------
 
+[ ] Makefile dependency if you delete a source file (just hangs currently)
 [✓] Windows port
   [x] OpenGL
   [ ] DirectX 11 or 12.
@@ -71,38 +73,35 @@ PUBLISH
   [ ] Deal with different configurations (DEBUG, RELEASE, OSX, ETC)
   [ ] shader variations
   [ ] suppress MCPP warning from unrecognized #extension directive
+  [ ] Shader variants to get back to one SampleShadowMap shader
 [ ] Relocate asset file paths
 [ ] SceneObject reference count
 [ ] sprite asset
 [ ] Material assets
   [ ] Include normal data for SDF
-[ ] UI describing keys
+[ ] UI legend describing keys
 [ ] Add member function for vec3 for destructive operations
 [ ] movement less jerky
-[ ] memory leaks
+[ ] memory leaks?
 [ ] shader reloading
+[ ] shader fallback when a shader can't be compiled or found instead of crashing
+[ ] Is glLogicOp still okay to or in light bits?
 [ ] use explicit layout in shaders to avoid string based coupling
 [ ] Move model matrix param setting into model, out of material
 [ ] Set view/projection param once per frame (or once per camera)
-[ ] global shader parameters
 [ ] realtime SDF (CL)
 [ ] move camera out of RenderContext and into Scene
 [ ] move SceneObject instances over to HandleAssetManager
-[ ] shader fallback when a shader can't be compiled or found
 [ ] Parameterized shadow blend factor
 [ ] Reverse index hashes in ShaderManager to allow sorting on separate indices
 [ ] GNU/Linux port
-[ ] Makefile dependency if you delete a source file (just hangs currently)
 [ ] GUIDs instead of asset paths
 [ ] Split one-time initialization like ShaderInit out of RenderInit which because it takes a render context implies it's not a singleton.  Alternatively make RenderContext a singleton.
 [ ] Make gamma correct
-[ ] Bilinear filter Gaussian blur
+[ ] Bilinear filter Gaussian blur to reduce number of passes
 [ ] Shader assets
   [ ] Decouple vsh/fsh
-[ ] Shader variants
-  [ ] Back to one SampleShadowMap shader
 [ ] Hundreds of sprites
 [ ] FIXME:
-  [ ] // duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
+  [ ] duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
 [ ] Need to spell out how the FromZeroOne functions result in non-cartesean reactions in the 1d mapping functions
-[ ] glLogicOp can't be the best way to or in light bits
