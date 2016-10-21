@@ -26,7 +26,6 @@ SRCS += Render/Texture.cpp
 SRCS += Render/PostEffect.cpp
 SRCS += Render/Shader.cpp
 SRCS += Render/Asset.cpp
-SRCS += Tool/RMath.cpp
 SRCS += Tool/Utils.cpp
 SRCS += Tool/Test.cpp
 SRCS += Main.cpp

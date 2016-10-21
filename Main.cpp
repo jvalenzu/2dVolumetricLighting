@@ -45,8 +45,12 @@ void Test()
     AssetHandleTableTest();
 }
 
+extern bool Mat3Test();
+
 int main(int argc, char* argv[])
 {
+    Mat3Test();
+    
     if (argc > 1 && !strcmp(argv[1], "--test"))
     {
         Test();

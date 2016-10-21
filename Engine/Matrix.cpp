@@ -10,7 +10,10 @@
 #include "Engine/Platform.h"
 #include "Engine/Matrix.h"
 #include "Engine/Utils.h"
-#include "Tool/RMath.h"
+
+#define kSmallEpsilon 1e-6
+#define kVerySmallEpsilon 1e-9
+
 
 // MatrixIsIdent
 //
@@ -750,26 +753,21 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
         lambda3[1] = 3.0f * q - lambda3[0] - lambda3[2];
         
         // generate eigenvectors from lambdas
-        RMat* rma = (RMat*) RMAT_A(3, 3);
-        for (int i=0; i<9; ++i)
-            rma->m_Data[i] = a.asFloat()[i];
-        RVector* dest = RVectorAlloc(alloca(RVectorSize(3)), 3);
+        Vec3 dest;
+        Mat3InvertIterate(&dest, a, lambda3[0]);
+        s->m_X[0] = dest.m_X[0];
+        s->m_Y[0] = dest.m_X[1];
+        s->m_Z[0] = dest.m_X[2];
         
-        RMatInvertIterate(dest, rma, lambda3[0]);
-        s->m_X[0] = dest->m_X[0];
-        s->m_Y[0] = dest->m_X[1];
-        s->m_Z[0] = dest->m_X[2];
-    
-        RMatInvertIterate(dest, rma, lambda3[1]);
-        s->m_X[1] = dest->m_X[0];
-        s->m_Y[1] = dest->m_X[1];
-        s->m_Z[1] = dest->m_X[2];
+        Mat3InvertIterate(&dest, a, lambda3[1]);
+        s->m_X[1] = dest.m_X[0];
+        s->m_Y[1] = dest.m_X[1];
+        s->m_Z[1] = dest.m_X[2];
         
-        RMatInvertIterate(dest, rma, lambda3[2]);
-        s->m_X[2] = dest->m_X[0];
-        s->m_Y[2] = dest->m_X[1];
-        s->m_Z[2] = dest->m_X[2];
-        
+        Mat3InvertIterate(&dest, a, lambda3[2]);
+        s->m_X[2] = dest.m_X[0];
+        s->m_Y[2] = dest.m_X[1];
+        s->m_Z[2] = dest.m_X[2];
     }
     
     MatrixInvert(sInv, *s);
@@ -935,4 +933,177 @@ int VectorApproxEqual(const Vec3& a, const Vec3& b, float eps)
     if (FloatApproxEqual(a.m_X[2], b.m_X[2], eps))
         ret++;
     return ret;
+}
+
+void Mat3InvertIterate(Vec3* dest, const Mat3& a, float lambda)
+{
+    Mat3 u = a;
+    
+    //  0  1  2
+    //  3  4  5
+    //  6  7  8
+    u.m_X[0] -= lambda;
+    u.m_Y[1] -= lambda;
+    u.m_Z[2] -= lambda;
+    
+    dest->m_X[0] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
+    dest->m_X[1] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
+    dest->m_X[2] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
+    
+    Vec3 x;
+    for (int i=0; i<10; ++i) // 10 is arbitrary
+    {
+        Mat3Solve(&x, u, *dest);
+        *dest = x.GetNormalized();
+    }
+}
+
+// lower columns = upper rows
+// lower rows = a rows
+// upper columns = a columns
+void Mat3Solve(Vec3* dest, const Mat3& a, const Vec3& b)
+{
+    Mat3 upper;
+    Mat3 lower;
+    int p[3];
+    
+    // decompose
+    Mat3DecomposeLdu(&lower, nullptr, &upper, p, a);
+    
+    // initialize destination array
+    dest->Splat(0.0f);
+    
+    const int kRows = 3;
+    const int kColumns = 3;
+    
+    // solve lower
+    for (int i=0; i<kRows; ++i)
+    {
+        float bi = b[p[i]];
+        for (int j=0; j<i; ++j)
+            bi -= dest->m_X[j] * lower[i][j];
+        dest->m_X[i] = bi;
+    }
+    
+    // solve upper
+    for (int i=kRows-1; i>=0; --i)
+    {
+        const float coeff = upper[i][i];
+        float bi = dest->m_X[i];
+        
+        for (int j=kColumns-1; j>i; --j)
+        {
+            const float rUpper = upper[i][j];
+            bi -= dest->m_X[j] * rUpper;
+        }
+        dest->m_X[i] = bi / upper[i][i];
+    }
+}
+
+void Mat3DecomposeLdu(Mat3* _lower, Mat3* _diagonal, Mat3* _upper, int p[3], const Mat3& a)
+{
+    // keep around pointer function arguments for descriptive purposes, but it's more convenient to use references because of operator overloading
+    Mat3& lower = *_lower;
+    Mat3& upper = *_upper;
+    
+    const int kRows = 3;
+    const int kColumns = 3;
+    
+    int* indices = p;
+    
+    // which indices have been set yet
+    uint8_t indicesSet[kColumns] = { 0, 0, 0 };
+    
+    for (int col=0; col<kRows; ++col)
+    {
+        int ndx = -1;
+        float value = -1.0f;
+        for (int row=0; row<kColumns; ++row)
+        {
+            if (indicesSet[row])
+                continue;
+            
+            const float scalar = fabsf(a[row][col]);
+            if (scalar > value)
+            {
+                value = scalar;
+                ndx = row;
+            }
+        }
+        
+        indicesSet[ndx] = 1;
+        *indices++ = ndx;
+    }
+    
+    // permute to initialize upper
+    for (int i=0; i<kRows; ++i)
+        upper[i] = a[p[i]];
+    
+    MatrixMakeIdentity(&lower);
+    
+    // iterate over each pivot column
+    for (int ri=0; ri<kRows; ++ri)
+    {
+        const Vec3& pivotSourceRow = upper[ri];
+        const float pivotDiv = upper[ri][ri];
+        
+        // iterate over the other rows, adding -(row_value / pivot_value)
+        for (int v=ri+1; v<kRows; ++v)
+        {
+            const Vec3& leftSourceRow = upper[v];
+            Vec3& leftDestRow = upper[v];
+            Vec3& rightDestRow = lower[v];
+            
+            const float rowValAtPivotColumn = upper[v][ri];
+            if (fabs(pivotDiv) < kSmallEpsilon || fabs(rowValAtPivotColumn) < kSmallEpsilon)
+                continue;
+            
+            const float scale = 1.0f/pivotDiv * rowValAtPivotColumn;
+            
+            // update U with pivot
+            for (int i=0; i<kColumns; ++i)
+                leftDestRow[i] = leftSourceRow[i] - scale * pivotSourceRow[i];
+            
+            // save inverse to L
+            lower[v][ri] = scale;
+        }
+    }
+    
+    // divide out diagonal elements
+    if (_diagonal)
+    {
+        Mat3& diagonal = *_diagonal;
+        
+        // initialize diagonal matrix
+        MatrixMakeZero(&diagonal);
+        
+        for (int ri=0; ri<kRows; ++ri)
+        {
+            const float dValue = upper[ri][ri];
+            const float invDValue = 1.0f / dValue;
+            
+            diagonal[ri][ri] = dValue;
+            Vec3& dest = upper[ri];
+            for (int i=0; i<kColumns; ++i)
+            {
+                dest[i] *= invDValue;
+                if (dest[i] == -0.0)
+                    dest[i] = 0.0;
+            }
+        }
+    }
+}
+
+bool Mat3Test()
+{
+    Vec3 dest;
+    Mat3 a = {{ 0.5f, -0.5f, 0.0f},
+              {-0.5f,  0.5f, 1.0f},
+              { 0.0f,  1.0f, 0.5f}};
+    Vec3 b{1.0f, 2.0f, 3.0f};
+    
+    Mat3Solve(&dest, a, b);
+
+    Vec3 c{3.5f, 1.5f, 3.0f};
+    return VectorDistanceSquared(b, c) < kVerySmallEpsilon;
 }

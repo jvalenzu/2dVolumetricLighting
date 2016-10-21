@@ -3,6 +3,7 @@
 #pragma once
 
 #include <math.h>
+#include <stdlib.h>
 
 #define kVecEpsilon 1e-3f
 
@@ -168,6 +169,21 @@ struct Vec3
         m_X[2] /= f;
         return *this;
     }
+
+    inline float& operator[](size_t index)
+    {
+        return m_X[index];
+    }
+
+    inline float operator[](size_t index) const
+    {
+        return m_X[index];
+    }
+    
+    inline void Splat(float value)
+    {
+        m_X[0] = m_X[1] = m_X[2] = value;
+    }
     
     inline float LengthSquared() const
     {
@@ -189,6 +205,18 @@ struct Vec3
             m_X[1] /= len;
             m_X[2] /= len;
         }
+    }
+
+    inline Vec3 GetNormalized()
+    {
+        Vec3 ret = *this;
+        const float lengthSquared = LengthSquared();
+        if (lengthSquared > kVecEpsilon)
+        {
+            float len = 1.0f / sqrtf(lengthSquared);
+            ret *= len;
+        }
+        return ret;
     }
     
     inline Vec2 xy() const
@@ -355,6 +383,18 @@ struct Mat3
     
     float* asFloat() { return &m_X[0]; }
     const float* asFloat() const { return &m_X[0]; }
+    
+    inline Vec3& operator[](size_t index)
+    {
+        Vec3* ret = (Vec3*) (asFloat() + index*3);
+        return *ret;
+    }
+    
+    inline const Vec3& operator[](size_t index) const
+    {
+        const Vec3* ret = (const Vec3*) (asFloat() + index*3);
+        return *ret;
+    }
     
     inline Mat3 operator/= (float f)
     {
@@ -622,3 +662,12 @@ inline bool operator!=(const Vec2& a, const Vec2& b)
     ret = ret && FloatApproxEqual(a.m_X[1], b.m_X[1], 1e-3f);
     return ret;
 }
+
+// given an eigenvalue lambda, calculate eigenvector
+void Mat3InvertIterate(Vec3* dest, const Mat3& a, float lambda);
+
+void Mat3Solve(Vec3* dest, const Mat3& a, const Vec3& b);
+
+// diagonal can be null
+void Mat3DecomposeLdu(Mat3* l, Mat3* d, Mat3* u, int p[3], const Mat3& a);
+
