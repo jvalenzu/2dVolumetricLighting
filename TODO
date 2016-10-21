@@ -39,7 +39,7 @@
   [x] Change color of cylinder
   [x] Change length of cylinder
   [x] Change length, color, angle of conical light
-[x] Rework conical attenuation.  Calculate two ranges, along facing and parallel to.  Parallel attenuation is squared.
+[x] rework conical attenuation.  Calculate two ranges, along facing and parallel to.  Parallel attenuation is squared.
 [x] light prepass optimization
 [x] directional light
 [x] Add member function for MaterialReserveMaterialProperties
@@ -49,17 +49,15 @@
 [x] Add member function for MaterialSetMaterialPropertyTexture
 [ ] ARTIFACT: The volumetric shadow has lines in it
 [ ] ARTIFACT: Dealing with lsp embedded in occluder
-[ ] Ghost shadow?
+[ ] ghost shadow?
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
 [x] ambient parameterization
-  - Removed ambient in favor of directional lights, might want it back.
-[x] Query the default resolution to create an appropriately sized window.
-[x] Black screen after resize
-[ ] Pare down RMath to just the stuff we need to generate Obb, then fix the types to R3
-[ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
-[ ] Aspect ratio is incorrect, want square
-[ ] Better method of finding eigenvectors in Obb tool
-[ ] Debug cylindrical attenuation
+  - removed ambient in favor of directional lights, might want it back.
+[x] query the default resolution to create an appropriately sized window.
+[x] black screen after resize
+[x] pare down RMath to just the stuff we need to generate Obb, then fix the types to R3
+[ ] aspect ratio is incorrect, want square
+[ ] debug cylindrical attenuation
 
 ------------------------------------------------
 PUBLISH
@@ -74,21 +72,20 @@ PUBLISH
   [ ] shader variations
   [ ] suppress MCPP warning from unrecognized #extension directive
   [ ] Shader variants to get back to one SampleShadowMap shader
-[ ] Relocate asset file paths
+[ ] relocate asset file paths
 [ ] SceneObject reference count
 [ ] sprite asset
 [ ] Material assets
   [ ] Include normal data for SDF
 [ ] UI legend describing keys
-[ ] Add member function for vec3 for destructive operations
+[ ] add member function for vec3 for destructive operations
 [ ] movement less jerky
-[ ] memory leaks?
+[ ] more comprehensive testing for memory leaks
 [ ] shader reloading
 [ ] shader fallback when a shader can't be compiled or found instead of crashing
-[ ] Is glLogicOp still okay to or in light bits?
 [ ] use explicit layout in shaders to avoid string based coupling
-[ ] Move model matrix param setting into model, out of material
-[ ] Set view/projection param once per frame (or once per camera)
+[ ] move model matrix param setting into model, out of material
+[ ] set view/projection param once per frame (or once per camera)
 [ ] realtime SDF (CL)
 [ ] move camera out of RenderContext and into Scene
 [ ] move SceneObject instances over to HandleAssetManager
@@ -96,12 +93,19 @@ PUBLISH
 [ ] Reverse index hashes in ShaderManager to allow sorting on separate indices
 [ ] GNU/Linux port
 [ ] GUIDs instead of asset paths
-[ ] Split one-time initialization like ShaderInit out of RenderInit which because it takes a render context implies it's not a singleton.  Alternatively make RenderContext a singleton.
-[ ] Make gamma correct
-[ ] Bilinear filter Gaussian blur to reduce number of passes
+[ ] split one-time initialization like ShaderInit out of RenderInit which because it takes a render context implies it's not a singleton.  Alternatively make RenderContext a singleton.
+[ ] make gamma correct
+[ ] bilinear filter Gaussian blur to reduce number of passes
 [ ] Shader assets
   [ ] Decouple vsh/fsh
-[ ] Hundreds of sprites
+[ ] hundreds of sprites
 [ ] FIXME:
   [ ] duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
-[ ] Need to spell out how the FromZeroOne functions result in non-cartesean reactions in the 1d mapping functions
+[ ] need to spell out how the FromZeroOne functions result in non-cartesean reactions in the 1d mapping functions
+
+------------------------------------------------
+DISTANT FUTURE
+------------------------------------------------
+[ ] Is glLogicOp still okay method to or in light bits?
+[ ] Better method of finding eigenvectors in Obb tool
+[ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
