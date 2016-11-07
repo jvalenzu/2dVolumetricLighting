@@ -59,6 +59,7 @@ void LightInitialize(Light* light, const LightOptions& lightOptions)
             light->m_Type = LightType::kDirectional;
             light->m_Color = lightOptions.m_Color;
             light->m_Direction = lightOptions.m_Direction;
+            light->m_Position = Vec3(0.0f, 0.0f, 0.0f);
             break;
         }
         case LightType::kPoint:
@@ -72,8 +73,8 @@ void LightInitialize(Light* light, const LightOptions& lightOptions)
         case LightType::kConical:
         {
             light->m_Type = LightType::kConical;
-            light->m_CosAngleOrLength = cosf(float(M_PI) * lightOptions.m_Angle / 360.0f);
-            assert(light->m_CosAngleOrLength>=0.0f);
+            light->m_CosAngle = cosf(float(M_PI) * lightOptions.m_Angle / 360.0f);
+            assert(light->m_CosAngle>=0.0f);
             light->m_Range = lightOptions.m_Range;
             light->m_Color = lightOptions.m_Color;
             light->m_Position = lightOptions.m_Position;
@@ -84,7 +85,7 @@ void LightInitialize(Light* light, const LightOptions& lightOptions)
         {
             light->m_Type = LightType::kCylindrical;
             light->m_Range = lightOptions.m_Range;
-            light->m_CosAngleOrLength = lightOptions.m_Length;
+            light->m_OrthogonalRange = lightOptions.m_OrthogonalRange;
             light->m_Color = lightOptions.m_Color;
             light->m_Position = lightOptions.m_Position;
             light->m_Direction = lightOptions.m_Direction;

@@ -39,7 +39,7 @@ ShaderManager::ShaderManager()
 void ShaderManager::DestroyShader(Shader* victim)
 {
     // jiv fixme delete shader
-
+    
     // destroy bookkeeping
     DestroyAsset(victim);
 }
@@ -241,6 +241,7 @@ void ShaderDestroy(Shader* victim)
 // internal
 
 Shader* g_SimpleShader;
+Shader* g_SimpleColorShader;
 Shader* g_SimpleTransparentShader;
 
 void ShaderManager::DumpInternal()
@@ -257,15 +258,18 @@ void ShaderInit()
     g_ShaderManager = new ShaderManager();
     
     g_SimpleShader = ShaderCreate("obj/Shader/Simple");
+    g_SimpleColorShader = ShaderCreate("obj/Shader/SimpleColor");
     g_SimpleTransparentShader = ShaderCreate("obj/Shader/SimpleTransparent");
 }
 
 void ShaderFini()
 {
     ShaderDestroy(g_SimpleShader);
+    ShaderDestroy(g_SimpleColorShader);
     ShaderDestroy(g_SimpleTransparentShader);
     
     g_SimpleShader = nullptr;
+    g_SimpleColorShader = nullptr;
     g_SimpleTransparentShader = nullptr;
     
     g_ShaderManager->Dump();

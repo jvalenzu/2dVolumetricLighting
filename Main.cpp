@@ -24,15 +24,11 @@
 #define GAME_NAME "foo"
 #define VERSION "1.0"
 
-int nbFrames;
-double lastTime;
-
 Vec3 s_Target;
 Vec3 s_LastDir;
 Vec3 s_Dir;
-int s_Strength = 0;
-
 SceneObject* s_SceneObject;
+
 static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mods);
 static void MainLoop(RenderContext* renderContext);
 
@@ -44,8 +40,115 @@ void Test()
 {
     AssetHandleTableTest();
     
-    extern bool Mat3Test();
     assert(Mat3Test());
+}
+
+static void ApplyUserInput(RenderContext* renderContext, SceneObject* sceneObject, const Vec3& targetPos)
+{
+    // handle user input
+    float err = 0.0f;
+    Vec3 pos = Mat4GetTranslation(sceneObject->m_LocalToWorld);
+    Vec3 dir = targetPos - pos;
+    if ((err = VectorLengthSquared(dir)) > 1e-3f)
+    {
+        dir.Normalize();
+        dir *= fminf(err, 0.2f);
+        pos += dir;
+        
+        Mat4ApplyTranslation(&sceneObject->m_LocalToWorld, pos);
+        sceneObject->m_Flags |= SceneObject::Flags::kDirty;
+    }
+}
+
+// s_ProcessKeys
+//
+// Callback what updates our key state
+static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mods)
+{
+    if (action == GLFW_PRESS || action == GLFW_REPEAT)
+    {
+        bool handled = false;
+        float step = 1.0f;
+        float x=0.0f, y=0.0f, z=0.0f;
+        
+        switch (key)
+        {
+            case GLFW_KEY_A:
+            {
+                handled = true;
+                x -= step;
+                break;
+            }
+            case GLFW_KEY_D:
+            {
+                handled = true;
+                x += step;
+                break;
+            }
+            case GLFW_KEY_W:
+            {
+                handled = true;
+                y += step;
+                break;
+            }
+            case GLFW_KEY_S:
+            {
+                handled = true;
+                y -= step;
+                break;
+            }
+            case GLFW_KEY_Z:
+            {
+                handled = true;
+                z -= step;
+                break;
+            }
+            case GLFW_KEY_X:
+            {
+                handled = true;
+                z += step;
+                break;
+            }
+        }
+        
+        Vec3 temp;
+        VectorSet(&temp, x, y, z);
+        
+        const Vec3 mask  = VectorSign(temp);
+        const Vec3 maskL = VectorSign(s_LastDir);
+        
+        s_LastDir = s_Dir;
+        s_Dir.Normalize();
+        
+        if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT)
+        {
+            handled = true;
+            
+            const float sign = key == GLFW_KEY_LEFT ? 1.0f : -1.0f;
+            
+            Mat4 rot;
+            float uvw[4] = { 0.0f, 0.0f, -1.0f, 0.0f };
+            // MatrixSetRotAboutAxis(&rot, uvw, sign*0.0872664625996f);
+            // MatrixSetRotAboutAxis(&rot, uvw, sign*1.5707963268f);
+            MatrixSetRotAboutAxis(&rot, uvw, sign*0.7853981634f);
+            
+            Mat4 t1;
+            MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);
+            MatrixCopy(&s_SceneObject->m_LocalToWorld, t1);
+        }
+        
+        if (handled)
+        {
+            s_Target = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
+            
+            if (key == GLFW_KEY_W || key == GLFW_KEY_S)
+                s_Target += Mat4GetUp(s_SceneObject->m_LocalToWorld) * (signbit(y)?-1.0f:1.0f) * step;
+            else
+                s_Target += Mat4GetRight(s_SceneObject->m_LocalToWorld) * (signbit(x)?-1.0f:1.0f) * step;
+        }
+        
+        s_SceneObject->m_Flags |= SceneObject::Flags::kDirty;
+    }
 }
 
 int main(int argc, char* argv[])
@@ -58,7 +161,7 @@ int main(int argc, char* argv[])
     
     int width = -1;
     int height = -1;
-    
+
     RenderContext renderContext;
     RenderInit(&renderContext, width, height);
     
@@ -77,7 +180,7 @@ static void MainLoop(RenderContext* renderContext)
     SceneCreate(&scene, 256);
     
     // move camera to 40.0f
-    Mat4ApplyTranslation(&renderContext->m_Camera, 0.0f, 0.0f, 40.0f);
+    renderContext->m_Camera.SetTranslation(0.0f, 0.0f, 40.0f);
     MatrixInvert(&renderContext->m_View, renderContext->m_Camera);
     
     // LSP
@@ -96,14 +199,14 @@ static void MainLoop(RenderContext* renderContext)
     // create a group for the shadow casting things
     int shadowCasterGroupId = SceneGroupCreate(&scene);
     
-    float xes[] =
+    const float xes[] =
     {
         +0.0f,
         +20.0f,
         +0.0f,
         -20.0f
     };
-    float yes[] =
+    const float yes[] =
     {
         -20.0f,
         +15.0f,
@@ -113,15 +216,15 @@ static void MainLoop(RenderContext* renderContext)
     
     Texture* treeAppleTexture = TextureCreateFromFile("TreeApple.png");
     Texture* treeAppleNormal = TextureCreateFromFile("TreeApple_OUTPUT.png");
-    Shader* outlineLightShader = ShaderCreate("obj/Shader/Planar");
-    Material* treeAppleMaterial = MaterialCreate(outlineLightShader, treeAppleTexture);
+    Shader* planarShader = ShaderCreate("obj/Shader/Planar");
+    Material* treeAppleMaterial = MaterialCreate(planarShader, treeAppleTexture);
     treeAppleMaterial->ReserveProperties(2);
     int planarTex = treeAppleMaterial->SetPropertyType("_PlanarTex", Material::MaterialPropertyType::kTexture);
     treeAppleMaterial->SetTexture(planarTex, treeAppleNormal);
     
     // debug material/shader
     Texture* whiteTexture = TextureCreateFromFile("white.png");
-    Material* debugMaterial = MaterialCreate(outlineLightShader, whiteTexture);
+    Material* debugMaterial = MaterialCreate(planarShader, whiteTexture);
     debugMaterial->ReserveProperties(1);
     int debugPlanarTex = debugMaterial->SetPropertyType("_PlanarTex", Material::MaterialPropertyType::kTexture);
     debugMaterial->SetTexture(debugPlanarTex, whiteTexture);
@@ -178,7 +281,7 @@ static void MainLoop(RenderContext* renderContext)
         
         light1 = SceneCreateLight(&scene, LightOptions::MakeConicalLight(Vec3(0.0f, 5.0f, -1.0f),
                                                                          Vec3(0.0f, 1.0f, 0.0f),
-                                                                         localSpriteOptions.m_TintColor, 30.0f, 40.0f));
+                                                                         localSpriteOptions.m_TintColor, 30.0f, 15.0f));
         
         light1->m_DebugName = "ConicalLight";
         SceneGroupAddChild(lightSprite1, light1);
@@ -196,7 +299,9 @@ static void MainLoop(RenderContext* renderContext)
         SceneGroupAddChild(s_SceneObject, lightSprite2);
         
         light2 = SceneCreateLight(&scene, LightOptions::MakeCylindricalLight(Vec3(0.0f, 5.0f, -1.0f), Vec3(0.0f, 1.0f, 0.0f),
-                                                                             spriteOptions.m_TintColor, 0.5f, 10.0f));
+                                                                             spriteOptions.m_TintColor,
+                                                                             10.0f, // range
+                                                                             5.0f)); // orthogonal range
         light2->m_DebugName = "Cylindrical Light";
         SceneGroupAddChild(lightSprite2, light2);
     }
@@ -260,51 +365,38 @@ static void MainLoop(RenderContext* renderContext)
     
     Shader* debugLightPrepassSampleShader = ShaderCreate("obj/Shader/DebugLightPrepassSample");
     
-    enum LightState
-    {
-        kPoint,
-        kConical,
-        kCylindrical,
-        kCount
-    };
-    const char* light_state_labels[] =
-    {
-        "point",
-        "conical",
-        "cylindrical"
-    };
-    int state = 0;
+    // which light are we rendering?
+    int light_state = 0;
     
-    const char* render_mode_debug_labels[]
-    {
-        "normal",
-        "coverage mask",
-        "fullframe"
-    };
+    // for switching between normal/debug render modes
     int render_mode = 0;
     
+    // initialize debug UI
     DebugUi::Init(renderContext, false);
     
     // point light enabled by default
     SceneSetEnabledRecursive(lightSprite0, true);
     SceneSetEnabledRecursive(lightSprite1, false);
     SceneSetEnabledRecursive(lightSprite2, false);
-    
+
     // do we enable directional mode or not?
     int directional_mode = 0;
-
+    
+    // blur enabled or not?
     int blur_mode = 0;
     
     bool running = true;
     while (running)
     {
+        // start render frame
         RenderFrameInit(renderContext);
-        
+
         // IMGUI
         DebugUi::NewFrame();
         
+        // DEBUG: 
         {
-            const char* directional[] =
+            constexpr const char* directional[] =
             {
                 "direction on",
                 "direction off"
@@ -317,8 +409,9 @@ static void MainLoop(RenderContext* renderContext)
             }
         }
         
+        // DEBUG: toggle blur
         {
-            const char* blur_labels[] =
+            constexpr const char* blur_labels[] =
             {
                 "blur on",
                 "blur off"
@@ -327,13 +420,29 @@ static void MainLoop(RenderContext* renderContext)
                 blur_mode = (blur_mode+1) & 1;
         }
         
+        // DEBUG: switch which light we're using
         {
-            if (ImGui::Button(light_state_labels[state]))
+            constexpr const char* light_state_labels[] =
             {
-                if (++state == LightState::kCount)
-                    state = LightState::kPoint;
+                "point",
+                "conical",
+                "cylindrical"
+            };
+            
+            enum LightState
+            {
+                kPoint,
+                kConical,
+                kCylindrical,
+                kCount
+            };
+            
+            if (ImGui::Button(light_state_labels[light_state]))
+            {
+                if (++light_state == LightState::kCount)
+                    light_state = LightState::kPoint;
                 
-                switch (state)
+                switch (light_state)
                 {
                     case LightState::kPoint:
                     {
@@ -359,7 +468,7 @@ static void MainLoop(RenderContext* renderContext)
                 };
             }
             
-            switch (state)
+            switch (light_state)
             {
                 case LightState::kPoint:
                 {
@@ -372,11 +481,11 @@ static void MainLoop(RenderContext* renderContext)
                 {
                     Light* light = SceneObjectGetLight(light1);
                     
-                    float angle = light->m_CosAngleOrLength * 180.0f / float(M_PI);
+                    float angle = light->m_CosAngle * 180.0f / float(M_PI);
                     ImGui::DragFloat("range", &light->m_Range, 0.1f, 0.0f, 80.0f);
                     ImGui::ColorEdit3("color", light->m_Color.asFloat());
                     if (ImGui::DragFloat("angle", &angle, 0.1f, 0.0f, 90.0f))
-                        light->m_CosAngleOrLength = angle * float(M_PI)/180.0f;
+                        light->m_CosAngle = angle * float(M_PI)/180.0f;
                     break;
                 }
                 case LightState::kCylindrical:
@@ -384,13 +493,21 @@ static void MainLoop(RenderContext* renderContext)
                     Light* light = SceneObjectGetLight(light2);
                     ImGui::DragFloat("range", &light->m_Range, 0.1f, 0.0f, 80.0f);
                     ImGui::ColorEdit3("color", light->m_Color.asFloat());
-                    ImGui::DragFloat("length", &light->m_CosAngleOrLength, 0.1f, 0.0f, 80.0f);
+                    ImGui::DragFloat("range", &light->m_Range, 0.1f, 0.0f, 80.0f);
+                    ImGui::DragFloat("orthogonal range", &light->m_OrthogonalRange, 0.1f, 0.0f, 80.0f);
                     
                     break;
                 }
             }
             
             // render mode debug
+            constexpr const char* render_mode_debug_labels[]
+            {
+                "normal",
+                "coverage mask",
+                "fullframe"
+            };
+            
             if (ImGui::Button(render_mode_debug_labels[render_mode]))
             {
                 render_mode++;
@@ -463,7 +580,7 @@ static void MainLoop(RenderContext* renderContext)
                 if (light->m_Type == LightType::kConical)
                 {
                     Vec4 direction = lightObject->m_LocalToWorld.GetUp();
-                    direction.m_X[3] = light->m_CosAngleOrLength;
+                    direction.m_X[3] = light->m_CosAngle;
                     shadow1dMaterial->SetVector(1, direction);
                 }
                 
@@ -514,8 +631,14 @@ static void MainLoop(RenderContext* renderContext)
             // setup one of the temporary render texture targets to receive the light pass.  We'll render
             // out each light as an opaque OBB which approximates (conservatively) their area of influence
             renderTextureInt->SetClearFlags(Texture::RenderTextureFlags::kClearColor, 0,0,0,1);
+            
+#if 1
             RenderSetRenderTarget(renderContext, renderTextureInt);
             RenderSetReplacementShader(renderContext, lightPrepassShader);
+#else
+            // see the obb and faces in perspective projection
+            RenderSetReplacementShader(renderContext, g_SimpleColorShader);
+#endif
             
             // RenderSetReplacementShader resets this for now
             RenderSetBlendMode(Material::BlendMode::kOr);
@@ -533,11 +656,27 @@ static void MainLoop(RenderContext* renderContext)
                 if (light == nullptr)
                     continue;
                 
+                if (light->m_Type == LightType::kDirectional)
+                    continue;
+                
                 light->m_Index = i;
                 RenderGlobalSetInt(renderContext, lightBitmaskIndex, 1U<<light->m_Index);
                 
-                // draw obb
-                SceneDrawObb(&scene, renderContext, lightObject);
+                const Vec3 cpMinusF = (renderContext->m_Camera.GetTranslation() - lightObject->m_LocalToWorld.GetTranslation()).Normalized();
+                
+                // rotate toward camera
+                Mat4 transform;
+                transform.SetRight(-PlaneProj(lightObject->m_LocalToWorld.GetRight(), cpMinusF));
+                transform.SetUp(PlaneProj(lightObject->m_LocalToWorld.GetUp(), cpMinusF));
+                transform.SetForward(cpMinusF);
+                transform.SetTranslation(lightObject->m_LocalToWorld.GetTranslation());
+                
+                Mat4 axes;
+                MatrixMakeIdentity(&axes);
+                axes.SetRot(lightObject->m_Obb.m_Axes);
+                
+                Mat4 localToWorld = transform * axes;
+                SceneDrawObb(&scene, renderContext, lightObject, localToWorld);
             }
             
             RenderSetReplacementShader(renderContext, nullptr);
@@ -566,22 +705,8 @@ static void MainLoop(RenderContext* renderContext)
             }
         }
         
-        if (true)
-        {
-            // handle user input
-            float err = 0.0f;
-            Vec3 pos = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
-            Vec3 dir = s_Target - pos;
-            if ((err = VectorLengthSquared(dir)) > 1e-3f)
-            {
-                dir.Normalize();
-                dir *= fminf(err, 0.2f);
-                pos += dir;
-                
-                Mat4ApplyTranslation(&s_SceneObject->m_LocalToWorld, pos);
-                s_SceneObject->m_Flags |= SceneObject::Flags::kDirty;
-            }
-        }
+        // apply the user input
+        ApplyUserInput(renderContext, s_SceneObject, s_Target);
         
         ImGui::Render();
         
@@ -603,7 +728,6 @@ static void MainLoop(RenderContext* renderContext)
         TextureDestroy(renderTextureTemp[i]);
     
     ShaderDestroy(shadowCasterShader);
-    
     ShaderDestroy(sampleShadowMapShader);
     
     ShaderDestroy(shaderBlurX);
@@ -621,7 +745,7 @@ static void MainLoop(RenderContext* renderContext)
     TextureDestroy(treeAppleTexture);
     TextureDestroy(treeAppleNormal);
     TextureDestroy(whiteTexture);
-    ShaderDestroy(outlineLightShader);
+    ShaderDestroy(planarShader);
     MaterialDestroy(treeAppleMaterial);
     
     ShaderDestroy(lightPrepassShader);
@@ -630,69 +754,4 @@ static void MainLoop(RenderContext* renderContext)
     MaterialDestroy(debugMaterial);
     
     SceneDestroy(&scene);
-}
-
-// s_ProcessKeys
-//
-// Callback what updates our key state
-static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mods)
-{
-    if (action == GLFW_PRESS || action == GLFW_REPEAT)
-    {
-        float step = 1.0f;
-        
-        float x=0.0f, y=0.0f, z=0.0f;
-        
-        if (key == GLFW_KEY_A)
-            x -= step;
-        if (key == GLFW_KEY_D)
-            x += step;
-        if (key == GLFW_KEY_W)
-            y += step;
-        if (key == GLFW_KEY_S)
-            y -= step;
-        
-        if (key == GLFW_KEY_Z)
-            z -= step;
-        if (key == GLFW_KEY_X)
-            z += step;
-        
-        Vec3 temp;
-        VectorSet(&temp, x, y, z);
-        
-        const Vec3 mask  = VectorSign(temp);
-        const Vec3 maskL = VectorSign(s_LastDir);
-        const int popCount = VectorEqual(mask, maskL);
-        if (popCount < 3)
-            s_Strength = 0;
-        else
-            s_Strength++;
-        
-        s_LastDir = s_Dir;
-        s_Dir.Normalize();
-        
-        if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT)
-        {
-            const float sign = key == GLFW_KEY_LEFT ? 1.0f : -1.0f;
-            
-            Mat4 rot;
-            float uvw[4] = { 0.0f, 0.0f, -1.0f, 0.0f };
-            MatrixSetRotAboutAxis(&rot, uvw, sign*0.0872664625996f);
-            
-            Mat4 t1;
-            MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);
-            MatrixCopy(&s_SceneObject->m_LocalToWorld, t1);
-        }
-        else
-        {
-            s_Target = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
-            
-            if (key == GLFW_KEY_W || key == GLFW_KEY_S)
-                s_Target += Mat4GetUp(s_SceneObject->m_LocalToWorld) * (signbit(y)?-1.0f:1.0f) * step;
-            else
-                s_Target += Mat4GetRight(s_SceneObject->m_LocalToWorld) * (signbit(x)?-1.0f:1.0f) * step;
-        }
-        
-        s_SceneObject->m_Flags |= SceneObject::Flags::kDirty;
-    }
 }

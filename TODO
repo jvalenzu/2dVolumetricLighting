@@ -56,8 +56,10 @@
 [x] query the default resolution to create an appropriately sized window.
 [x] black screen after resize
 [x] pare down RMath to just the stuff we need to generate Obb, then fix the types to R3
-[ ] aspect ratio is incorrect, want square
-[ ] debug cylindrical attenuation
+[ ] FIX ASPECT RATIO.  It's clearly wrong in all the screen space stuff.
+[x] debug cylindrical attenuation
+[ ] move inline matrix methods into separate header.  Just to keep it more readable.
+[ ] Remove standalone matrix functions where it makes sense, like MatrixMultiply.  Just rely on operator overloading.
 
 ------------------------------------------------
 PUBLISH

@@ -32,6 +32,7 @@ struct Shader
 
 // default simple shader
 extern Shader* g_SimpleShader;
+extern Shader* g_SimpleColorShader;
 extern Shader* g_SimpleTransparentShader;
 
 // create shader system

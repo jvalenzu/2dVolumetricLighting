@@ -22,21 +22,6 @@ struct SortNode
     uint32_t m_Key;
 };
 
-static int s_SortNodeCmp(const void* _ap, const void* _bp)
-{
-    SortNode* a = (SortNode*)_ap;
-    SortNode* b = (SortNode*)_bp;
-    uint32_t keyA = a->m_Key;
-    uint32_t keyB = b->m_Key;
-    
-    if (keyA < keyB)
-        return -1;
-    else if (keyA > keyB)
-        return 1;
-    
-    return 0;
-}
-
 static void SceneObjectApplyDelta(SceneObject* scene, const Mat4& delta);
 
 uint32_t SceneObjectGetSortKey(const SceneObject* sceneObject)
@@ -50,7 +35,7 @@ uint32_t SceneObjectGetSortKey(const SceneObject* sceneObject)
     uint32_t blendModeBit = 0;
     uint32_t positionBits = 0;
     
-    Vec3 pos = Mat4GetTranslation(simpleModel->m_Po);
+    Vec3 pos = simpleModel->m_Po.GetTranslation();
     
     if (simpleModel->m_Material->m_BlendMode != Material::BlendMode::kOpaque)
     {
@@ -148,7 +133,7 @@ void SceneUpdate(Scene* scene)
                 *dest = *light;
                 
                 // transform position
-                dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
+                dest->m_Position = sceneObject->m_LocalToWorld.GetTranslation();
             }
             
             if (light->m_Type == LightType::kConical)
@@ -160,7 +145,7 @@ void SceneUpdate(Scene* scene)
                 *dest = *light;
                 
                 // transform position
-                dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
+                dest->m_Position = sceneObject->m_LocalToWorld.GetTranslation();
                 
                 // jiv fixme: it's in world space, shouldn't be
                 dest->m_Direction = sceneObject->m_LocalToWorld.GetUp();
@@ -174,8 +159,9 @@ void SceneUpdate(Scene* scene)
                 Light* dest = &scene->m_CylindricalLights[scene->m_NumCylindricalLights++];
                 *dest = *light;
                 
-                // transform position
-                dest->m_Position = Mat4GetTranslation(sceneObject->m_LocalToWorld);
+                // transform position and direction
+                dest->m_Position = sceneObject->m_LocalToWorld.GetTranslation();
+                dest->m_Direction = light->m_Direction.xyz0() * sceneObject->m_LocalToWorld;
             }
             
             if (light->m_Type == LightType::kDirectional)
@@ -189,12 +175,26 @@ void SceneUpdate(Scene* scene)
         }
     }
     
-    qsort(sortNodes, scene->m_NumObjects, sizeof(SortNode), s_SortNodeCmp);
+    auto cmp = [](const void* _ap, const void* _bp)
+    {
+        const SortNode* a = (SortNode*)_ap;
+        const SortNode* b = (SortNode*)_bp;
+        const uint32_t keyA = a->m_Key;
+        const uint32_t keyB = b->m_Key;
+        
+        if (keyA < keyB)
+            return -1;
+        else if (keyA > keyB)
+            return 1;
+        
+        return 0;
+    };
+    
+    qsort(sortNodes, scene->m_NumObjects, sizeof(SortNode), cmp);
 }
 
-static void SceneObjectApplyDelta(SceneObject* scene, const Mat4& delta)
+static void SceneObjectApplyDelta(SceneObject* itr, const Mat4& delta)
 {
-    SceneObject* itr = scene;
     while (itr)
     {
         Mat4 mat;
@@ -258,6 +258,8 @@ SceneObject* SceneCreateLight(Scene* scene, const LightOptions& lightOptions)
     {
         sceneObject->m_ModelInstance = nullptr;
         LightInitialize(&sceneObject->m_Light, lightOptions);
+        
+        assert(lightOptions.m_Position.m_X[1] < 10000.0f);
         
         Mat4ApplyTranslation(&sceneObject->m_LocalToWorld, lightOptions.m_Position.xyz());
         
@@ -335,7 +337,7 @@ void SceneDraw(Scene* scene, RenderContext* renderContext)
         if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
             continue;
         
-        Vec3 pos = Mat4GetTranslation(sceneObject->m_ModelInstance->m_Po);
+        Vec3 pos = sceneObject->m_ModelInstance->m_Po.GetTranslation();
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
     }
 }
@@ -363,7 +365,7 @@ void SceneDraw(Scene* scene, RenderContext* renderContext, int groupId)
         if ((itr->m_Flags & SceneObject::kEnabled) == 0)
             continue;
         
-        Vec3 pos = Mat4GetTranslation(sceneObject->m_ModelInstance->m_Po);
+        Vec3 pos = sceneObject->m_ModelInstance->m_Po.GetTranslation();
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
     }
 }
@@ -547,19 +549,23 @@ int SceneGetSceneObjectsByType(SceneObject** dest, int size, Scene* scene, Scene
 // SceneDrawObb
 void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject)
 {
+    if (sceneObject)
+    {
+        Mat4 axes;
+        MatrixMakeIdentity(&axes);
+        axes.SetRot(sceneObject->m_Obb.m_Axes);
+        
+        SceneDrawObb(scene, renderContext, sceneObject, sceneObject->m_LocalToWorld * axes);
+    }
+}
+
+// SceneDrawObb
+void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject, const Mat4& _localToWorld)
+{
     if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
         return;
     
-    Mat4 temp;
-    MatrixMakeZero(&temp);
-    temp.SetRot(sceneObject->m_Obb.m_Axes);
-    
-    Mat4 localToWorld;
-    MatrixMakeZero(&localToWorld);
-    MatrixMultiply(&localToWorld, sceneObject->m_LocalToWorld, temp);
-    localToWorld.SetTranslation(sceneObject->m_LocalToWorld.GetTranslation());
-    
-    const float aspectRatio = (float) renderContext->m_Width/renderContext->m_Height;
+    Mat4 localToWorld = _localToWorld;
     
     if (sceneObject->m_Type == SceneObjectType::kLight)
     {
@@ -573,7 +579,7 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
             case LightType::kPoint:
             {
                 const float range = light.m_Range;
-                MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range, range));
+                MatrixScaleInsitu(&localToWorld, Vec3(range, range, range));
                 break;
             }
             case LightType::kConical:
@@ -588,8 +594,7 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
             }
             case LightType::kCylindrical:
             {
-                const float range = light.m_Range;
-                MatrixScaleInsitu(&localToWorld, Vec3(range*aspectRatio, range * light.m_CosAngleOrLength, range));
+                MatrixScaleInsitu(&localToWorld, Vec3(2.0f*light.m_OrthogonalRange, 2.0f*light.m_Range, light.m_Range));
                 break;
             }
         }

@@ -44,8 +44,11 @@ endef
 shaderOutName = obj/Shader/$(notdir $1)
 shaderDepName = obj/Shader/$(notdir $1).d
 
+# jiv fixme: should extract from cpp pass
+SHADER_DEPS := Render/Shaders/shader.h Render/Shaders/light.h
+
 define shaderSrcToObj
-$(call shaderOutName,$1) : obj/dummy obj/Shader/dummy $1 $(call shaderDepName,$1) Makefile Build/rules.mk
+$(call shaderOutName,$1) : obj/dummy obj/Shader/dummy $1 $(call shaderDepName,$1) Makefile Build/rules.mk $(SHADER_DEPS)
 #	cpp -MMD -IRender/Shaders -MF$(call shaderDepName,$1) $1 $(call shaderOutName,$1)
 	-Build/Binary/mcpp -P -@old -MMD -IRender/Shaders -MF $(call shaderDepName,$1) $1 $(call shaderOutName,$1)
 

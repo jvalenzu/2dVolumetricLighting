@@ -70,7 +70,7 @@ struct Texture
         m_DebugName(nullptr)
     {
     }
-
+    
     void SetClearFlags(Texture::RenderTextureFlags renderTextureFlags, float r=0, float g=0, float b=0, float z=1.0f);
 };
 

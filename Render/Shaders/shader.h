@@ -8,7 +8,6 @@
 #define kRootTwo    1.41421356237
 #define kInvTwoPi   0.159154943092
 
-
 float fromZeroOne(float param)
 {
     return param*2.0f - 1.0f;
@@ -46,15 +45,16 @@ vec4 toZeroOne(vec4 param)
 
 float pointOnLineSegmentT(vec2 p0, vec2 p1, vec2 q0)
 {
-    vec2 p1p0 = p1 - p0;
-    float t0 = dot(p0 - q0, p1p0)/dot(p1p0, p1p0);
+    vec2 n = p1 - p0;
+    float t0 = dot(q0 - p0, n)/dot(n, n);
     return t0;
 }
 
-vec2 pointOnLineSegment(float t0, vec2 p0, vec2 p1)
+vec2 pointOnLineSegment(vec2 p0, vec2 p1, vec2 q0)
 {
-    vec2 p1p0 = p1 - p0;
-    return p0+p1p0*clamp(t0, 0.0f, 1.0f);
+    vec2 n = p1 - p0;
+    float t0 = dot(q0 - p0, n)/dot(n, n);
+    return p0+n*clamp(t0, 0.0f, 1.0f);
 }
 
 // clip to box
@@ -153,3 +153,11 @@ vec2 clampCircle(vec2 uv)
     origin /= max(absOrigin.x, absOrigin.y);
     return toZeroOne(origin);
 }
+
+vec2 projectOn(vec2 v, vec2 normal)
+{
+    return dot(v, normalize(normal))*normal;
+}
+
+uniform vec4 _Time;
+uniform float _AspectRatio;

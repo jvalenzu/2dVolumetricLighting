@@ -34,7 +34,7 @@ void main (void)
     uint pointMask = mask & pointLightMask;
     uint conicalMask = mask & conicalLightMask;
     uint cylindricalMask = mask & cylindricalLightMask;
-
+    
     for (int i=0; i<numDirectionalLights; ++i)
     {
         Light directionalLight = _DirectionalLight[i];
@@ -78,9 +78,9 @@ void main (void)
         
         // angle attenuation.  This is a sharp falloff, but typically it would also attenuation based on distance from the center ray.
         float theta = dot(ray, -normalize(conicalLight.m_Direction.xy));
-        if (theta > conicalLight.m_AngleOrLength)
+        if (theta > conicalLight.m_Angle)
         {
-            float phi = (theta - conicalLight.m_AngleOrLength) / (1-conicalLight.m_AngleOrLength);
+            float phi = (theta - conicalLight.m_Angle) / (1-conicalLight.m_Angle);
             color.rgb += c0*d1*phi*conicalLight.m_Color.rgb;
         }
     }
@@ -94,18 +94,23 @@ void main (void)
         
         Light cylindricalLight = _CylindricalLight[index];
         
-        // screenspace distance based attenuation squared
-        float temp0 = pointOnLineSegmentT(cylindricalLight.m_Position.xy, cylindricalLight.m_Position.zw, fragmentPos.xy);
-        vec2 p0 = pointOnLineSegment(temp0, cylindricalLight.m_Position.xy, cylindricalLight.m_Position.zw);
+        vec2 lightAxis = cylindricalLight.m_Direction.xy - cylindricalLight.m_Position.xy;
+        float t = pointOnLineSegmentT(cylindricalLight.m_Position.xy, cylindricalLight.m_Direction.xy, fragmentPos.xy);
+        vec2 q0 = cylindricalLight.m_Position.xy+lightAxis*clamp(t, 0.0f, 1.0f);
         
-        vec2 ray = normalize(p0 - fragmentPos);
-        float c0 = clamp(dot(t1.rg, ray), 0.0, 1);
+        float orthogonalAttenuation = 0.0f;
+        if (t >= 0.0f && t <= 1.0f)
+        {
+            vec2 orthogonalProjection = fragmentPos.xy - q0;
+            orthogonalAttenuation = 1.0f-clamp(length(orthogonalProjection)*cylindricalLight.m_OrthogonalRange, 0.0f, 1.0f);
+        }
         
-        float d0 = distance(p0, fragmentPos.xy);
-        float d1 = clamp((d0*d0) * cylindricalLight.m_Range, 0.0f, 1.0f);
+        vec2 ray = normalize(fragmentPos.xy - q0.xy);
+        float c0 = clamp(dot(t1.rg, ray), 0.0f, 1.0f);
         
-        color.rgb += (1-d1)*c0*cylindricalLight.m_Color.rgb;
+        color.rgb += orthogonalAttenuation*cylindricalLight.m_Color.rgb;
     }
     
     fragColor = vec4(color.rgb*t0.rgb, t0.a);
+    // fragColor = vec4(color.rgb, t0.a);
 }

@@ -14,6 +14,9 @@
 #define kSmallEpsilon 1e-6
 #define kVerySmallEpsilon 1e-9
 
+Vec3 Vec3::kZero{0.0f, 0.0f, 0.0f};
+Vec4 Vec4::kZero{0.0f, 0.0f, 0.0f, 0.0f};
+Vec3 Vec3::kUp{0.0f, 1.0f, 0.0f};
 
 // MatrixIsIdent
 //
@@ -179,6 +182,11 @@ void MatrixSetRotAboutAxis(Mat4* dest, const float uvw[4], float theta)
     dest->m_W[3] = 1;
 }
 
+void MatrixSetRotAboutAxis(Mat4* dest, const Vec3& axis, float theta)
+{
+    MatrixSetRotAboutAxis(dest, axis.asFloat(), theta);
+}
+
 float MatrixDotTransposed(const Mat4& a, int col, const float* v)
 {
     float sum = 0.0f;
@@ -319,12 +327,20 @@ void MatrixTranspose(Mat4* dest, const Mat4& a)
     dest->m_W[3] = a.m_W[3];
 }
 
-void MatrixMultiplyVec(Vec4* dest, Vec4 v, const Mat4& a)
+void MatrixMultiplyVec(Vec4* dest, const Mat4& a, const Vec4& v)
 {
     dest->m_X[0] = v.m_X[0]*a.m_X[0] + v.m_X[1]*a.m_X[1] + v.m_X[2]*a.m_X[2] + v.m_X[3]*a.m_X[3];
     dest->m_X[1] = v.m_X[0]*a.m_Y[0] + v.m_X[1]*a.m_Y[1] + v.m_X[2]*a.m_Y[2] + v.m_X[3]*a.m_Y[3];
     dest->m_X[2] = v.m_X[0]*a.m_Z[0] + v.m_X[1]*a.m_Z[1] + v.m_X[2]*a.m_Z[2] + v.m_X[3]*a.m_Z[3];
     dest->m_X[3] = v.m_X[0]*a.m_W[0] + v.m_X[1]*a.m_W[1] + v.m_X[2]*a.m_W[2] + v.m_X[3]*a.m_W[3];
+}
+
+void MatrixMultiplyVec(Vec4* dest, const Vec4& v, const Mat4& a)
+{
+    dest->m_X[0] = v.m_X[0]*a.m_X[0] + v.m_X[1]*a.m_Y[0] + v.m_X[2]*a.m_Z[0] + v.m_X[3]*a.m_W[0];
+    dest->m_X[1] = v.m_X[0]*a.m_X[1] + v.m_X[1]*a.m_Y[1] + v.m_X[2]*a.m_Z[1] + v.m_X[3]*a.m_W[1];
+    dest->m_X[2] = v.m_X[0]*a.m_X[2] + v.m_X[1]*a.m_Y[2] + v.m_X[2]*a.m_Z[2] + v.m_X[3]*a.m_W[2];
+    dest->m_X[3] = v.m_X[0]*a.m_X[3] + v.m_X[1]*a.m_Y[3] + v.m_X[2]*a.m_Z[3] + v.m_X[3]*a.m_W[3];
 }
 
 // right multiply v by a, storing in dest
@@ -378,6 +394,11 @@ void MatrixCopy(Mat4* dest, const Mat4& a)
 void Vector3Dump(float v[3], const char* prefix)
 {
     Printf("%s[%f %f %f]\n", prefix, v[0], v[1], v[2]);
+}
+
+void VectorDump(const Vec2& a, const char* prefix)
+{
+    Printf("%s[%f %f]\n", prefix, a[0], a[1]);
 }
 
 void VectorDump(const Vec3* a, const char* prefix)
@@ -773,6 +794,7 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
     MatrixInvert(sInv, *s);
 }
 
+// MatrixMakeDiagonal
 void MatrixMakeDiagonal(Mat3* dest, float diags[3])
 {
     MatrixMakeZero(dest);
@@ -782,6 +804,7 @@ void MatrixMakeDiagonal(Mat3* dest, float diags[3])
     dest->m_Z[2] = diags[2];
 }
 
+// MatrixCalculateDelta
 void MatrixCalculateDelta(Mat4* dest, const Mat4& current, const Mat4& prev)
 {
     Mat4 t0;
@@ -790,12 +813,14 @@ void MatrixCalculateDelta(Mat4* dest, const Mat4& current, const Mat4& prev)
     MatrixMultiply(dest, t0, current);
 }
 
+// VectorDistanceSquared
 float VectorDistanceSquared(const Vec4& a, const Vec4& b)
 {
     Vec4 v = a - b;
     return VectorDot(v, v);
 }
 
+// VectorDistanceSquared
 float VectorDistanceSquared(const Vec3& a, const Vec3& b)
 {
     Vec3 v = a - b;
@@ -890,6 +915,44 @@ Vec3 VectorSign(const Vec3& temp)
     return mask;
 }
 
+Vec3 VectorMax(const Vec3& a, const Vec3& b)
+{
+    Vec3 ret;
+    ret.m_X[0] = Max(a.m_X[0], b.m_X[0]);
+    ret.m_X[1] = Max(a.m_X[1], b.m_X[1]);
+    ret.m_X[2] = Max(a.m_X[2], b.m_X[2]);
+    return ret;
+}
+
+Vec3 VectorMin(const Vec3& a, const Vec3& b)
+{
+    Vec3 ret;
+    ret.m_X[0] = Min(a.m_X[0], b.m_X[0]);
+    ret.m_X[1] = Min(a.m_X[1], b.m_X[1]);
+    ret.m_X[2] = Min(a.m_X[2], b.m_X[2]);
+    return ret;
+}
+
+Vec4 VectorMax(const Vec4& a, const Vec4& b)
+{
+    Vec4 ret;
+    ret.m_X[0] = Max(a.m_X[0], b.m_X[0]);
+    ret.m_X[1] = Max(a.m_X[1], b.m_X[1]);
+    ret.m_X[2] = Max(a.m_X[2], b.m_X[2]);
+    ret.m_X[3] = Max(a.m_X[3], b.m_X[3]);
+    return ret;
+}
+
+Vec4 VectorMin(const Vec4& a, const Vec4& b)
+{
+    Vec4 ret;
+    ret.m_X[0] = Min(a.m_X[0], b.m_X[0]);
+    ret.m_X[1] = Min(a.m_X[1], b.m_X[1]);
+    ret.m_X[2] = Min(a.m_X[2], b.m_X[2]);
+    ret.m_X[3] = Min(a.m_X[3], b.m_X[3]);
+    return ret;
+}
+
 Vec3 VectorMul(const Vec3& a, const Vec3& b)
 {
     Vec3 ret;
@@ -954,7 +1017,7 @@ void Mat3InvertIterate(Vec3* dest, const Mat3& a, float lambda)
     for (int i=0; i<10; ++i) // 10 is arbitrary
     {
         Mat3Solve(&x, u, *dest);
-        *dest = x.GetNormalized();
+        *dest = x.Normalized();
     }
 }
 
@@ -1107,7 +1170,7 @@ bool Mat3Test()
     Vec3 b{1.0f, 2.0f, 3.0f};
     
     Mat3Solve(&dest, a, b);
-
+    
     Vec3 c{3.5f, 1.5f, 3.0f};
     if (VectorDistanceSquared(dest, c) > kVerySmallEpsilon)
         return false;
@@ -1131,4 +1194,27 @@ bool Mat3Test()
         return false;
     
     return true;
+}
+
+
+Vec3 VectorCross(const Vec3& a, const Vec3& b)
+{
+    Vec3 dest;
+    dest.m_X[0] = a.m_X[1]*b.m_X[2]-a.m_X[2]*b.m_X[1];
+    dest.m_X[1] = a.m_X[2]*b.m_X[0]-a.m_X[0]*b.m_X[2];
+    dest.m_X[2] = a.m_X[0]*b.m_X[1]-a.m_X[1]*b.m_X[0];
+    return dest;
+}
+
+Vec3 PlaneProj(const Vec3& a, const Vec3& normal)
+{
+    return (a - VectorDot(a, normal)*normal).Normalized();
+}
+
+Vec2 Orthogonal(const Vec2& b)
+{
+    Vec2 ret;
+    ret.m_X[0] =  b.m_X[1];
+    ret.m_X[1] = -b.m_X[0];
+    return ret;
 }

@@ -314,12 +314,12 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     
     const GLfloat quadVertexBufferData[] =
     {
-        -1.0f, -1.0f, 0.0f, 0.0, 0.0,
-        +1.0f, -1.0f, 0.0f, 1.0, 0.0,
-        -1.0f, +1.0f, 0.0f, 0.0, 1.0,
-        -1.0f, +1.0f, 0.0f, 0.0, 1.0,
-        +1.0f, -1.0f, 0.0f, 1.0, 0.0,
-        +1.0f, +1.0f, 0.0f, 1.0, 1.0
+        /* position */ -1.0f, -1.0f, 0.0f, /* texcoord */ 0.0, 0.0,
+        /* position */ +1.0f, -1.0f, 0.0f, /* texcoord */ 1.0, 0.0,
+        /* position */ -1.0f, +1.0f, 0.0f, /* texcoord */ 0.0, 1.0,
+        /* position */ -1.0f, +1.0f, 0.0f, /* texcoord */ 0.0, 1.0,
+        /* position */ +1.0f, -1.0f, 0.0f, /* texcoord */ 1.0, 0.0,
+        /* position */ +1.0f, +1.0f, 0.0f, /* texcoord */ 1.0, 1.0,
     };
     
     GLuint quadVertexBuffer;
@@ -329,22 +329,6 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     
     renderContext->m_QuadVertexArrayId = quadVertexArrayId;
     renderContext->m_QuadVertexBufferId = quadVertexBuffer;
-    
-    glEnableVertexAttribArray(kVertexAttributePosition);
-    glVertexAttribPointer(kVertexAttributePosition,
-                          3,                                          // x/y/z
-                          GL_FLOAT,                                   // type
-                          GL_FALSE,                                   // normalize?
-                          20,                                         // stride
-                          0);                                         // offset in buffer data
-    
-    glEnableVertexAttribArray(kVertexAttributeTexCoord);
-    glVertexAttribPointer(kVertexAttributeTexCoord,
-                          2,                                          // x/y/z
-                          GL_FLOAT,                                   // type
-                          GL_FALSE,                                   // normalize?
-                          20,                                         // stride
-                          (void*) 12);                                // offset in buffer data
     
     // generate frame buffer
     glGenFramebuffers(2, renderContext->m_FrameBufferIds);
@@ -394,6 +378,13 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     
     glfwSetFramebufferSizeCallback(renderContext->m_Window, s_WindowSizeCallback);
     glfwSetWindowUserPointer(renderContext->m_Window, renderContext);
+    
+    // expose some stuff to shaders
+    renderContext->m_ShaderTimeIndex = RenderAddGlobalProperty(renderContext, "_Time", Material::MaterialPropertyType::kVec4);
+    renderContext->m_AspectRatioIndex = RenderAddGlobalProperty(renderContext, "_AspectRatio", Material::MaterialPropertyType::kFloat);
+    
+    // set aspect ratio
+    RenderGlobalSetFloat(renderContext, renderContext->m_AspectRatioIndex, aspectRatio);
     
 #if 0
     GLint n=0; 
@@ -499,8 +490,11 @@ void RenderUpdatePointLights(RenderContext* renderContext, const Light* pointLig
         *dest = *source;
         
         const float range = pointLights[i].m_Range;
-        const Vec3 screenPosition = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz());
-        const Vec3 screenPosition2 = RenderGetScreenPos(renderContext, pointLights[i].m_Position.xyz() + Vec3(range, range, 0.0f));
+        const Vec3 adjustedLightPosition = Vec3(pointLights[i].m_Position.xy(), kLightZ); // camera has fixed orientation, making this easier
+        const Vec3 adjustedLightPosition2 = adjustedLightPosition + Vec3(range, range, 0.0f);
+        
+        const Vec3 screenPosition = RenderGetScreenPos(renderContext, adjustedLightPosition).xyz();
+        const Vec3 screenPosition2 = RenderGetScreenPos(renderContext, adjustedLightPosition2).xyz();
         const float screenRange = (screenPosition - screenPosition2).Length();
         dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
         dest[i].m_Range = 1.0f / screenRange;
@@ -535,8 +529,12 @@ void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conica
         conicalLightMask |= 1ULL<<source->m_Index;
         
         const float range = source->m_Range;
-        const Vec3 screenPosition = RenderGetScreenPos(renderContext, source->m_Position.xyz());
-        const Vec3 screenPosition2 = RenderGetScreenPos(renderContext, source->m_Position.xyz() + range*source->m_Direction.xyz());
+        
+        const Vec3 adjustedLightPosition = Vec3(source->m_Position.xy(), kLightZ); // camera has fixed orientation, making this easier
+        const Vec3 adjustedLightPosition2 = adjustedLightPosition + Vec3(range*source->m_Direction.xy(), 0.0f);
+        const Vec3 screenPosition = RenderGetScreenPos(renderContext, adjustedLightPosition).xyz();
+        const Vec3 screenPosition2 = RenderGetScreenPos(renderContext, adjustedLightPosition2).xyz();
+        
         const float screenRange = (screenPosition - screenPosition2).Length();
         dest[i].m_Position = Vec4(FromZeroOne(screenPosition), 1.0f);
         dest[i].m_Range = 1.0f/screenRange;
@@ -567,16 +565,22 @@ void RenderUpdateCylindricalLights(RenderContext* renderContext, const Light* cy
         
         cylindricalLightMask |= 1ULL<<source->m_Index;
         
-        Vec3 screenPosition = RenderGetScreenPos(renderContext, cylindricalLights[i].m_Position.xyz());
-        dest[i].m_Position.SetXY(Vec4(FromZeroOne(screenPosition), 1.0f).xy());
-        dest[i].m_Position.SetZW(dest[i].m_Position.xy() + dest[i].m_Direction.xy().Normalized()*dest[i].m_CosAngleOrLength);
-        dest[i].m_Range = 1.0f / dest[i].m_Range;
-        dest[i].m_Index = cylindricalLights[i].m_Index;
+        const Vec3 adjustedLightPosition1 = Vec3(source->m_Position.xy(), kLightZ);
+        dest->m_Position = FromZeroOne(RenderGetScreenPos(renderContext, adjustedLightPosition1)).xyz1();
+        
+        const Vec3 adjustedLightPosition2 = Vec3(source->m_Position.xy() + dest->m_Direction.xy()*dest->m_Range, kLightZ);
+        dest->m_Direction = FromZeroOne(RenderGetScreenPos(renderContext, adjustedLightPosition2)).xyz1();
+        dest->m_Range = 1.0f / (dest->m_Position.xy() - dest->m_Direction.xy()).Length();
+        
+        float cameraDist = (adjustedLightPosition1.xyz1() * renderContext->m_View).z();
+        dest->m_OrthogonalRange = (-cameraDist / dest->m_OrthogonalRange);
+        
+        dest->m_Index = cylindricalLights[i].m_Index;
     }
     
     glUnmapBuffer(GL_UNIFORM_BUFFER);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
+    
     renderContext->m_CylindricalLightMask = cylindricalLightMask;
 }
 
@@ -761,7 +765,7 @@ void RenderFrameInit(RenderContext* renderContext)
     
     glfwMakeContextCurrent(renderContext->m_Window);
     
-    float currentTime = (float) glfwGetTime();
+    float currentTime = (float) glfwGetTime()*0.125f;
     renderContext->m_FrameCount++;
     renderContext->m_FrameRollover++;
     
@@ -775,6 +779,9 @@ void RenderFrameInit(RenderContext* renderContext)
         renderContext->m_FrameRollover = 0;
         renderContext->m_LastTime += 1.0f;
     };
+    
+    // update shader time
+    RenderGlobalSetVector(renderContext, renderContext->m_ShaderTimeIndex, Vec4(currentTime, currentTime, currentTime, currentTime));
 }
 
 // RenderAttachPostEffect
@@ -791,8 +798,6 @@ void RenderFullscreenSetVertexAttributes(RenderContext* renderContext)
 {
     glBindBuffer(GL_ARRAY_BUFFER, renderContext->m_QuadVertexBufferId);
     
-    glEnableVertexAttribArray(kVertexAttributePosition);
-    glEnableVertexAttribArray(kVertexAttributeTexCoord);
     glDisableVertexAttribArray(kVertexAttributeColor);
     glDisableVertexAttribArray(kVertexAttributeNormal);
     
@@ -892,13 +897,6 @@ void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader)
             glUniform1ui(direcitonalLightNumIndex, renderContext->m_NumDirectionalLights);
         
     }
-    
-#if 0
-    printf("mask: point 0x%x cylinder 0x%x conical 0x%x\n",
-           renderContext->m_PointLightMask,
-           renderContext->m_CylindricalLightMask,
-           renderContext->m_ConicalLightMask);
-#endif
 }
 
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int textureId)
@@ -947,6 +945,12 @@ void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int 
     RenderSetLightConstants(renderContext, shader);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+// RenderDrawBillboard
+//
+void RenderDrawBillboard(RenderContext* renderContext, Material* material, Texture* texture, const Vec2 points[4])
+{
 }
 
 // RenderDrawFullscreen
@@ -1060,6 +1064,7 @@ void RenderSetReplacementShader(RenderContext* renderContext, Shader* shader)
     }
 }
 
+// RenderFrameEnd
 bool RenderFrameEnd(RenderContext* renderContext)
 {
     GL_ERROR_SCOPE();
@@ -1097,34 +1102,50 @@ bool RenderFrameEnd(RenderContext* renderContext)
     return ret;
 }
 
-Vec3 RenderGetScreenPos(RenderContext* renderContext, Vec3 worldPos)
+bool g_Trace = false;
+
+// RenderGetScreenPos
+Vec4 RenderGetScreenPos(const Mat4& view, const Mat4& proj, float width, float height, const Vec3& worldPos)
 {
-    Vec4 temp;
-    MatrixMultiplyVecW1(&temp, worldPos, renderContext->m_View);
+    Vec4 temp = worldPos.xyz1() * view;
     
-    Vec4 ret;
-    MatrixMultiplyVec(&ret, temp, renderContext->m_Projection);
+    // Vec4 ret = proj * temp;
+    Vec4 ret = temp * proj;
     
-    float w = ret.W();
-    // ret /= w;
+    const float two_w = 2.0f * ret.w();
+
+    if (g_Trace)
+        printf("ret: (%f %f)\n", ret[0], ret[1]);
     
-#if 1
-    ret.m_X[0] = (ret.m_X[0] * renderContext->m_Width)  / (2.0f*w) + renderContext->m_Width*0.5f;
-    ret.m_X[1] = (ret.m_X[1] * renderContext->m_Height) / (2.0f*w) + renderContext->m_Height*0.5f;
-    
-    ret.m_X[0] /= renderContext->m_Width;
-    ret.m_X[1] /= renderContext->m_Height;
-#else
-    ret.m_X[0] = (ret.m_X[0] * renderContext->m_Width)  / (2.0f*w) + renderContext->m_Width*0.5f;
-    ret.m_X[1] = (ret.m_X[1] * renderContext->m_Height) / (2.0f*w) + renderContext->m_Height*0.5f;
-    
-    ret.m_X[0] /= renderContext->m_Width;
-    ret.m_X[1] /= renderContext->m_Height;
-#endif
-    
-    return ret.XYZ();
+    ret.m_X[0] = (ret.m_X[0] * width)  / (two_w) + width*0.5f;
+    ret.m_X[1] = (ret.m_X[1] * height) / (two_w) + height*0.5f;
+    ret.m_X[0] /= width;
+    ret.m_X[1] /= height;
+
+    return ret;
 }
 
+// RenderGetScreenPos
+Vec4 RenderGetScreenPos(const RenderContext* renderContext, const Vec3& worldPos)
+{
+    return RenderGetScreenPos(renderContext->m_View, renderContext->m_Projection, renderContext->m_Width, renderContext->m_Height, worldPos);
+}
+
+// RenderGetWorldPos
+Vec3 RenderGetWorldPos(const RenderContext* renderContext, const Vec2& screenPos, float z)
+{
+    //Mat4 temp = (renderContext->m_View * renderContext->m_Projection);
+    Mat4 temp = (renderContext->m_Projection * renderContext->m_View);
+    Mat4 viewToProj;
+    MatrixInvert(&viewToProj, temp);
+    
+    Vec2 temp0 = screenPos * 2.0f - Vec2(1.0f, 1.0f);
+    temp0 *= Vec2(renderContext->m_Width, renderContext->m_Height);
+    Vec4 ret = Vec4(temp0, 0.0f, 0.1f) * viewToProj;
+    return ret.xyz();
+}
+
+// RenderGenerateSprite
 SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOptions& spriteOptions, Material* material)
 {
     GL_ERROR_SCOPE();
@@ -1252,8 +1273,7 @@ SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOpti
     return simpleModel;
 }
 
-// renderGenerateCube
-//
+// RenderGenerateCube
 SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
 {
     SimpleModel* simpleModel = new SimpleModel();
@@ -1280,7 +1300,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     
     int numPositions = 0;
     SimpleVertex* simpleVertex = &simpleModel->m_Vertices[numPositions++];
-    simpleVertex->m_Color = 0xffffffff;
+    simpleVertex->m_Color = 0x00ffff00;
     simpleVertex->m_Position[0] = -halfWidth; // 0
     simpleVertex->m_Position[1] = +halfWidth; // 0
     simpleVertex->m_Position[2] = +halfWidth; // 0
@@ -1289,7 +1309,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[2] = +1.0f;
     
     simpleVertex = &simpleModel->m_Vertices[numPositions++];
-    simpleVertex->m_Color = 0xffffffff;
+    simpleVertex->m_Color = 0x0000ffff;
     simpleVertex->m_Position[0] = +halfWidth; // 1
     simpleVertex->m_Position[1] = +halfWidth; // 1
     simpleVertex->m_Position[2] = +halfWidth; // 1
@@ -1298,7 +1318,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[2] = +1.0f;
     
     simpleVertex = &simpleModel->m_Vertices[numPositions++];
-    simpleVertex->m_Color = 0xffffffff;
+    simpleVertex->m_Color = 0x00ff00ff;
     simpleVertex->m_Position[0] = +halfWidth; // 2
     simpleVertex->m_Position[1] = +halfWidth; // 2
     simpleVertex->m_Position[2] = -halfWidth; // 2
@@ -1307,7 +1327,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[2] = -1.0f;
     
     simpleVertex = &simpleModel->m_Vertices[numPositions++];
-    simpleVertex->m_Color = 0xffffffff;
+    simpleVertex->m_Color = 0xff00ffff;
     simpleVertex->m_Position[0] = -halfWidth; // 3
     simpleVertex->m_Position[1] = +halfWidth; // 3
     simpleVertex->m_Position[2] = -halfWidth; // 3
@@ -1316,7 +1336,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[2] = -1.0f;
     
     simpleVertex = &simpleModel->m_Vertices[numPositions++];
-    simpleVertex->m_Color = 0xffffffff;
+    simpleVertex->m_Color = 0xffff00ff;
     simpleVertex->m_Position[0] = -halfWidth; // 4
     simpleVertex->m_Position[1] = -halfWidth; // 4
     simpleVertex->m_Position[2] = -halfWidth; // 4
@@ -1325,7 +1345,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[2] = -1.0f;
     
     simpleVertex = &simpleModel->m_Vertices[numPositions++];
-    simpleVertex->m_Color = 0xffffffff;
+    simpleVertex->m_Color = 0xf0fff0ff;
     simpleVertex->m_Position[0] = +halfWidth; // 5
     simpleVertex->m_Position[1] = -halfWidth; // 5
     simpleVertex->m_Position[2] = -halfWidth; // 5
@@ -1334,7 +1354,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[2] = -1.0f;
     
     simpleVertex = &simpleModel->m_Vertices[numPositions++];
-    simpleVertex->m_Color = 0xffffffff;
+    simpleVertex->m_Color = 0x0ffff0ff;
     simpleVertex->m_Position[0] = +halfWidth; // 6
     simpleVertex->m_Position[1] = -halfWidth; // 6
     simpleVertex->m_Position[2] = +halfWidth; // 6
@@ -1343,7 +1363,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[2] = +1.0f;
     
     simpleVertex = &simpleModel->m_Vertices[numPositions++];
-    simpleVertex->m_Color = 0xffffffff;
+    simpleVertex->m_Color = 0xf0fff0ff;
     simpleVertex->m_Position[0] = -halfWidth; // 7
     simpleVertex->m_Position[1] = -halfWidth; // 7
     simpleVertex->m_Position[2] = +halfWidth; // 7
@@ -1458,7 +1478,6 @@ void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
     glBindBuffer(GL_ARRAY_BUFFER, simpleModel->m_VertexBufferName);
     
     // setup vertex attributes.  shaders bind on kVertexAttributePosition etc in ShaderCreate
-    
     glEnableVertexAttribArray(kVertexAttributePosition);
     glVertexAttribPointer(kVertexAttributePosition,
                           3,                                          // x/y/z
@@ -1471,7 +1490,7 @@ void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
     glVertexAttribPointer(kVertexAttributeColor,
                           4,                                          // rgba
                           GL_UNSIGNED_BYTE,                           // type
-                          GL_FALSE,                                   // normalize?
+                          GL_TRUE,                                    // normalize?
                           sizeof(SimpleVertex),                       // stride
                           BUFFER_OFFSETOF(SimpleVertex, m_Color));    // offset in buffer data
     
@@ -1494,6 +1513,7 @@ void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, simpleModel->m_IndexBufferName);
 }
 
+// RenderAddGlobalProperty
 int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type)
 {
     int index = -1;

@@ -81,6 +81,8 @@ void         SceneDestroy(Scene* scene);
 void         SceneUpdate(Scene* scene);
 void         SceneDraw(Scene* scene, RenderContext* renderContext);
 void         SceneDraw(Scene* scene, RenderContext* renderContext, int groupId);
+
+void         SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject, const Mat4& localToWorld);
 void         SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject* sceneObject);
 
 void         SceneLightsUpdate(Scene* scene, RenderContext* renderContext);

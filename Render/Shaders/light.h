@@ -5,10 +5,14 @@ struct Light
     int m_TypePad;
     uint m_Index;
     float m_Range;
-    float m_AngleOrLength;
+    float m_Angle;
     vec4 m_Color;
     vec4 m_Position;
     vec4 m_Direction;
+    float m_OrthogonalRange;
+    int m_PadA;
+    int m_PadB;
+    int m_PadC;
 };
 
 struct DirectionalLight

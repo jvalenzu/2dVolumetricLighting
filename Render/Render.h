@@ -65,6 +65,9 @@ struct RenderContext
     SimpleModel* m_CubeModel;
     
     FixedVector<Material::MaterialProperty, 32> m_MaterialProperties;
+    
+    int m_ShaderTimeIndex;
+    int m_AspectRatioIndex;
 };
 
 struct RenderOptions
@@ -163,6 +166,8 @@ struct SpriteOptions
     }
 };
 
+#define kLightZ -1.0f
+
 void RenderOptionsInit(RenderOptions* renderOptions, int width, int height);
 
 void RenderInit(RenderContext* renderContext, int width, int height);
@@ -187,9 +192,14 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, con
 void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, Texture* texture);
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, Texture* texture);
 
+void RenderDrawBillboard(RenderContext* renderContext, Material* material, Texture* texture, const Vec2 points[4]);
+
 void RenderAttachPostEffect(RenderContext* renderContext, PostEffect* effect);
 
-Vec3 RenderGetScreenPos(RenderContext* renderContext, Vec3 avatarPosition);
+Vec4 RenderGetScreenPos(const RenderContext* renderContext, const Vec3& worldPos);
+Vec4 RenderGetScreenPos(const Mat4& view, const Mat4& proj, float width, float height, const Vec3& worldPos);
+
+Vec3 RenderGetWorldPos(const RenderContext* renderContext, const Vec2& screenPos, float z);
 
 void RenderSetBlendMode(Material::BlendMode blendMode);
 

@@ -8,6 +8,7 @@ uniform mat4 view;
 uniform mat4 modelView;
 uniform mat4 normalModel;
 uniform mat4 project;
+uniform mat4 orthoProject;
 
 in vec3 inPosition; // position attribute
 in vec3 inNormal; // normal attribute
@@ -20,8 +21,8 @@ out vec4 screenPosition;
 void main(void)
 {
     // Transform vertex by modelview projection matrix
-    vec4 pos = project * modelView * vec4(inPosition.xyz, 1.0);
-    gl_Position = pos;
-    screenPosition = pos;
+    gl_Position = project * modelView * vec4(inPosition.xyz, 1.0f);
+    
+    screenPosition = gl_Position;
     texCoord = inTexCoord;
 }
