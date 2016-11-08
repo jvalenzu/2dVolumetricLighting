@@ -47,7 +47,7 @@ static void ApplyUserInput(RenderContext* renderContext, SceneObject* sceneObjec
 {
     // handle user input
     float err = 0.0f;
-    Vec3 pos = Mat4GetTranslation(sceneObject->m_LocalToWorld);
+    Vec3 pos = sceneObject->m_LocalToWorld.GetTranslation();
     Vec3 dir = targetPos - pos;
     if ((err = VectorLengthSquared(dir)) > 1e-3f)
     {
@@ -55,7 +55,7 @@ static void ApplyUserInput(RenderContext* renderContext, SceneObject* sceneObjec
         dir *= fminf(err, 0.2f);
         pos += dir;
         
-        Mat4ApplyTranslation(&sceneObject->m_LocalToWorld, pos);
+        sceneObject->m_LocalToWorld.SetTranslation(pos);
         sceneObject->m_Flags |= SceneObject::Flags::kDirty;
     }
 }
@@ -134,17 +134,17 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
             
             Mat4 t1;
             MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);
-            MatrixCopy(&s_SceneObject->m_LocalToWorld, t1);
+            s_SceneObject->m_LocalToWorld = t1;
         }
         
         if (handled)
         {
-            s_Target = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
+            s_Target = s_SceneObject->m_LocalToWorld.GetTranslation();
             
             if (key == GLFW_KEY_W || key == GLFW_KEY_S)
-                s_Target += Mat4GetUp(s_SceneObject->m_LocalToWorld) * (signbit(y)?-1.0f:1.0f) * step;
+                s_Target += s_SceneObject->m_LocalToWorld.GetUp() * (signbit(y)?-1.0f:1.0f) * step;
             else
-                s_Target += Mat4GetRight(s_SceneObject->m_LocalToWorld) * (signbit(x)?-1.0f:1.0f) * step;
+                s_Target += s_SceneObject->m_LocalToWorld.GetRight() * (signbit(x)?-1.0f:1.0f) * step;
         }
         
         s_SceneObject->m_Flags |= SceneObject::Flags::kDirty;
@@ -187,12 +187,12 @@ static void MainLoop(RenderContext* renderContext)
     SpriteOptions spriteOptions;
     // spriteOptions.m_Pivot = Vec2(0.5f, 0.0f);
     SceneObject* sprite0 = s_SceneObject = SceneCreateSpriteFromFile(&scene, renderContext, "Avatar.png", spriteOptions);
-    Mat4ApplyTranslation(&sprite0->m_LocalToWorld, 0, 0, -1);
+    sprite0->m_LocalToWorld.SetTranslation(0, 0, -1);
     sprite0->m_Flags |= SceneObject::Flags::kDirty;
     sprite0->m_DebugName = "lsp";
     
     // initialize target
-    s_Target = Mat4GetTranslation(s_SceneObject->m_LocalToWorld);
+    s_Target = s_SceneObject->m_LocalToWorld.GetTranslation();
     VectorSplat(&s_Dir, 0.0f);
     VectorSplat(&s_LastDir, 0.0f);
     
@@ -236,7 +236,7 @@ static void MainLoop(RenderContext* renderContext)
         // spriteOptionsTree.m_Scale = Vec2(5.0f, 5.0f);
         
         SceneObject* sprite1 = sceneObjects[i] = SceneCreateSprite(&scene, renderContext, MaterialRef(treeAppleMaterial), spriteOptionsTree);
-        Mat4ApplyTranslation(&sprite1->m_LocalToWorld, xes[i], yes[i], -1);
+        sprite1->m_LocalToWorld.SetTranslation(xes[i], yes[i], -1);
         sprite1->m_Flags |= SceneObject::Flags::kDirty;
         
         SceneGroupAdd(&scene, shadowCasterGroupId, sprite1);
@@ -255,7 +255,7 @@ static void MainLoop(RenderContext* renderContext)
         pointLightSpriteOptions.ResetPivot();
         lightSprite0 = SceneCreateSpriteFromFile(&scene, renderContext, "Bulb.png", pointLightSpriteOptions);
         
-        Mat4ApplyTranslation(&lightSprite0->m_LocalToWorld, 0, 5.0f, -1);
+        lightSprite0->m_LocalToWorld.SetTranslation(0.0f, 5.0f, -1);
         lightSprite0->m_Flags |= SceneObject::Flags::kDirty;
         
         light0 = SceneCreateLight(&scene, LightOptions::MakePointLight(Vec3(0.0f, 5.0f, -1.0f), // position
@@ -275,7 +275,7 @@ static void MainLoop(RenderContext* renderContext)
         localSpriteOptions.m_Scale = Vec2(0.25f, 0.25f);
         localSpriteOptions.m_TintColor = Vec4(1.0f, 0.25f, 0.25f, 1.0f);
         lightSprite1 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", localSpriteOptions);
-        Mat4ApplyTranslation(&lightSprite1->m_LocalToWorld, 0, 5.0f, -1);
+        lightSprite1->m_LocalToWorld.SetTranslation(0.0f, 5.0f, -1);
         lightSprite1->m_Flags |= SceneObject::Flags::kDirty;
         SceneGroupAddChild(s_SceneObject, lightSprite1);
         
@@ -294,7 +294,7 @@ static void MainLoop(RenderContext* renderContext)
         spriteOptions.m_TintColor = Vec4(0.25f, 0.25f, 1.0f, 1.0f);
         
         lightSprite2 = SceneCreateSpriteFromFile(&scene, renderContext, "Beam.png", spriteOptions);
-        Mat4ApplyTranslation(&lightSprite2->m_LocalToWorld, 0.0f, 5.0f, -1.0f);
+        lightSprite2->m_LocalToWorld.SetTranslation(0.0f, 5.0f, -1.0f);
         lightSprite2->m_Flags |= SceneObject::Flags::kDirty;
         SceneGroupAddChild(s_SceneObject, lightSprite2);
         
@@ -564,7 +564,7 @@ static void MainLoop(RenderContext* renderContext)
                 
                 // calculate the sceen position of our light source
                 // jiv fixme: we already calculate this and cache it via SceneDraw
-                Vec4 screenPos = RenderGetScreenPos(renderContext, Mat4GetTranslation(lightObject->m_LocalToWorld));
+                Vec4 screenPos = RenderGetScreenPos(renderContext, lightObject->m_LocalToWorld.GetTranslation());
                 
                 // 1d mapping material
                 Material* shadow1dMaterial = shadow1dMaterials[light->m_Type];

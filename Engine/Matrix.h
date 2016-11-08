@@ -154,6 +154,13 @@ struct Vec3
         m_X[1] = y;
         m_X[2] = z;
     }
+    
+    Vec3(const float v[3])
+    {
+        m_X[0] = v[0];
+        m_X[1] = v[1];
+        m_X[2] = v[2];
+    }
 
     Vec3(const Vec2& v2, float z)
     {
@@ -726,44 +733,48 @@ Vec3 VectorMin(const Vec3& a, const Vec3& b);
 Vec4 VectorMax(const Vec4& a, const Vec4& b);
 Vec4 VectorMin(const Vec4& a, const Vec4& b);
 
+// project a on the plane defined by normal
 Vec3 PlaneProj(const Vec3& a, const Vec3& normal);
 
 // set dest explicitly
 void VectorSet(Vec3* dest, float x, float y, float z);
 
 // return distance squared
-float VectorDistanceSquared(const Vec4& a, const Vec4& b);
-float VectorDistanceSquared(const Vec3& a, const Vec3& b);
+float DistanceSquared(const Vec4& a, const Vec4& b);
+float DistanceSquared(const Vec3& a, const Vec3& b);
 
 // simple distance
-inline float VectorDistance(const Vec2& a, const Vec2& b)
+inline float Distance(const Vec2& a, const Vec2& b)
 {
     return (a-b).Length();
 }
 
+// return the 2d vector orthogonal to a
 Vec2 Orthogonal(const Vec2& a);
 
 // returns inner product
 float VectorDot(const Vec4& a, const Vec4& b);
 float VectorDot(const Vec3& a, const Vec3& b);
 
+// cross project
 Vec3 VectorCross(const Vec3& a, const Vec3& b);
 
 // returns length squared
 float VectorLengthSquared(const Vec3& a);
 
-// normalize, one (destructive) and two argument mode
-void VectorNormalize(Vec3* a);
-void VectorNormalize(Vec3* dest, const Vec3& a);
-
 // copy vector
 void VectorCopy(Vec3* a, const Vec3& b);
 
+// vector dump
 void VectorDump(const Vec2& a, const char* prefix);
 void VectorDump(const Vec3* a, const char* prefix);
 void VectorDump(const Vec3& a, const char* prefix);
 void VectorDump(const Vec4* a, const char* prefix);
 void VectorDump(const Vec4& a, const char* prefix);
+
+// matrix dump
+void MatrixDump(const Mat4& m, const char* prefix);
+void MatrixDump(const Mat3& m, const char* prefix);
 
 // return a vector with -1,0,1 in the component if the corresponding component in temp is negative,0, positive
 Vec3 VectorSign(const Vec3& temp);
@@ -782,34 +793,18 @@ void MatrixMakeRandy(Mat4* dest, float mid, float extent);
 
 void MatrixMakeZero(Mat3* dest);
 void MatrixMakeZero(Mat4* dest);
+
 void MatrixMakeDiagonal(Mat3* dest, float diags[3]);
-
-Vec3 Mat4GetTranslation(const Mat4& dest);
-Vec3 Mat4GetFacing(const Mat4& dest);
-Vec3 Mat4GetRight(const Mat4& dest);
-Vec3 Mat4GetUp(const Mat4& dest);
-
-// set translation
-void Mat4ApplyTranslation(Mat4* dest, float x, float y, float z);
-
-// set translation
-void Mat4ApplyTranslation(Mat4* dest, const Vec3& a);
 
 void MatrixMultiply(Mat4* dest, const Mat4& a, const Mat4& b);
 void MatrixMultiply(Mat3* dest, const Mat3& a, const Mat3& b);
-void MatrixMultiplyVec(float dest[3], const float v[3], const Mat3& a);
 
 // v is a row vector.
 void MatrixMultiplyVec(Vec4* dest, const Vec4& v, const Mat4& a);
 
 // v is a column vector.
 void MatrixMultiplyVec(Vec4* dest, const Mat4& a, const Vec4& v);
-
-void MatrixMultiplyVecW0(Vec4* dest, const Mat4& a, const Vec4& v);
-void MatrixMultiplyVecW0(float dest[3], const float v[3], const Mat4& a); // implied v.w=0
-void MatrixMultiplyVecW1(Vec3* dest, Vec3 v, const Mat4& a); // implied v.w=0
-void MatrixMultiplyVecW1(Vec4* dest, Vec3 v, const Mat4& a); // implied v.w=0
-void MatrixMultiplyVec(float dest[4], const float v[4], const Mat4& a);
+void MatrixMultiplyVec(Vec3* dest, const Mat3& a, const Vec3& v);
 
 inline Mat4 operator* (const Mat4& lhs, const Mat4& rhs)
 {
@@ -847,7 +842,6 @@ inline Vec4 operator* (const Mat4& lhs, const Vec4& rhs)
 
 float MatrixDotTransposed(const Mat4& a, int col, const float* v);
 float MatrixDotTransposed(const Mat3& a, int col, const float* v);
-void MatrixCopy(Mat4* dest, const Mat4& a);
 
 void MatrixSetRotAboutAxis(Mat4* dest, const float uvw[4], float theta);
 void MatrixSetRotAboutAxis(Mat4* dest, const Vec3& axis, float theta);
@@ -873,11 +867,6 @@ void MatrixCalculateDelta(Mat4* dest, const Mat4& current, const Mat4& prev);
 void MatrixScaleInsitu(Mat4* dest, float value);
 void MatrixScaleInsitu(Mat3* dest, float value);
 void MatrixScaleInsitu(Mat4* dest, const Vec3& value);
-
-void Vector3Dump(float v[3], const char* prefix);
-
-void MatrixDump(const Mat4& m, const char* prefix);
-void MatrixDump(const Mat3& m, const char* prefix);
 
 float MatrixDeterminant(const Mat3& m);
 
@@ -969,7 +958,7 @@ void Mat3Solve(Vec3* dest, const Mat3& a, const Vec3& b);
 // diagonal can be null
 void Mat3DecomposeLdu(Mat3* l, Mat3* d, Mat3* u, int p[3], const Mat3& a);
 
-inline float FloatDistance(float a, float b)
+inline float Distance(float a, float b)
 {
     return fabsf(a - b);
 }

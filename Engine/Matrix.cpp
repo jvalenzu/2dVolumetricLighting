@@ -61,56 +61,6 @@ void MatrixMakeRandy(Mat4* dest, float mid, float extent)
         f[i] = rand()/(float)RAND_MAX * extent - mid;
 }
 
-void Mat4ApplyTranslation(Mat4* dest, float x, float y, float z)
-{
-    dest->m_W[0] = x;
-    dest->m_W[1] = y;
-    dest->m_W[2] = z;
-}
-
-void Mat4ApplyTranslation(Mat4* dest, const Vec3& a)
-{
-    dest->m_W[0] = a.m_X[0];
-    dest->m_W[1] = a.m_X[1];
-    dest->m_W[2] = a.m_X[2];
-}
-
-Vec3 Mat4GetFacing(const Mat4& dest)
-{
-    Vec3 ret;
-    ret.m_X[0] = dest.m_Z[0];
-    ret.m_X[1] = dest.m_Z[1];
-    ret.m_X[2] = dest.m_Z[2];
-    return ret;
-}
-
-Vec3 Mat4GetRight(const Mat4& dest)
-{
-    Vec3 ret;
-    ret.m_X[0] = dest.m_X[0];
-    ret.m_X[1] = dest.m_X[1];
-    ret.m_X[2] = dest.m_X[2];
-    return ret;
-}
-
-Vec3 Mat4GetUp(const Mat4& dest)
-{
-    Vec3 ret;
-    ret.m_X[0] = dest.m_Y[0];
-    ret.m_X[1] = dest.m_Y[1];
-    ret.m_X[2] = dest.m_Y[2];
-    return ret;
-}
-
-Vec3 Mat4GetTranslation(const Mat4& dest)
-{
-    Vec3 ret;
-    ret.m_X[0] = dest.m_W[0];
-    ret.m_X[1] = dest.m_W[1];
-    ret.m_X[2] = dest.m_W[2];
-    return ret;
-}
-
 // [ 1 0 0 0 ]   [ 1 0 0 0 ]   [ lhs.x . column 0 rhs | lhs.x . column 1 rhs | lhs.x . column 2 rhs | lhs.x . column 3 rhs ]
 // [ 0 1 0 0 ] x [ 0 1 0 0 ] = [ lhs.y . column 0 rhs | lhs.y . column 1 rhs | lhs.y . column 2 rhs | lhs.y . column 3 rhs ]
 // [ 0 0 1 0 ]   [ 0 0 1 0 ]   [ lhs.z . column 0 rhs | lhs.z . column 1 rhs | lhs.z . column 2 rhs | lhs.z . column 3 rhs ]
@@ -335,6 +285,13 @@ void MatrixMultiplyVec(Vec4* dest, const Mat4& a, const Vec4& v)
     dest->m_X[3] = v.m_X[0]*a.m_W[0] + v.m_X[1]*a.m_W[1] + v.m_X[2]*a.m_W[2] + v.m_X[3]*a.m_W[3];
 }
 
+void MatrixMultiplyVec(Vec3* dest, const Mat3& a, const Vec3& v)
+{
+    dest->m_X[0] = v.m_X[0]*a.m_X[0] + v.m_X[1]*a.m_X[1] + v.m_X[2]*a.m_X[2];
+    dest->m_X[1] = v.m_X[0]*a.m_Y[0] + v.m_X[1]*a.m_Y[1] + v.m_X[2]*a.m_Y[2];
+    dest->m_X[2] = v.m_X[0]*a.m_Z[0] + v.m_X[1]*a.m_Z[1] + v.m_X[2]*a.m_Z[2];
+}
+
 void MatrixMultiplyVec(Vec4* dest, const Vec4& v, const Mat4& a)
 {
     dest->m_X[0] = v.m_X[0]*a.m_X[0] + v.m_X[1]*a.m_Y[0] + v.m_X[2]*a.m_Z[0] + v.m_X[3]*a.m_W[0];
@@ -343,59 +300,7 @@ void MatrixMultiplyVec(Vec4* dest, const Vec4& v, const Mat4& a)
     dest->m_X[3] = v.m_X[0]*a.m_X[3] + v.m_X[1]*a.m_Y[3] + v.m_X[2]*a.m_Z[3] + v.m_X[3]*a.m_W[3];
 }
 
-// right multiply v by a, storing in dest
-void MatrixMultiplyVec(float dest[4], const float v[4], const Mat4& a)
-{
-    dest[0] = v[0]*a.m_X[0] + v[1]*a.m_X[1] + v[2]*a.m_X[2] + v[3]*a.m_X[3];
-    dest[1] = v[0]*a.m_Y[0] + v[1]*a.m_Y[1] + v[2]*a.m_Y[2] + v[3]*a.m_Y[3];
-    dest[2] = v[0]*a.m_Z[0] + v[1]*a.m_Z[1] + v[2]*a.m_Z[2] + v[3]*a.m_Z[3];
-    dest[3] = v[0]*a.m_W[0] + v[1]*a.m_W[1] + v[2]*a.m_W[2] + v[3]*a.m_W[3];
-}
-
-// right multiply v by a, storing in dest
-void MatrixMultiplyVecW0(float dest[3], const float v[3], const Mat4& a)
-{
-    dest[0] = v[0]*a.m_X[0] + v[1]*a.m_X[1] + v[2]*a.m_X[2];
-    dest[1] = v[0]*a.m_Y[0] + v[1]*a.m_Y[1] + v[2]*a.m_Y[2];
-    dest[2] = v[0]*a.m_Z[0] + v[1]*a.m_Z[1] + v[2]*a.m_Z[2];
-}
-
-void MatrixMultiplyVecW1(Vec3* dest, Vec3 v, const Mat4& a)
-{
-    dest->m_X[0] = v.m_X[0]*a.m_X[0] + v.m_X[1]*a.m_X[1] + v.m_X[2]*a.m_X[2] + a.m_X[3];
-    dest->m_X[1] = v.m_X[0]*a.m_Y[0] + v.m_X[1]*a.m_Y[1] + v.m_X[2]*a.m_Y[2] + a.m_Y[3];
-    dest->m_X[2] = v.m_X[0]*a.m_Z[0] + v.m_X[1]*a.m_Z[1] + v.m_X[2]*a.m_Z[2] + a.m_Z[3];
-}
-
-void MatrixMultiplyVecW1(Vec4* dest, Vec3 v, const Mat4& a)
-{
-    dest->m_X[0] = a.m_X[0]*v.m_X[0] + a.m_X[1]*v.m_X[1] + a.m_X[2]*v.m_X[2] + a.m_X[3];
-    dest->m_X[1] = a.m_Y[0]*v.m_X[0] + a.m_Y[1]*v.m_X[1] + a.m_Y[2]*v.m_X[2] + a.m_Y[3];
-    dest->m_X[2] = a.m_Z[0]*v.m_X[0] + a.m_Z[1]*v.m_X[1] + a.m_Z[2]*v.m_X[2] + a.m_Z[3];
-    dest->m_X[3] = a.m_W[0]*v.m_X[0] + a.m_W[1]*v.m_X[1] + a.m_W[2]*v.m_X[2] + a.m_W[3];
-}
-
-// right multiply v by a, storing in dest
-void MatrixMultiplyVec(float dest[3], const float v[3], const Mat3& a)
-{
-    dest[0] = v[0]*a.m_X[0] + v[1]*a.m_X[1] + v[2]*a.m_X[2];
-    dest[1] = v[0]*a.m_Y[0] + v[1]*a.m_Y[1] + v[2]*a.m_Y[2];
-    dest[2] = v[0]*a.m_Z[0] + v[1]*a.m_Z[1] + v[2]*a.m_Z[2];
-}
-
-
-// MatrixCopy
-void MatrixCopy(Mat4* dest, const Mat4& a)
-{
-    memcpy(dest, a.asFloat(), 64);
-}
-
-// vector3 dump
-void Vector3Dump(float v[3], const char* prefix)
-{
-    Printf("%s[%f %f %f]\n", prefix, v[0], v[1], v[2]);
-}
-
+// vector dump
 void VectorDump(const Vec2& a, const char* prefix)
 {
     Printf("%s[%f %f]\n", prefix, a[0], a[1]);
@@ -813,15 +718,15 @@ void MatrixCalculateDelta(Mat4* dest, const Mat4& current, const Mat4& prev)
     MatrixMultiply(dest, t0, current);
 }
 
-// VectorDistanceSquared
-float VectorDistanceSquared(const Vec4& a, const Vec4& b)
+// DistanceSquared
+float DistanceSquared(const Vec4& a, const Vec4& b)
 {
     Vec4 v = a - b;
     return VectorDot(v, v);
 }
 
-// VectorDistanceSquared
-float VectorDistanceSquared(const Vec3& a, const Vec3& b)
+// DistanceSquared
+float DistanceSquared(const Vec3& a, const Vec3& b)
 {
     Vec3 v = a - b;
     return VectorDot(v, v);
@@ -871,23 +776,6 @@ void VectorSet(Vec3* dest, float x, float y, float z)
     dest->m_X[0] = x;
     dest->m_X[1] = y;
     dest->m_X[2] = z;
-}
-
-void VectorNormalize(Vec3* a)
-{
-    a->Normalize();
-}
-
-void VectorNormalize(Vec3* dest, const Vec3& a)
-{
-    const float lengthSquared = a.LengthSquared();
-    if (lengthSquared > 1e-3f)
-    {
-        const float length = sqrtf(lengthSquared);
-        dest->m_X[0] = a.m_X[0] / length;
-        dest->m_X[1] = a.m_X[1] / length;
-        dest->m_X[2] = a.m_X[2] / length;
-    }
 }
 
 float VectorLengthSquared(const Vec3& a)
@@ -1172,7 +1060,7 @@ bool Mat3Test()
     Mat3Solve(&dest, a, b);
     
     Vec3 c{3.5f, 1.5f, 3.0f};
-    if (VectorDistanceSquared(dest, c) > kVerySmallEpsilon)
+    if (DistanceSquared(dest, c) > kVerySmallEpsilon)
         return false;
     
     Mat3 s;
@@ -1183,11 +1071,11 @@ bool Mat3Test()
     int seen_count = 0;
     for (int i=0; i<3; ++i)
     {
-        if (FloatDistance(lambdas[i], 1.6180338859558105f) < kVerySmallEpsilon)
+        if (Distance(lambdas[i], 1.6180338859558105f) < kVerySmallEpsilon)
             seen_count++;
-        if (FloatDistance(lambdas[i], 0.5f) < kVerySmallEpsilon)
+        if (Distance(lambdas[i], 0.5f) < kVerySmallEpsilon)
             seen_count++;
-        if (FloatDistance(lambdas[i], -0.6180338859558105f) < kVerySmallEpsilon)
+        if (Distance(lambdas[i], -0.6180338859558105f) < kVerySmallEpsilon)
             seen_count++;
     }
     if (seen_count != 3)

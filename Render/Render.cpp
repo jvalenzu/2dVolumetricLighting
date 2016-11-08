@@ -616,9 +616,9 @@ void RenderDumpModel(const SimpleModel* model)
     for (int i=0; i<model->m_NumIndices; ++i)
     {
         const SimpleVertex* vertex = &model->m_Vertices[model->m_Indices[i]];
-        float in[3] = { vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2] };
-        float out[3];
-        MatrixMultiplyVec(out, in, model->m_Po);
+        Vec3 in{vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2]};
+        Vec4 out;
+        MatrixMultiplyVec(&out, model->m_Po, in.xyz1());
         Printf("    point[%d] = { %.2f, %.2f, %.2f }\n", i, out[0], out[1], out[2]);
     }
 }
@@ -633,8 +633,8 @@ void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a)
     for (int i=0; i<model->m_NumIndices; ++i)
     {
         const SimpleVertex* vertex = model->m_Vertices + model->m_Indices[i];
-        float out[3];
-        MatrixMultiplyVec(out, vertex->m_Position, a);
+        Vec4 out;
+        MatrixMultiplyVec(&out, a, Vec3(vertex->m_Position).xyz1());
         Printf("    point[%d] = [ %.2f, %.2f, %.2f, 1 ] -> [ %.2f, %.2f, %.2f, 1 ]\n",
                i, vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2], out[0], out[1], out[2]);
     }

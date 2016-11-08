@@ -107,10 +107,10 @@ void SceneUpdate(Scene* scene)
             
             // update position and orientation
             if (sceneObject->m_ModelInstance)
-                MatrixCopy(&sceneObject->m_ModelInstance->m_Po, sceneObject->m_LocalToWorld);
+                sceneObject->m_ModelInstance->m_Po = sceneObject->m_LocalToWorld;
             
             // update prev local to world
-            MatrixCopy(&sceneObject->m_PrevLocalToWorld, sceneObject->m_LocalToWorld);
+            sceneObject->m_PrevLocalToWorld = sceneObject->m_LocalToWorld;
         }
         
         sceneObject->m_Flags |= SceneObject::Flags::kUpdatedOnce;
@@ -199,7 +199,7 @@ static void SceneObjectApplyDelta(SceneObject* itr, const Mat4& delta)
     {
         Mat4 mat;
         MatrixMultiply(&mat, itr->m_LocalToWorld, delta);
-        MatrixCopy(&itr->m_LocalToWorld, mat);
+        itr->m_LocalToWorld = mat;
         
         itr->m_Flags |= SceneObject::Flags::kDirty;
         
@@ -261,7 +261,7 @@ SceneObject* SceneCreateLight(Scene* scene, const LightOptions& lightOptions)
         
         assert(lightOptions.m_Position.m_X[1] < 10000.0f);
         
-        Mat4ApplyTranslation(&sceneObject->m_LocalToWorld, lightOptions.m_Position.xyz());
+        sceneObject->m_LocalToWorld.SetTranslation(lightOptions.m_Position.xyz());
         
         // jiv fixme: make some lights not drive shadows
         sceneObject->m_Shadow1dMap = TextureCreateRenderTexture(kShadowMapSize, 1, 0, Texture::RenderTextureFormat::kFloat);

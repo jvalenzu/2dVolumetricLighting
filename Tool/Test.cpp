@@ -19,35 +19,35 @@ void MatrixTest()
 
 static bool MatrixMultiplyVecTest()
 {
-    float v[3];
-    v[0] = rand()/(float)RAND_MAX * 1024 - 512.0f;
-    v[1] = rand()/(float)RAND_MAX * 1024 - 512.0f;
-    v[2] = rand()/(float)RAND_MAX * 1024 - 512.0f;
+  Vec3 v;
+  v[0] = rand()/(float)RAND_MAX * 1024 - 512.0f;
+  v[1] = rand()/(float)RAND_MAX * 1024 - 512.0f;
+  v[2] = rand()/(float)RAND_MAX * 1024 - 512.0f;
+  
+  Mat3 r;
+  MatrixMakeRandy(&r, 512.0f, 1024.0f);
+  
+  Vec3 dest;
+  MatrixMultiplyVec(&dest, r, v);
+  
+  bool ret = true;
+  
+  const float* f = r.asFloat();
+  if (dest[0] != f[0]*v[0] + f[1]*v[1] + f[2]*v[2])
+    ret = false;
+  if (dest[1] != f[3]*v[0] + f[4]*v[1] + f[5]*v[2])
+    ret = false;
+  if (dest[2] != f[6]*v[0] + f[7]*v[1] + f[8]*v[2])
+    ret = false;
+  
+  if (!ret)
+  {
+    VectorDump(v, "v: ");
+    MatrixDump(r, "r");
+    VectorDump(dest, "dest: ");
+  }
     
-    Mat3 r;
-    MatrixMakeRandy(&r, 512.0f, 1024.0f);
-    
-    float dest[3];
-    MatrixMultiplyVec(dest, v, r);
-    
-    bool ret = true;
-
-    const float* f = r.asFloat();
-    if (dest[0] != f[0]*v[0] + f[1]*v[1] + f[2]*v[2])
-        ret = false;
-    if (dest[1] != f[3]*v[0] + f[4]*v[1] + f[5]*v[2])
-        ret = false;
-    if (dest[2] != f[6]*v[0] + f[7]*v[1] + f[8]*v[2])
-        ret = false;
-
-    if (!ret)
-    {
-        Vector3Dump(v, "v: ");
-        MatrixDump(r, "r");
-        Vector3Dump(dest, "dest: ");
-    }
-    
-    return true;
+  return true;
 }
 
 static bool Mat3MakeZero()
