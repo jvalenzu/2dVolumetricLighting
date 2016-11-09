@@ -12,7 +12,7 @@ struct Vec4;
 struct Vec2
 {
     float m_X[2];
-
+    
     Vec2()    {}
     
     Vec2(float x, float y)
@@ -658,7 +658,7 @@ struct Mat4
         m_W[2] *= -1.0f;
         m_W[3] = 1.0f;
     }
-
+    
     inline void SetTranslation(const Vec3& pos)
     {
         m_W[0] = pos.m_X[0];
@@ -666,7 +666,7 @@ struct Mat4
         m_W[2] = pos.m_X[2];
         m_W[3] = 1.0f;
     }
-
+    
     inline void SetTranslation(const Vec4& pos)
     {
         m_W[0] = pos.m_X[0];
@@ -723,9 +723,6 @@ struct Mat4
 
 // splat value in dest
 void VectorSplat(Vec3* dest, float value);
-
-// component multiplication
-Vec3 VectorMul(const Vec3& a, const Vec3& b);
 
 // component max/min
 Vec3 VectorMax(const Vec3& a, const Vec3& b);
@@ -827,13 +824,6 @@ inline Vec4 operator* (float f, const Vec4& rhs)
 }
 
 inline Vec4 operator* (const Vec4& lhs, const Mat4& rhs)
-{
-    Vec4 temp;
-    MatrixMultiplyVec(&temp, lhs, rhs);
-    return temp;
-}
-
-inline Vec4 operator* (const Mat4& lhs, const Vec4& rhs)
 {
     Vec4 temp;
     MatrixMultiplyVec(&temp, lhs, rhs);

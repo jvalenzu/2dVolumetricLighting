@@ -841,15 +841,6 @@ Vec4 VectorMin(const Vec4& a, const Vec4& b)
     return ret;
 }
 
-Vec3 VectorMul(const Vec3& a, const Vec3& b)
-{
-    Vec3 ret;
-    ret.m_X[0] = a.m_X[0] * b.m_X[0];
-    ret.m_X[1] = a.m_X[1] * b.m_X[1];
-    ret.m_X[2] = a.m_X[2] * b.m_X[2];
-    return ret;
-}
-
 int VectorNegativeCount(const Vec3& a)
 {
     int ret = 0;

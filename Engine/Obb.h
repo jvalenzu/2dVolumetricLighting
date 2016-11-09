@@ -15,5 +15,3 @@ struct Obb
 void ObbInit(Obb* obb);
 void ObbRender(const Obb& obb);
 void ObbDump(const Obb& obb, const char* prefix="");
-
-

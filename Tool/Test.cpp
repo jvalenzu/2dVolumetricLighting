@@ -1,3 +1,4 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4; -*-
 #include "Engine/Matrix.h"
 #include "Engine/Utils.h"
 #include <stdio.h>

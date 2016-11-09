@@ -21,6 +21,7 @@ char* FileGetAsText(const char* fname)
         fread(ret, 1, buf.st_size, fh);
         fclose(fh);
         
+        // NUL terminate
         ret[buf.st_size] = '\0';
     }
     
@@ -41,7 +42,7 @@ int Printf(const char* fmt, ...)
   OutputDebugStringA(buf);
 #endif
   va_end(args);
-
+  
   return ret;
 }
 
@@ -50,7 +51,7 @@ int FPrintf(FILE* fh, const char* fmt, ...)
   int ret = 0;
   va_list args;
   va_start(args, fmt);
-
+  
 #if defined(WINDOWS)
   if (fh == stderr)
   {
@@ -66,6 +67,6 @@ int FPrintf(FILE* fh, const char* fmt, ...)
   }
   
   va_end(args);
-
+  
   return ret;
 }

@@ -41,7 +41,7 @@ void main (void)
         cylindricalMask &= ~bit;
         
         Light cylindricalLight = _CylindricalLight[index];
-
+        
         float t = pointOnLineSegmentT(cylindricalLight.m_Position.xy, cylindricalLight.m_Direction.xy, fragmentPos.xy);
         float t0 = clamp(t, 0.0f, 1.0f);
         if (t >= 0.0f && t <= 1.0f)
@@ -69,9 +69,9 @@ void main (void)
                 fragColor.rgb = vec3(0.5,0.5,0.5);
         }
         
-        if (distance(fragmentPos.xy, cylindricalLight.m_Position.xy) < 0.025)
+        if (aspectCorrectedDistance(fragmentPos.xy, cylindricalLight.m_Position.xy) < 0.025)
             fragColor.rgb = vec3(1,0,0);
-        if (distance(fragmentPos.xy, cylindricalLight.m_Direction.xy) < 0.025)
+        if (aspectCorrectedDistance(fragmentPos.xy, cylindricalLight.m_Direction.xy) < 0.025)
             fragColor.rgb = vec3(0,1,0);
         
         vec2 p0 = pointOnLineSegment(cylindricalLight.m_Position.xy, cylindricalLight.m_Direction.xy, fragmentPos.xy);

@@ -282,7 +282,9 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     MatrixMakeIdentity(&renderContext->m_Camera);
     MatrixMakeIdentity(&renderContext->m_View);
     
+    // const float aspectRatio = 1.0f;
     const float aspectRatio = (float) renderContext->m_Width/renderContext->m_Height;
+    // const float aspectRatio = (float) renderContext->m_Height/renderContext->m_Width;
     
     // initialize perspective matrix
     if (renderOptions.m_CameraType == RenderOptions::kPerspective)

@@ -1,12 +1,12 @@
 // -*- mode: glsl; tab-width: 4; c-basic-offset: 4; -*-
 
-
 #ifdef GL_ES
 precision highp float;
 #endif
 
 uniform mat4 modelView;
 uniform mat4 project;
+uniform float _AspectRatio;
 
 in vec3 inPosition;
 in vec2 inTexCoord;

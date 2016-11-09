@@ -8,6 +8,9 @@
 #define kRootTwo    1.41421356237
 #define kInvTwoPi   0.159154943092
 
+uniform vec4 _Time;
+uniform float _AspectRatio;
+
 float fromZeroOne(float param)
 {
     return param*2.0f - 1.0f;
@@ -159,5 +162,7 @@ vec2 projectOn(vec2 v, vec2 normal)
     return dot(v, normalize(normal))*normal;
 }
 
-uniform vec4 _Time;
-uniform float _AspectRatio;
+float aspectCorrectedDistance(vec2 a, vec2 b)
+{
+    return length((a-b)*vec2(_AspectRatio, 1.0f));
+}
