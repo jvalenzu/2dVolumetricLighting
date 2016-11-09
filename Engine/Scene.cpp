@@ -337,7 +337,6 @@ void SceneDraw(Scene* scene, RenderContext* renderContext)
         if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
             continue;
         
-        Vec3 pos = sceneObject->m_ModelInstance->m_Po.GetTranslation();
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
     }
 }
@@ -365,7 +364,6 @@ void SceneDraw(Scene* scene, RenderContext* renderContext, int groupId)
         if ((itr->m_Flags & SceneObject::kEnabled) == 0)
             continue;
         
-        Vec3 pos = sceneObject->m_ModelInstance->m_Po.GetTranslation();
         RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
     }
 }

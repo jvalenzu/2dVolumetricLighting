@@ -32,10 +32,6 @@ SceneObject* s_SceneObject;
 static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mods);
 static void MainLoop(RenderContext* renderContext);
 
-static float s_X = 0.0f;
-static float s_Y = 0.0f;
-static float s_Z = 0.0f;
-
 void Test()
 {
     AssetHandleTableTest();
@@ -113,9 +109,6 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
         
         Vec3 temp;
         VectorSet(&temp, x, y, z);
-        
-        const Vec3 mask  = VectorSign(temp);
-        const Vec3 maskL = VectorSign(s_LastDir);
         
         s_LastDir = s_Dir;
         s_Dir.Normalize();
@@ -322,8 +315,6 @@ static void MainLoop(RenderContext* renderContext)
     
     Shader* shaderBlurX = ShaderCreate("obj/Shader/BlurX");
     Shader* shaderBlurY = ShaderCreate("obj/Shader/BlurY");
-    
-    float dir[3] = { 1, 0, 0 };
     
     Texture* shadowCasterRenderTarget = TextureCreateRenderTexture(512, 512, 0);
     shadowCasterRenderTarget->SetClearFlags(Texture::RenderTextureFlags::kClearColor, 0,1,0,1);

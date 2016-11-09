@@ -653,8 +653,6 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
         const float p2 = powf(a.m_X[0] - q, 2.0f) + powf(a.m_Y[1] - q, 2.0f) + powf(a.m_Z[2] - q, 2.0f) + 2.0f*p1;
         const float p = sqrtf(p2 / 6.0f);
         
-        const float t1 = MatrixDeterminant(a);
-        
         Mat3 qi;
         Mat3MakeScale(&qi, q);
         
@@ -932,7 +930,6 @@ void Mat3Solve(Vec3* dest, const Mat3& a, const Vec3& b)
     // solve upper
     for (int i=kRows-1; i>=0; --i)
     {
-        const float coeff = upper[i][i];
         float bi = dest->m_X[i];
         
         for (int j=kColumns-1; j>i; --j)
@@ -998,7 +995,6 @@ void Mat3DecomposeLdu(Mat3* _lower, Mat3* _diagonal, Mat3* _upper, int p[3], con
         {
             const Vec3& leftSourceRow = upper[v];
             Vec3& leftDestRow = upper[v];
-            Vec3& rightDestRow = lower[v];
             
             const float rowValAtPivotColumn = upper[v][ri];
             if (fabs(pivotDiv) < kSmallEpsilon || fabs(rowValAtPivotColumn) < kSmallEpsilon)

@@ -2,6 +2,7 @@
 
 include Build/rules.mk
 
+CPPFLAGS += -Wunused-variable -Werror
 CPPFLAGS += -DGLFW_INCLUDE_GLCOREARB=1
 
 INCLUDES += -IExternal

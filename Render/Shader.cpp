@@ -80,10 +80,6 @@ Shader* ShaderManager::CreateShader(const char* fname)
     glBindAttribLocation(temp.m_ProgramName, kVertexAttributeNormal, "inNormal");
     glBindAttribLocation(temp.m_ProgramName, kVertexAttributeTexCoord, "inTexCoord");
     
-    // Get the size of the version preprocessor string info so we know 
-    //  how much memory to allocate for our sourceString
-    const GLsizei versionStringSize = sizeof("#version 123\n");
-    
     // Specify and compile VertexShader
     
     // Prepend our vertex shader source string with the supported GLSL version so

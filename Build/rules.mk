@@ -7,6 +7,7 @@ slash_to_underscore = $(subst $(slash),$(underscore),$1)
 space:=$(empty) $(empty)
 first_dot = $(subst $(space),.,$(wordlist 1, 2,$(subst ., ,$(1))))
 
+CPPFLAGS += -Wno-parentheses
 CPPFLAGS += -Wno-deprecated-declarations
 CPPFLAGS += -Wc++11-extensions
 
@@ -19,7 +20,7 @@ CPPFLAGS += -g -O0
 CPPFLAGS += -D_DEBUG=1
 endif
 
-CPPFLAGS += -std=c++11 -stdlib=libc++ -Wno-parentheses
+CXXFLAGS += -std=c++11 -stdlib=libc++ 
 
 LDFLAGS += -Wc++11-extensions
 
@@ -28,8 +29,14 @@ outName = obj/$(basename $(call slash_to_underscore,$1)).o
 depName = obj/$(basename $(call slash_to_underscore,$1)).d
 
 define srcToObj
+
+ifeq (x$(filter %.cpp, $1),x)
 $(call outName,$1) : obj/dummy $1 $(call depName,$1) Makefile
-	$(CXX) $(CPPFLAGS) -MMD $(INCLUDES) -I$(CURDIR) -c -o $(call outName,$1) $1
+	$(CC) $(CPPFLAGS) $(CCFLAGS) -MMD $(INCLUDES) -I$(CURDIR) -c -o $(call outName,$1) $1
+else
+$(call outName,$1) : obj/dummy $1 $(call depName,$1) Makefile
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD $(INCLUDES) -I$(CURDIR) -c -o $(call outName,$1) $1
+endif
 
 $(call depName,$1) : $1
 

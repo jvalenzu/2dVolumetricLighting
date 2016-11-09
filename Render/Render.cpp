@@ -100,12 +100,12 @@ static bool s_CgInit(RenderContext* renderContext)
 #if USE_CL
     CGLContextObj glContext = CGLGetCurrentContext();
     CGLShareGroupObj shareGroup = CGLGetShareGroup(glContext);
-    cl_context_properties properties[] =
-    {
-        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
-        (cl_context_properties)shareGroup,
-        0
-    };
+    // cl_context_properties properties[] =
+    // {
+    //     CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+    //     (cl_context_properties)shareGroup,
+    //     0
+    // };
     
     gcl_gl_set_sharegroup(shareGroup);
     
