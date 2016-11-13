@@ -283,6 +283,26 @@ struct Vec3
     inline Vec4 xyz1() const;
     inline Vec4 xyz0() const;
     
+    inline float x() const
+    {
+        return m_X[0];
+    }
+    
+    inline float& x()
+    {
+        return m_X[0];
+    }
+
+    inline float y() const
+    {
+        return m_X[1];
+    }
+    
+    inline float& y()
+    {
+        return m_X[1];
+    }
+    
     inline float z() const
     {
         return m_X[2];
@@ -445,15 +465,30 @@ struct Vec4
         ret *= -1.0f;
         return ret;
     }
+    
+    inline float x() const
+    {
+        return asFloat()[0];
+    }
 
     inline float& x()
     {
         return asFloat()[0];
     }
     
+    inline float y() const
+    {
+        return asFloat()[1];
+    }
+    
     inline float& y()
     {
         return asFloat()[1];
+    }
+    
+    inline float z() const
+    {
+        return asFloat()[2];
     }
     
     inline float& z()

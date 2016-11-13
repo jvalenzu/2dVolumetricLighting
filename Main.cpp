@@ -72,13 +72,13 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
             case GLFW_KEY_A:
             {
                 handled = true;
-                x -= step;
+                x += step;
                 break;
             }
             case GLFW_KEY_D:
             {
                 handled = true;
-                x += step;
+                x -= step;
                 break;
             }
             case GLFW_KEY_W:
