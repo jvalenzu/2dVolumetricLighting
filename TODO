@@ -63,12 +63,14 @@
 [ ] move inline matrix methods into separate header.  Just to keep it more readable.
 [ ] Remove standalone matrix functions where it makes sense, maybe MatrixMultiply.  Just rely on operator overloading.
 [ ] Write README.md
+[ ] Multiple LSPs
 
 ------------------------------------------------
 PUBLISH
 ------------------------------------------------
 
 [ ] Makefile dependency if you delete a source file (just hangs currently)
+[ ] MRT for lsp raymarch generation.  Maybe simpler?
 [✓] Windows port
   [x] OpenGL
   [ ] DirectX 11 or 12.
