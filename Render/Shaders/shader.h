@@ -46,10 +46,12 @@ vec4 toZeroOne(vec4 param)
     return (param+1.0f)*0.5f;
 }
 
+// jiv fixme:
+// stupid aspect ratio bs.  I mean seriously.
 float pointOnLineSegmentT(vec2 p0, vec2 p1, vec2 q0)
 {
-    vec2 n = p1 - p0;
-    float t0 = dot(q0 - p0, n)/dot(n, n);
+    vec2 n = (p1 - p0)*vec2(_AspectRatio, 1.0f);
+    float t0 = dot((q0 - p0)*vec2(_AspectRatio, 1.0f), n)/dot(n, n);
     return t0;
 }
 

@@ -56,11 +56,13 @@
 [x] query the default resolution to create an appropriately sized window.
 [x] black screen after resize
 [x] pare down RMath to just the stuff we need to generate Obb, then fix the types to R3
-[x] FIX ASPECT RATIO.  It's clearly wrong in all the screen space stuff.
-   - I think aspect ratio is fine, but move all the screenspace transformation of variables to viewspace
+[✓] FIX ASPECT RATIO.  It's clearly wrong in all the screen space stuff.
+  - Kludges in place to paper over problems.
+  - Maybe instead of operating on fragmentPos, transform cylinder position and direction into aspect corrected clip space and separate aspect corrected fragment pos to use?
 [x] debug cylindrical attenuation
 [ ] move inline matrix methods into separate header.  Just to keep it more readable.
-[ ] Remove standalone matrix functions where it makes sense, like MatrixMultiply.  Just rely on operator overloading.
+[ ] Remove standalone matrix functions where it makes sense, maybe MatrixMultiply.  Just rely on operator overloading.
+[ ] Write README.md
 
 ------------------------------------------------
 PUBLISH

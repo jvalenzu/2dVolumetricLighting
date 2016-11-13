@@ -20,6 +20,9 @@ in vec2 texCoord;
 in vec4 screenPosition;
 out vec4 fragColor;
 
+#define kCylinderDistanceCutoff 0.75
+#define kCylinderDistanceCutoffMultiplier (1.0/(1.0 - kCylinderDistanceCutoff))
+
 void main (void)
 {
     vec4 t0 = texture(_MainTex, texCoord);
@@ -97,18 +100,26 @@ void main (void)
         vec2 lightAxis = cylindricalLight.m_Direction.xy - cylindricalLight.m_Position.xy;
         float t = pointOnLineSegmentT(cylindricalLight.m_Position.xy, cylindricalLight.m_Direction.xy, fragmentPos.xy);
         vec2 q0 = cylindricalLight.m_Position.xy+lightAxis*clamp(t, 0.0f, 1.0f);
+
+        float distanceAttenuation = 1.0f;
         
         float orthogonalAttenuation = 0.0f;
         if (t >= 0.0f && t <= 1.0f)
         {
             vec2 orthogonalProjection = fragmentPos.xy - q0;
             orthogonalAttenuation = 1.0f-clamp(length(orthogonalProjection)*cylindricalLight.m_OrthogonalRange, 0.0f, 1.0f);
+            
+            if (t >= kCylinderDistanceCutoff)
+            {
+                // 1 at kCylinderDistanceCutoff, 0 at 1, quadratic falloff
+                distanceAttenuation = pow(1.0f-kCylinderDistanceCutoffMultiplier*(t-kCylinderDistanceCutoff), 2.0f);
+            }
         }
         
         vec2 ray = normalize(fragmentPos.xy - q0.xy);
         float c0 = clamp(dot(t1.rg, ray), 0.0f, 1.0f);
         
-        color.rgb += orthogonalAttenuation*cylindricalLight.m_Color.rgb;
+        color.rgb += distanceAttenuation*orthogonalAttenuation*cylindricalLight.m_Color.rgb;
     }
     
     fragColor = vec4(color.rgb*t0.rgb, t0.a);

@@ -44,13 +44,21 @@ void main (void)
         
         float t = pointOnLineSegmentT(cylindricalLight.m_Position.xy, cylindricalLight.m_Direction.xy, fragmentPos.xy);
         float t0 = clamp(t, 0.0f, 1.0f);
-        if (t >= 0.0f && t <= 1.0f)
+        if (t < 0.0f)
+        {
+            fragColor.rgb = vec3(1,0,0);
+        }
+        else if (t >= 0.0f && t <= 1.0f)
         {
             vec2 q0 = pointOnLineSegment(cylindricalLight.m_Position.xy, cylindricalLight.m_Direction.xy, fragmentPos.xy);
             vec2 orthogonalProjection = fragmentPos.xy - q0;
             float orthogonalAttenuation = 1.0f-clamp(length(orthogonalProjection)*cylindricalLight.m_OrthogonalRange, 0.0f, 1.0f);
             
             fragColor.rgb = vec3(orthogonalAttenuation, orthogonalAttenuation, orthogonalAttenuation);
+        }
+        else
+        {
+            fragColor.rgb = vec3(0,0,1);
         }
         
         // distinguish port/starboard
