@@ -27,9 +27,9 @@ This approach is similar to mattdesc1.  One difference is we don't require the l
 Tested on Mac OSX, Windows 10.
 
 ### External Libraries
-*(GLFW)[https://github.com/glfw/glfw]           - https://github.com/glfw/glfw
-*(GL)[http://khronos.org]                       - http://khronos.org
-*(Dear imgui)[https://github.com/ocornut/imgui] - https://github.com/ocornut/imgui
+* (GLFW)[https://github.com/glfw/glfw]           - https://github.com/glfw/glfw
+* (GL)[http://khronos.org]                       - http://khronos.org
+* (Dear imgui)[https://github.com/ocornut/imgui] - https://github.com/ocornut/imgui
 
 ## Assets
 Most sprite data (Beam.png, TreeApple.png) from the [Small World sprite set](http://www.lostgarden.com/2009/03/dancs-miraculously-flexible-game.html).  The associated normal data (TreeApple_OUTPUT.png) built from the sprite data.
