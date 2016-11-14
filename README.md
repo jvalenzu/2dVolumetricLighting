@@ -20,15 +20,16 @@ Other approaches, like this one, are image based.  Shadow casters are rendered t
 
 A couple of folks have already implemented an image based approach ([mattdesc1](https://github.com/mattdesl/lwjgl-basics/wiki/2D-Pixel-Perfect-Shadows) and [catalinzima](http://www.catalinzima.com/2010/07/my-technique-for-the-shader-based-dynamic-2d-shadows/)).  These implementations render the shadow casters with the lsp at the origin.  A second pass is performed (1d raymarching) into a 1d render texture.  This pass operates on polar coordinates to determine the minimum distance at which a "collision" occurs.  Use of the 1d render texture for lookups first require determining the distance from a screen position to the lsp and then comparing against the stored 1d lookup.  This technique works well provided (a) the lsp is onscreen or very close to being onscreen and (b) there is not great z-depth variance in the shadow casters and/or lsp.
 
-This approach is similar to mattdesc1.  One difference is we don't require the lsp to be the center of the 1d raymarch scene.  This is because we take a more expensive approach to determining map the 1d raymarch texture to our normalized t (specifically, line clipping to the border - border in shader.h).  We render shadow casters, then for each lsp generate a 1d raymarch texture, and a final pass to combine results.
+This approach is similar to mattdesc1.  One difference is we don't require the lsp to be the center of the 1d raymarch scene.  This is because we take a more expensive approach to determining map the 1d raymarch texture to our normalized t (specifically, line clipping to the border - border in shader.h).  We render shadow casters, then for each lsp generate a 1d raymarch texture, and a final pass to combine results.  In this demo, I do one 1d->2d "final" pass per shadowing light.
 
 ## Building
 
 Tested on Mac OSX, Windows 10.
 
 ### External Libraries
-GLFW - https://github.com/glfw/glfw
-GL   - http://khronos.org
+*(GLFW)[https://github.com/glfw/glfw]           - https://github.com/glfw/glfw
+*(GL)[http://khronos.org]                       - http://khronos.org
+*(Dear imgui)[https://github.com/ocornut/imgui] - https://github.com/ocornut/imgui
 
 ## Assets
 Most sprite data (Beam.png, TreeApple.png) from the [Small World sprite set](http://www.lostgarden.com/2009/03/dancs-miraculously-flexible-game.html).  The associated normal data (TreeApple_OUTPUT.png) built from the sprite data.
