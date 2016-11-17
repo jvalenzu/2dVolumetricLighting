@@ -440,7 +440,7 @@ void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, con
     
     Mat4 normalModel;
     MatrixInvert(&normalModel, localToWorld);
-    MatrixTransposeInsitu(&normalModel);
+    normalModel.Transpose();
     
     // use material
     int textureSlotItr = 1;

@@ -105,7 +105,7 @@ static bool Mat3DiagonalizeTest()
     Mat3 ident;    
     MatrixMultiply(&ident, sdsInvInv, a);
     
-    if (MatrixIsIdent(ident, 1e-3f))
+    if (ident.IsIdentity(1e-3f))
         return true;
     
     MatrixDump(a, "a");

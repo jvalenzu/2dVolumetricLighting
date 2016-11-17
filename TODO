@@ -47,9 +47,6 @@
 [x] Add member function for MaterialSetMaterialPropertyVector
 [x] Add member function for MaterialSetMaterialPropertyFloat
 [x] Add member function for MaterialSetMaterialPropertyTexture
-[ ] ARTIFACT: The volumetric shadow has lines in it
-[ ] ARTIFACT: Dealing with lsp embedded in occluder
-[ ] ghost shadow?
 [x] ARTIFACT: Dealing with nearly offscreen LSP -> radial test artifacts
 [x] ambient parameterization
   - removed ambient in favor of directional lights, might want it back.
@@ -59,18 +56,26 @@
 [✓] FIX ASPECT RATIO.  It's clearly wrong in all the screen space stuff.
   - Kludges in place to paper over problems.
   - Maybe instead of operating on fragmentPos, transform cylinder position and direction into aspect corrected clip space and separate aspect corrected fragment pos to use?
+  - How does anyone else deal with this?
 [x] debug cylindrical attenuation
-[ ] move inline matrix methods into separate header.  Just to keep it more readable.
-[ ] Remove standalone matrix functions where it makes sense, maybe MatrixMultiply.  Just rely on operator overloading.
-[ ] Write README.md
+[✓] make a list of standalone Vector/matrix functions to convert to operator overloading.
+  [x] TransposeInsitu
+  [x] IsIdent
+  [x] MatrixDeterminant
+  [x] Mat3InvertIterate (changed to CalculateEigenvector)
+[x] Write README.md
+  - More or less right
+[x] UI legend describing keys
+[x] movement less jerky
 
 ------------------------------------------------
 PUBLISH
 ------------------------------------------------
 
+[ ] shader fallback when a shader can't be compiled or found instead of crashing
 [ ] Makefile dependency if you delete a source file (just hangs currently)
 [ ] MRT for lsp raymarch generation.
-[ ] uniform support through materials, to reduce the 1d->2d pass to one pass using multiple samplers
+[ ] sampler array to reduce the 1d->2d pass to one pass using multiple samplers.  Requires GL4?
 [✓] Windows port
   [x] OpenGL
   [ ] DirectX 11 or 12.
@@ -79,36 +84,30 @@ PUBLISH
   [ ] shader variations
   [ ] suppress MCPP warning from unrecognized #extension directive
   [ ] Shader variants to get back to one SampleShadowMap shader
-[ ] relocate asset file paths
-[ ] SceneObject reference count
-[ ] sprite asset
-[ ] Material assets
-  [ ] Include normal data for SDF
-[ ] UI legend describing keys
-[ ] add member function for vec3 for destructive operations
-[ ] movement less jerky
-[ ] more comprehensive testing for memory leaks
 [ ] shader reloading
-[ ] shader fallback when a shader can't be compiled or found instead of crashing
+[ ] bilinear filter Gaussian blur to reduce number of passes
+[ ] relocate asset file paths
+[ ] hundreds of sprites
+[ ] SceneObject reference count
+[ ] sprite asset - should clean up a bit of the boilerplate
+[ ] Material assets - should clean up a bit of the boilerplate per asset
+  [ ] Include normal data for SDF
+[ ] more comprehensive testing for memory leaks
 [ ] use explicit layout in shaders to avoid string based coupling
 [ ] move model matrix param setting into model, out of material
 [ ] set view/projection param once per frame (or once per camera)
-[ ] realtime SDF (CL)
 [ ] move camera out of RenderContext and into Scene
 [ ] move SceneObject instances over to HandleAssetManager
 [ ] Parameterized shadow blend factor
-[ ] Reverse index hashes in ShaderManager to allow sorting on separate indices
 [ ] GNU/Linux port
+[ ] make gamma correct
 [ ] GUIDs instead of asset paths
 [ ] split one-time initialization like ShaderInit out of RenderInit which because it takes a render context implies it's not a singleton.  Alternatively make RenderContext a singleton.
-[ ] make gamma correct
-[ ] bilinear filter Gaussian blur to reduce number of passes
 [ ] Shader assets
   [ ] Decouple vsh/fsh
-[ ] hundreds of sprites
-[ ] FIXME:
-  [ ] duplication in ToolGenerateObbFromVec3 (Tools/Utils.cpp)
+[ ] remove duplication between ToolGenerateObbFromSimpleModel and ToolGenerateObbFromVec3 (Tools/Utils.cpp)
 [ ] need to spell out how the FromZeroOne functions result in non-cartesean reactions in the 1d mapping functions
+[ ] move inline matrix/vector methods into separate header.  Just to keep it more readable.
 
 ------------------------------------------------
 DISTANT FUTURE
@@ -116,3 +115,7 @@ DISTANT FUTURE
 [ ] Is glLogicOp still okay method to or in light bits?
 [ ] Better method of finding eigenvectors in Obb tool
 [ ] Do we need a separate Model Po matrix?  Seems like overkill given the size and purpose of the demo.
+[ ] ARTIFACT: The volumetric shadow has lines in it
+[ ] ARTIFACT: Dealing with lsp embedded in occluder
+[ ] realtime SDF (CL)
+[ ] Reverse index hashes in ShaderManager to allow sorting on separate indices.  I don't remember what this is for.

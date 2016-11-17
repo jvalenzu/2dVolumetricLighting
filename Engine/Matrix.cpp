@@ -18,14 +18,12 @@ Vec3 Vec3::kZero{0.0f, 0.0f, 0.0f};
 Vec4 Vec4::kZero{0.0f, 0.0f, 0.0f, 0.0f};
 Vec3 Vec3::kUp{0.0f, 1.0f, 0.0f};
 
-// MatrixIsIdent
-//
-// Returns whether a is the identity matrix, within tolerance epsilon
-bool MatrixIsIdent(const Mat3& a, float epsilon)
+// is identity
+bool Mat3::IsIdentity(float epsilon) const
 {
     bool isIdent = true;
     
-    const float* fData = a.asFloat();
+    const float* fData = asFloat();
     for (int i=0; isIdent && i<3; ++i)
     {
         for (int j=0; isIdent && j<3; ++j)
@@ -224,16 +222,49 @@ void MatrixDump(const Mat3& m, const char* prefix)
     Printf("  [ %f, %f, %f ] ]\n", m.m_Z[0], m.m_Z[1], m.m_Z[2]);
 }
 
-void MatrixTransposeInsitu(Mat4* dest)
+// Mat3::Scale
+void Mat4::Scale(float value)
 {
-    Utils::swap(dest->m_X[1], dest->m_Y[0]);
-    Utils::swap(dest->m_X[2], dest->m_Z[0]);
-    Utils::swap(dest->m_X[3], dest->m_W[0]);
+    for (int i=0; i<4; ++i)
+    {
+        m_X[i] *= value;
+        m_Y[i] *= value;
+        m_Z[i] *= value;
+        m_W[i] *= value;
+    }
+}
+
+void Mat3::Scale(float value)
+{
+    for (int i=0; i<3; ++i)
+    {
+        m_X[i] *= value;
+        m_Y[i] *= value;
+        m_Z[i] *= value;
+    }
+}
+
+void Mat4::Scale(const Vec3& value)
+{
+    for (int i=0; i<3; ++i)
+    {
+        m_X[i] *= value[0];
+        m_Y[i] *= value[1];
+        m_Z[i] *= value[2];
+    }
+}
+
+// Transpose
+void Mat4::Transpose()
+{
+    Utils::swap(m_X[1], m_Y[0]);
+    Utils::swap(m_X[2], m_Z[0]);
+    Utils::swap(m_X[3], m_W[0]);
     
-    Utils::swap(dest->m_Y[2], dest->m_Z[1]);
-    Utils::swap(dest->m_Y[3], dest->m_W[1]);
+    Utils::swap(m_Y[2], m_Z[1]);
+    Utils::swap(m_Y[3], m_W[1]);
     
-    Utils::swap(dest->m_Z[3], dest->m_W[2]);
+    Utils::swap(m_Z[3], m_W[2]);
 }
 
 
@@ -241,18 +272,18 @@ void MatrixTransposeInsitu(Mat4* dest)
 // | y0 y1 y2 |
 // | z0 z1 z2 |
 //
-void MatrixTransposeInsitu(Mat3* dest)
+void Mat3::Transpose()
 {
-    Utils::swap(dest->m_X[1], dest->m_Y[0]);
-    Utils::swap(dest->m_X[2], dest->m_Z[0]);
-    Utils::swap(dest->m_Y[2], dest->m_Z[1]);
+    Utils::swap(m_X[1], m_Y[0]);
+    Utils::swap(m_X[2], m_Z[0]);
+    Utils::swap(m_Y[2], m_Z[1]);
 }
 
 void MatrixTranspose(Mat4* dest, const Mat4& a)
 {
     if (dest == &a)
     {
-        MatrixTransposeInsitu(dest);
+        dest->Transpose();
         return;
     }
     
@@ -443,7 +474,7 @@ void MatrixAdjoint4x4(Mat4* dest, const Mat4& a)
         dest->m_W[i] = MatrixCofactor(a, 3, i);
     }
     
-    MatrixTransposeInsitu(dest);
+    dest->Transpose();
 }
 
 // MatrixAdjoint3x3
@@ -458,39 +489,7 @@ void MatrixAdjoint3x3(Mat3* dest, const Mat3& a)
         dest->m_Z[i] = MatrixCofactor(a, 2, i);
     }
     
-    MatrixTransposeInsitu(dest);
-}
-
-void MatrixScaleInsitu(Mat4* dest, float value)
-{
-    for (int i=0; i<4; ++i)
-    {
-        dest->m_X[i] = value * dest->m_X[i];
-        dest->m_Y[i] = value * dest->m_Y[i];
-        dest->m_Z[i] = value * dest->m_Z[i];
-        dest->m_W[i] = value * dest->m_W[i];
-    }
-}
-
-
-void MatrixScaleInsitu(Mat3* dest, float value)
-{
-    for (int i=0; i<3; ++i)
-    {
-        dest->m_X[i] = value * dest->m_X[i];
-        dest->m_Y[i] = value * dest->m_Y[i];
-        dest->m_Z[i] = value * dest->m_Z[i];
-    }
-}
-
-void MatrixScaleInsitu(Mat4* dest, const Vec3& value)
-{
-    for (int i=0; i<3; ++i)
-    {
-        dest->m_X[i] = value.m_X[0] * dest->m_X[i];
-        dest->m_Y[i] = value.m_X[1] * dest->m_Y[i];
-        dest->m_Z[i] = value.m_X[2] * dest->m_Z[i];
-    }
+    dest->Transpose();
 }
 
 void MatrixInvert(Mat4* dest, const Mat4& a)
@@ -505,7 +504,7 @@ void MatrixInvert(Mat4* dest, const Mat4& a)
         return;
     
     MatrixAdjoint4x4(dest, a);
-    MatrixScaleInsitu(dest, 1.0f / det);
+    dest->Scale(1.0f / det);
 }
 
 
@@ -603,11 +602,11 @@ void Mat3Sub(Mat3* dest, const Mat3&a, const Mat3& b)
     }
 }
 
-float MatrixDeterminant(const Mat3& m)
+float Mat3::Determinant() const
 {
-    return MatrixDet3x3(m.m_X[0], m.m_X[1], m.m_X[2],
-                        m.m_Y[0], m.m_Y[1], m.m_Y[2],
-                        m.m_Z[0], m.m_Z[1], m.m_Z[2]);
+    return MatrixDet3x3(m_X[0], m_X[1], m_X[2],
+                        m_Y[0], m_Y[1], m_Y[2],
+                        m_Z[0], m_Z[1], m_Z[2]);
 }
 
 void MatrixInvert(Mat3* dest, const Mat3& a)
@@ -621,7 +620,7 @@ void MatrixInvert(Mat3* dest, const Mat3& a)
         return;
     
     MatrixAdjoint3x3(dest, a);
-    MatrixScaleInsitu(dest, 1.0f / det);
+    dest->Scale(1.0f / det);
 }
 
 void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
@@ -662,7 +661,7 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
         Mat3 b;
         Mat3MulScalar(&b, b0, 1.0f/p);
         
-        const float r = MatrixDeterminant(b) * 0.5f;
+        const float r = b.Determinant() * 0.5f;
         
         float phi;
         if (r <= -1.0f)
@@ -677,18 +676,17 @@ void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a)
         lambda3[1] = 3.0f * q - lambda3[0] - lambda3[2];
         
         // generate eigenvectors from lambdas
-        Vec3 dest;
-        Mat3InvertIterate(&dest, a, lambda3[0]);
+        Vec3 dest = a.CalculateEigenvector(lambda3[0]);
         s->m_X[0] = dest.m_X[0];
         s->m_Y[0] = dest.m_X[1];
         s->m_Z[0] = dest.m_X[2];
         
-        Mat3InvertIterate(&dest, a, lambda3[1]);
+        dest = a.CalculateEigenvector(lambda3[1]);
         s->m_X[1] = dest.m_X[0];
         s->m_Y[1] = dest.m_X[1];
         s->m_Z[1] = dest.m_X[2];
         
-        Mat3InvertIterate(&dest, a, lambda3[2]);
+        dest = a.CalculateEigenvector(lambda3[2]);
         s->m_X[2] = dest.m_X[0];
         s->m_Y[2] = dest.m_X[1];
         s->m_Z[2] = dest.m_X[2];
@@ -729,26 +727,6 @@ float DistanceSquared(const Vec3& a, const Vec3& b)
     Vec3 v = a - b;
     return VectorDot(v, v);
 }
-
-Vec4 VectorSub(const Vec4& a, const Vec4& b)
-{
-    Vec4 ret;
-    ret.m_X[0] = a.m_X[0]-b.m_X[0];
-    ret.m_X[1] = a.m_X[1]-b.m_X[1];
-    ret.m_X[2] = a.m_X[2]-b.m_X[2];
-    ret.m_X[3] = a.m_X[3]-b.m_X[3];
-    return ret;
-}
-
-Vec3 VectorSub(const Vec3& a, const Vec3& b)
-{
-    Vec3 ret;
-    ret.m_X[0] = a.m_X[0]-b.m_X[0];
-    ret.m_X[1] = a.m_X[1]-b.m_X[1];
-    ret.m_X[2] = a.m_X[2]-b.m_X[2];
-    return ret;
-}
-
 
 float VectorDot(const Vec4& a, const Vec4& b)
 {
@@ -875,9 +853,10 @@ int VectorApproxEqual(const Vec3& a, const Vec3& b, float eps)
     return ret;
 }
 
-void Mat3InvertIterate(Vec3* dest, const Mat3& a, float lambda)
+Vec3 Mat3::CalculateEigenvector(float lambda) const
 {
-    Mat3 u = a;
+    Mat3 u = *this;
+    Vec3 ret;
     
     //  0  1  2
     //  3  4  5
@@ -886,19 +865,21 @@ void Mat3InvertIterate(Vec3* dest, const Mat3& a, float lambda)
     u.m_Y[1] -= lambda;
     u.m_Z[2] -= lambda;
     
-    dest->m_X[0] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
-    dest->m_X[1] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
-    dest->m_X[2] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
-    
+    ret[0] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
+    ret[1] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
+    ret[2] = rand()/(float)RAND_MAX * lambda - 2.0f * lambda;
+
     Vec3 x;
     for (int i=0; i<10; ++i) // 10 is arbitrary
     {
-        Mat3Solve(&x, u, *dest);
-        *dest = x.Normalized();
+        Mat3Solve(&x, u, ret);
+        ret = x.Normalized();
     }
+    
+    return ret;
 }
 
-//  Mat3Solve
+// Mat3Solve
 //    
 // lower columns = upper rows
 // lower rows = a rows

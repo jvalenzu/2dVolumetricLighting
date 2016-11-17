@@ -27,6 +27,7 @@
 Vec3 s_Target;
 Vec3 s_LastDir;
 Vec3 s_Dir;
+float s_Angle;
 SceneObject* s_SceneObject;
 
 static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mods);
@@ -48,11 +49,28 @@ static void ApplyUserInput(RenderContext* renderContext, SceneObject* sceneObjec
     if ((err = VectorLengthSquared(dir)) > 1e-3f)
     {
         dir.Normalize();
-        dir *= fminf(err, 0.2f);
+        dir *= fminf(err, 0.075f);
         pos += dir;
         
         sceneObject->m_LocalToWorld.SetTranslation(pos);
         sceneObject->m_Flags |= SceneObject::Flags::kDirty;
+    }
+
+    if (fabsf(s_Angle) > 1e-3f)
+    {
+        const float step_size = 0.1f;
+        float tick = s_Angle*step_size;
+        
+        Mat4 rot;
+        float uvw[4] = { 0.0f, 0.0f, -1.0f, 0.0f };
+        MatrixSetRotAboutAxis(&rot, uvw, tick*0.7853981634f);
+        
+        Mat4 t1;
+        MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);
+        s_SceneObject->m_LocalToWorld = t1;
+        sceneObject->m_Flags |= SceneObject::Flags::kDirty;
+        
+        s_Angle *= 1.0f - step_size;
     }
 }
 
@@ -63,7 +81,7 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
 {
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
-        bool handled = false;
+        bool translated = false;
         float step = 1.0f;
         float x=0.0f, y=0.0f, z=0.0f;
         
@@ -71,37 +89,37 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
         {
             case GLFW_KEY_A:
             {
-                handled = true;
+                translated = true;
                 x += step;
                 break;
             }
             case GLFW_KEY_D:
             {
-                handled = true;
+                translated = true;
                 x -= step;
                 break;
             }
             case GLFW_KEY_W:
             {
-                handled = true;
+                translated = true;
                 y += step;
                 break;
             }
             case GLFW_KEY_S:
             {
-                handled = true;
+                translated = true;
                 y -= step;
                 break;
             }
             case GLFW_KEY_Z:
             {
-                handled = true;
+                translated = true;
                 z -= step;
                 break;
             }
             case GLFW_KEY_X:
             {
-                handled = true;
+                translated = true;
                 z += step;
                 break;
             }
@@ -115,22 +133,11 @@ static void s_ProcessKeys(void* data, int key, int scanCode, int action, int mod
         
         if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT)
         {
-            handled = true;
-            
             const float sign = key == GLFW_KEY_LEFT ? 1.0f : -1.0f;
-            
-            Mat4 rot;
-            float uvw[4] = { 0.0f, 0.0f, -1.0f, 0.0f };
-            // MatrixSetRotAboutAxis(&rot, uvw, sign*0.0872664625996f);
-            // MatrixSetRotAboutAxis(&rot, uvw, sign*1.5707963268f);
-            MatrixSetRotAboutAxis(&rot, uvw, sign*0.7853981634f);
-            
-            Mat4 t1;
-            MatrixMultiply(&t1, rot, s_SceneObject->m_LocalToWorld);
-            s_SceneObject->m_LocalToWorld = t1;
+            s_Angle = sign*0.7853981634f;
         }
         
-        if (handled)
+        if (translated)
         {
             s_Target = s_SceneObject->m_LocalToWorld.GetTranslation();
             
@@ -384,6 +391,9 @@ static void MainLoop(RenderContext* renderContext)
 
         // IMGUI
         DebugUi::NewFrame();
+
+        ImGui::Text("translate: a/s/d/f");
+        ImGui::Text("rotate: <-/->");
         
         // DEBUG: 
         {

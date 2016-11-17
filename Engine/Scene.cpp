@@ -577,7 +577,7 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
             case LightType::kPoint:
             {
                 const float range = light.m_Range;
-                MatrixScaleInsitu(&localToWorld, Vec3(range, range, range));
+                localToWorld.Scale(Vec3(range, range, range));
                 break;
             }
             case LightType::kConical:
@@ -587,12 +587,12 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
                 Vec3 offset = half_range * localToWorld.GetUp();
                 localToWorld.AddTranslation(offset);
                 
-                MatrixScaleInsitu(&localToWorld, Vec3(half_range, range, half_range));
+                localToWorld.Scale(Vec3(half_range, range, half_range));
                 break;
             }
             case LightType::kCylindrical:
             {
-                MatrixScaleInsitu(&localToWorld, Vec3(2.0f*light.m_OrthogonalRange, 2.0f*light.m_Range, light.m_Range));
+                localToWorld.Scale(Vec3(2.0f*light.m_OrthogonalRange, 2.0f*light.m_Range, light.m_Range));
                 break;
             }
         }

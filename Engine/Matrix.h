@@ -636,6 +636,20 @@ struct Mat3
         }
         return *this;
     }
+
+    // Transpose in place
+    void Transpose();
+
+    // Scale in place
+    void Scale(float value);
+
+    // true if the identity matrix, within epsilon tolerance
+    bool IsIdentity(float epsilon) const;
+
+    float Determinant() const;
+
+    // given an eigenvalue lambda, calculate eigenvector
+    Vec3 CalculateEigenvector(float lambda) const;
 };
 
 struct Mat4
@@ -754,6 +768,13 @@ struct Mat4
         }
         return *this;
     }
+
+    // Transpose in place
+    void Transpose();
+    
+    // Scale in place
+    void Scale(float value);
+    void Scale(const Vec3& value);
 };
 
 // splat value in dest
@@ -873,27 +894,18 @@ void MatrixSetRotAboutAxis(Mat4* dest, const Vec3& axis, float theta);
 
 // transpose matrix
 void MatrixTranspose(Mat4* dest, const Mat4& a);
-void MatrixTransposeInsitu(Mat4* dest);
-void MatrixTransposeInsitu(Mat3* dest);
 
 // general invert
 void MatrixInvert(Mat4* dest, const Mat4& a);
 void MatrixInvert(Mat3* dest, const Mat3& a);
 
-// true if a is the identity matrix, within epsilon tolerance
-bool MatrixIsIdent(const Mat3& a, float epsilon);
+// bool MatrixIsIdent(const Mat3& a, float epsilon);
 
 // convert Mat4 to float array (or float array transposed)
 void MatrixToGl(float temp[16], const Mat4& a);
 void MatrixTransposeToGl(float temp[16], const Mat4& a);
 
 void MatrixCalculateDelta(Mat4* dest, const Mat4& current, const Mat4& prev);
-
-void MatrixScaleInsitu(Mat4* dest, float value);
-void MatrixScaleInsitu(Mat3* dest, float value);
-void MatrixScaleInsitu(Mat4* dest, const Vec3& value);
-
-float MatrixDeterminant(const Mat3& m);
 
 // FLOAT
 bool FloatApproxEqual(float a, float b, float eps=1e-3f);
@@ -975,7 +987,6 @@ inline bool operator!=(const Vec2& a, const Vec2& b)
 // mat3 diagonalize
 void Mat3Diagonalize(Mat3* s, float lambda3[3], Mat3* sInv, const Mat3& a);
 
-// given an eigenvalue lambda, calculate eigenvector
 void Mat3InvertIterate(Vec3* dest, const Mat3& a, float lambda);
 
 void Mat3Solve(Vec3* dest, const Mat3& a, const Vec3& b);
