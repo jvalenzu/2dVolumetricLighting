@@ -18,4 +18,5 @@ obj/Shader/dummy: obj/dummy
 	touch obj/Shader/dummy
 
 tags:
-	find . -iname "*.h" -print -o -iname "*.cpp" -print | etags -a -
+	ctags -R --fields="+afikKlmnsSzt"
+
