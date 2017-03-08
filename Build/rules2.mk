@@ -18,5 +18,8 @@ obj/Shader/dummy: obj/dummy
 	touch obj/Shader/dummy
 
 tags:
-	ctags -R --fields="+afikKlmnsSzt"
+	ctags -e -R --fields="+afikKlmnsSzt"
+
+wt:
+	which ctags
 

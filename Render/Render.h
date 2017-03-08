@@ -5,12 +5,14 @@
 #include "slib/Container/FixedVector.h"
 #include "Render/GL.h"
 #include "Engine/Matrix.h"
+#include "Engine/BSphere.h"
 #include "Render/Material.h"
 #include "Engine/Light.h"
 
 #include <assert.h>
 
-struct SimpleModel;
+struct ModelClass;
+struct ModelInstance;
 struct Material;
 struct GLFWwindow;
 struct PostEffect;
@@ -41,6 +43,8 @@ struct RenderContext
     
     GLuint m_FrameBufferIds[2];
     GLuint m_FrameBufferColorIds[2];
+    GLuint m_FrameBufferDepthIds[2];
+    int m_CurrentFrameBufferIndex;
     
     PostEffect** m_PostEffects;
     int m_NumPostEffects;
@@ -61,8 +65,6 @@ struct RenderContext
     uint32_t m_NumDirectionalLights;
     
     Texture* m_WhiteTexture;
-    
-    SimpleModel* m_CubeModel;
     
     FixedVector<Material::MaterialProperty, 32> m_MaterialProperties;
     
@@ -127,9 +129,8 @@ struct SimpleVertex
     uint32_t m_Color;
 };
 
-struct SimpleModel
+struct ModelClassSubset
 {
-    Mat4 m_Po;
     SimpleVertex* m_Vertices;
     int32_t m_NumVertices;
     
@@ -141,6 +142,14 @@ struct SimpleModel
     GLuint m_VaoName;
     GLuint m_VertexBufferName;
     GLuint m_IndexBufferName;
+    
+    BSphere m_BSphere;
+};
+
+struct ModelInstance
+{
+    ModelClass* m_ModelClass;
+    Mat4 m_Po;
 };
 
 struct SpriteOptions
@@ -186,8 +195,13 @@ void RenderClearReplacementShader(RenderContext* renderContext);
 typedef void ProcessKeysCallback(void* data, int key, int scanCode, int action, int mods);
 void RenderSetProcessKeysCallback(RenderContext* context, ProcessKeysCallback (*processKeysCallback));
 
-void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model);
-void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, const Mat4& localToWorld);
+typedef void ProcessMouseCallback(void* data, int button, int action, int modes);
+void RenderSetProcessMouseCallback(RenderContext* context, ProcessMouseCallback (*processMouseCallback));
+
+typedef void ProcessCursorCallback(void* data, double x, double y);
+void RenderSetProcessCursorCallback(RenderContext* context, ProcessCursorCallback (*processCursorCallback));
+
+void RenderDrawModelSubset(RenderContext* renderContext, const Mat4& localToWorld, const ModelClassSubset* modelClassSubset);
 
 void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, Texture* texture);
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, Texture* texture);
@@ -203,12 +217,12 @@ Vec3 RenderGetWorldPos(const RenderContext* renderContext, const Vec2& screenPos
 
 void RenderSetBlendMode(Material::BlendMode blendMode);
 
-SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfExtent);
-SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOptions& spriteOptions, Material* material);
+ModelInstance* RenderGenerateCube(RenderContext* renderContext, float halfExtent);
+ModelInstance* RenderGenerateSprite(RenderContext* renderContext, const SpriteOptions& spriteOptions, Material* material);
 
-void RenderDumpModel(const SimpleModel* model);
-void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a);
-void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model);
+void RenderDumpModel(const ModelInstance* model);
+void RenderDumpModelTransformed(const ModelInstance* model, const Mat4& a);
+void RenderDrawModel(RenderContext* renderContext, const ModelInstance* model);
 
 void RenderUpdatePointLights(RenderContext* renderContext, const Light* pointLights, int numPointLights);
 void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conicalLights, int numConicalLights);
@@ -216,7 +230,7 @@ void RenderUpdateCylindricalLights(RenderContext* renderContext, const Light* cy
 void RenderUpdateDirectionalLights(RenderContext* renderContext, const Light* directionalLights, int numDirectionalLights);
 
 // global properties
-int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type);
+int  RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type);
 void RenderGlobalSetFloat(RenderContext* renderContext, int index, float value);
 void RenderGlobalSetInt(RenderContext* renderContext, int index, int value);
 void RenderGlobalSetVector(RenderContext* renderContext, int index, Vec4 value);
@@ -224,9 +238,11 @@ void RenderGlobalSetMatrix(RenderContext* renderContext, int index, const Mat4& 
 void RenderGlobalSetTexture(RenderContext* renderContext, int index, int textureId);
 void RenderGlobalSetTexture(RenderContext* renderContext, int index, Texture* texture);
 
-void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel);
+uint32_t RenderModelSubsetGetSortKey(const ModelClassSubset* modelClassSubset);
 
-void SimpleModelDestroy(SimpleModel* simpleModel);
+void RenderSetClearColor(RenderContext* renderContext, Vec3 color);
+
+void ModelInstanceSetVertexAttributes(const ModelClassSubset* modelClassSubset);
 
 const char * GetGLErrorString(GLenum error);
 

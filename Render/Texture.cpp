@@ -27,6 +27,7 @@ struct TextureManager : SimpleAssetManager<Texture>
 
 TextureManager* g_TextureManager;
 
+// -------------------------------------------------------------------------------------------------
 Texture* TextureRef(Texture* texture)
 {
     if (texture)
@@ -34,6 +35,7 @@ Texture* TextureRef(Texture* texture)
     return texture;
 }
 
+// -------------------------------------------------------------------------------------------------
 Texture* TextureManager::CreateRenderTexture(int width, int height, int depth, Texture::RenderTextureFormat format)
 {
     GL_ERROR_SCOPE();
@@ -87,6 +89,7 @@ Texture* TextureManager::CreateRenderTexture(int width, int height, int depth, T
     return texture;
 }
 
+// -------------------------------------------------------------------------------------------------
 Texture* TextureManager::CreateTexture(const char* filename, uint32_t crc)
 {
     unsigned int width;
@@ -116,6 +119,7 @@ Texture* TextureManager::CreateTexture(const char* filename, uint32_t crc)
     return ret;
 }
 
+// -------------------------------------------------------------------------------------------------
 void TextureManager::DestroyTexture(Texture* victim)
 {
     glDeleteTextures(1, &victim->m_TextureId);
@@ -142,6 +146,7 @@ void TextureManager::DumpInternal(const Texture* texture)
     Printf("name %s refCount %d\n", texture->m_DebugName, texture->m_RefCount);
 }
 
+// -------------------------------------------------------------------------------------------------
 Texture* TextureCreateFromFile(const char* filename)
 {
     Texture* ret = nullptr;
@@ -156,11 +161,13 @@ Texture* TextureCreateFromFile(const char* filename)
     return ret;
 }
 
+// -------------------------------------------------------------------------------------------------
 Texture* TextureCreateRenderTexture(int width, int height, int depth, Texture::RenderTextureFormat format)
 {
     return g_TextureManager->CreateRenderTexture(width, height, depth, format);
 }
 
+// -------------------------------------------------------------------------------------------------
 void TextureDestroy(Texture* victim)
 {
     if (victim == nullptr)
@@ -195,17 +202,21 @@ void TextureDestroy(Texture* victim)
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 void Texture::SetClearFlags(Texture::RenderTextureFlags renderTextureFlags, float r, float g, float b, float z)
 {
     m_RenderTextureFlags = renderTextureFlags;
     VectorSet(&m_ClearColor, r, g, b);
+    m_ClearDepth = z;
 }
 
+// -------------------------------------------------------------------------------------------------
 void TextureInit()
 {
     g_TextureManager = new TextureManager();
 }
 
+// -------------------------------------------------------------------------------------------------
 void TextureFini()
 {
     g_TextureManager->Dump();
@@ -213,6 +224,7 @@ void TextureFini()
     g_TextureManager = nullptr;
 }
 
+// -------------------------------------------------------------------------------------------------
 void TextureManager::DumpTitle()
 {
     Printf("TextureManager\n");

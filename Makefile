@@ -27,13 +27,16 @@ SRCS += Render/Texture.cpp
 SRCS += Render/PostEffect.cpp
 SRCS += Render/Shader.cpp
 SRCS += Render/Asset.cpp
+SRCS += Render/Model.cpp
 SRCS += Tool/Utils.cpp
 SRCS += Tool/Test.cpp
-SRCS += Main.cpp
 SRCS += External/src/imgui/imgui.cpp
 SRCS += External/src/imgui/imgui_draw.cpp
 SRCS += External/src/lodepng/lodepng.c
 OBJS := $(foreach src,$(SRCS),$(call outName,$(src)))
+
+MAIN_OBJ_2D += $(call outName,Main.cpp)
+MAIN_OBJ_TS += $(call outName,TriangleSort.cpp)
 
 # Shader code preprocessing
 SHADER_SRCS += Render/Shaders/SampleShadowMap.fsh
@@ -60,18 +63,29 @@ SHADER_SRCS += Render/Shaders/LightPrepass.fsh
 SHADER_SRCS += Render/Shaders/LightPrepass.vsh
 SHADER_SRCS += Render/Shaders/DebugLightPrepassSample.fsh
 SHADER_SRCS += Render/Shaders/DebugLightPrepassSample.vsh
+SHADER_SRCS += Render/Shaders/LitColor.fsh
+SHADER_SRCS += Render/Shaders/LitColor.vsh
+SHADER_SRCS += Render/Shaders/LitWaveFront2.fsh
+SHADER_SRCS += Render/Shaders/LitWaveFront2.vsh
 SHADER_TRANSFORMED := $(foreach src,$(SHADER_SRCS),$(call shaderOutName,$(src)))
 
-all: 2dVolumetricLighting
+all: 2dVolumetricLighting TriangleSort
 
-2dVolumetricLighting : $(OBJS) $(SHADER_TRANSFORMED) Makefile
-	$(CXX) -o $@ $(OBJS) -I$(CURDIR) $(LDFLAGS) $(LIBRARIES)
+2dVolumetricLighting : $(OBJS) $(MAIN_OBJ_2D) $(SHADER_TRANSFORMED) Makefile
+	$(CXX) -o $@ $(OBJS) $(MAIN_OBJ_2D) -I$(CURDIR) $(LDFLAGS) $(LIBRARIES)
+
+TriangleSort : $(OBJS) $(MAIN_OBJ_TS) $(SHADER_TRANSFORMED) Makefile
+	$(CXX) -o $@ $(OBJS) $(MAIN_OBJ_TS) -I$(CURDIR) $(LDFLAGS) $(LIBRARIES)
 
 shaders : $(SHADER_TRANSFORMED)
 
 $(foreach src,$(SRCS),$(eval $(call srcToObj,$(src))))
 $(foreach src,$(SHADER_SRCS),$(eval $(call shaderSrcToObj,$(src))))
 
+$(eval $(call srcToObj,Main.cpp))
+$(eval $(call srcToObj,TriangleSort.cpp))
+
 CLEAN += 2dVolumetricLighting
+CLEAN += TriangleSort
 
 include Build/rules2.mk

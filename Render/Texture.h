@@ -38,6 +38,7 @@ struct Texture
     int32_t m_Width;
     int32_t m_Height;
     Vec3 m_ClearColor;
+    float m_ClearDepth;
     int m_RefCount;
     const char* m_DebugName;
     uint32_t m_Format;
@@ -49,12 +50,14 @@ struct Texture
         m_DebugName = nullptr;
     }
     
-    Texture() : m_RefCount(0), m_DebugName(nullptr)
+    Texture() : m_ClearColor(0,0,0), m_ClearDepth(1.0f), m_RefCount(0)
     {
+        Invalidate();
     }
     
-    Texture(int width, int height) : m_Width(width), m_Height(height), m_RefCount(0), m_DebugName(nullptr)
+    Texture(int width, int height) : m_Width(width), m_Height(height), m_ClearColor(0,0,0), m_ClearDepth(1.0f), m_RefCount(0)
     {
+        Invalidate();
     }
     
     Texture(const Texture& rhs) :
@@ -66,6 +69,7 @@ struct Texture
         m_Width(rhs.m_Width),
         m_Height(rhs.m_Height),
         m_ClearColor(rhs.m_ClearColor), 
+        m_ClearDepth(rhs.m_ClearDepth),
         m_RefCount(rhs.m_RefCount),
         m_DebugName(nullptr)
     {

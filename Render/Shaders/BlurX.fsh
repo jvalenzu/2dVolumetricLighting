@@ -34,7 +34,7 @@ void main(void)
         c += texture(_MainTex, texCoord+size.xy*offset*i) * coeffs[i];
         c += texture(_MainTex, texCoord+size.zy*offset*i) * coeffs[i];
     }
-    
+
     fragColor.rgb = c.rgb;
     fragColor.a  = 1;
 }

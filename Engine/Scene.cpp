@@ -4,6 +4,7 @@
 #include "Engine/Scene.h"
 #include "Render/Render.h"
 #include "Render/Material.h"
+#include "Render/Model.h"
 #include "Tool/Utils.h"
 
 #include <assert.h>
@@ -18,43 +19,12 @@
 
 struct SortNode
 {
-    int32_t m_Index;
+    SceneObject* m_SceneObject;
+    ModelClassSubset* m_ModelClassSubset;
     uint32_t m_Key;
 };
 
 static void SceneObjectApplyDelta(SceneObject* scene, const Mat4& delta);
-
-uint32_t SceneObjectGetSortKey(const SceneObject* sceneObject)
-{
-    if (sceneObject->m_Type == SceneObjectType::kLight)
-        return 0;
-    
-    const SimpleModel* simpleModel = sceneObject->m_ModelInstance;
-    
-    uint32_t materialIdBits = 0;
-    uint32_t blendModeBit = 0;
-    uint32_t positionBits = 0;
-    
-    Vec3 pos = simpleModel->m_Po.GetTranslation();
-    
-    if (simpleModel->m_Material->m_BlendMode != Material::BlendMode::kOpaque)
-    {
-        blendModeBit = 0x80000000;
-        positionBits = ((unsigned int) (pos.m_X[2] * 128.0f)) & 0x7fff;
-    }
-    else
-    {
-        uint32_t textureId = 0;
-        textureId ^= simpleModel->m_Material->m_Texture->m_TextureId;
-        textureId = ((textureId>>16) ^ (textureId&0xffff))&0xffff;
-        
-        materialIdBits = textureId<<15;
-    }
-    
-    uint32_t key = 0;
-    key = blendModeBit | positionBits | materialIdBits;
-    return key;
-}
 
 void SceneCreate(Scene* scene, int maxSceneObjects)
 {
@@ -64,8 +34,7 @@ void SceneCreate(Scene* scene, int maxSceneObjects)
     scene->m_SceneObjects = new SceneObject*[maxSceneObjects];
     memset(scene->m_SceneGroups, 0, sizeof scene->m_SceneGroups);
     memset(scene->m_SceneGroupAllocated, 0, sizeof scene->m_SceneGroupAllocated);
-    
-    scene->m_SortArray = malloc(maxSceneObjects*sizeof(SortNode));
+    scene->m_SortArray = malloc(Scene::kMaxSubsets*sizeof(SortNode));
 }
 
 void SceneDestroy(Scene* scene)
@@ -78,6 +47,7 @@ void SceneDestroy(Scene* scene)
     delete[] scene->m_SceneObjects;
 }
 
+// -------------------------------------------------------------------------------------------------
 void SceneUpdate(Scene* scene)
 {
     // reset light count
@@ -87,6 +57,7 @@ void SceneUpdate(Scene* scene)
     scene->m_NumDirectionalLights = 0;
     
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
+    scene->m_SortIndex = 0;
     
     for (int i=0,n=scene->m_NumObjects; i<n; ++i)
     {
@@ -115,8 +86,18 @@ void SceneUpdate(Scene* scene)
         
         sceneObject->m_Flags |= SceneObject::Flags::kUpdatedOnce;
         
-        sortNodes[i].m_Index = i;
-        sortNodes[i].m_Key = SceneObjectGetSortKey(sceneObject);
+        if (sceneObject->m_Type != SceneObjectType::kLight && sceneObject->m_ModelInstance)
+        {
+            for (int j=0,m=sceneObject->m_ModelInstance->m_ModelClass->m_NumSubsets; j<m; ++j)
+            {
+                const int write_index = scene->m_SortIndex++;
+                ModelClassSubset* modelClassSubset = &sceneObject->m_ModelInstance->m_ModelClass->m_Subsets[j];
+                
+                sortNodes[write_index].m_SceneObject = sceneObject;
+                sortNodes[write_index].m_ModelClassSubset = modelClassSubset;
+                sortNodes[write_index].m_Key = RenderModelSubsetGetSortKey(modelClassSubset);
+            }
+        }
         
         if (sceneObject->m_Type == SceneObjectType::kLight)
         {
@@ -190,7 +171,7 @@ void SceneUpdate(Scene* scene)
         return 0;
     };
     
-    qsort(sortNodes, scene->m_NumObjects, sizeof(SortNode), cmp);
+    qsort(sortNodes, scene->m_SortIndex, sizeof(SortNode), cmp);
 }
 
 static void SceneObjectApplyDelta(SceneObject* itr, const Mat4& delta)
@@ -242,7 +223,7 @@ SceneObject* SceneCreateSprite(Scene* scene, RenderContext* renderContext, Mater
     if (sceneObject)
     {
         sceneObject->m_ModelInstance = RenderGenerateSprite(renderContext, spriteOptions, material);
-        sceneObject->m_Obb = ToolGenerateObbFromSimpleModel(sceneObject->m_ModelInstance);
+        sceneObject->m_Obb = ToolGenerateObbFromModelClass(sceneObject->m_ModelInstance->m_ModelClass);
         
         sceneObject->m_LocalToWorld.m_X[0] *= spriteOptions.m_Scale.m_X[0];
         sceneObject->m_LocalToWorld.m_Y[1] *= spriteOptions.m_Scale.m_X[1];
@@ -311,7 +292,7 @@ SceneObject* SceneCreateCube(Scene* scene, RenderContext* renderContext, Materia
     if (sceneObject)
     {
         sceneObject->m_ModelInstance = RenderGenerateCube(renderContext, 1.0f);
-        sceneObject->m_Obb = ToolGenerateObbFromSimpleModel(sceneObject->m_ModelInstance);
+        sceneObject->m_Obb = ToolGenerateObbFromModelClass(sceneObject->m_ModelInstance->m_ModelClass);
     }
     return sceneObject;
 }
@@ -325,33 +306,31 @@ void SceneLightsUpdate(Scene* scene, RenderContext* renderContext)
     RenderUpdateDirectionalLights(renderContext, scene->m_DirectionalLights, scene->m_NumDirectionalLights);
 }
 
+// -------------------------------------------------------------------------------------------------
 void SceneDraw(Scene* scene, RenderContext* renderContext)
 {
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
-    for (int i=0,n=scene->m_NumObjects; i<n; ++i)
+    for (int i=0,n=scene->m_SortIndex; i<n; ++i)
     {
-        int index = sortNodes[i].m_Index;
-        SceneObject* sceneObject = scene->m_SceneObjects[index];
-        if (sceneObject->m_ModelInstance == nullptr)
-            continue;
+        const SceneObject* sceneObject = sortNodes[i].m_SceneObject;
         if ((sceneObject->m_Flags & SceneObject::kEnabled) == 0)
             continue;
         
-        RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
+        const ModelClassSubset* modelClassSubset = sortNodes[i].m_ModelClassSubset;
+        RenderDrawModelSubset(renderContext, sceneObject->m_ModelInstance->m_Po, modelClassSubset);
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 void SceneDraw(Scene* scene, RenderContext* renderContext, int groupId)
 {
     if (!scene->m_SceneGroupAllocated[groupId])
         return;
     
     SortNode* sortNodes = (SortNode*) scene->m_SortArray;
-    for (int i=0,n=scene->m_NumObjects; i<n; ++i)
+    for (int i=0,n=scene->m_SortIndex; i<n; ++i)
     {
-        int index = sortNodes[i].m_Index;
-        SceneObject* sceneObject = scene->m_SceneObjects[index];
-        
+        const SceneObject* sceneObject = sortNodes[i].m_SceneObject;
         SceneObject* itr = scene->m_SceneGroups[groupId];
         
         bool found = itr == sceneObject;
@@ -364,7 +343,8 @@ void SceneDraw(Scene* scene, RenderContext* renderContext, int groupId)
         if ((itr->m_Flags & SceneObject::kEnabled) == 0)
             continue;
         
-        RenderDrawModel(renderContext, sceneObject->m_ModelInstance);
+        const ModelClassSubset* modelClassSubset = sortNodes[i].m_ModelClassSubset;
+        RenderDrawModelSubset(renderContext, sceneObject->m_ModelInstance->m_Po, modelClassSubset);
     }
 }
 
@@ -499,7 +479,7 @@ void SceneObjectDestroy(Scene* scene, SceneObject* sceneObject)
             sceneObject->m_Parent = nullptr;
         }
         
-        SimpleModelDestroy(sceneObject->m_ModelInstance);
+        ModelInstanceDestroy(sceneObject->m_ModelInstance);
         sceneObject->m_ModelInstance = nullptr;
         
         for (int i=0; i<Scene::kGroupMax; ++i)
@@ -597,6 +577,7 @@ void SceneDrawObb(Scene* scene, RenderContext* renderContext, const SceneObject*
             }
         }
     }
-    
-    RenderDrawModel(renderContext, renderContext->m_CubeModel, localToWorld);
+
+    const ModelClass* cubeModelClass = ModelClassFind(kModelClassBuiltinCube);
+    RenderDrawModelSubset(renderContext, localToWorld, &cubeModelClass->m_Subsets[0]);
 }

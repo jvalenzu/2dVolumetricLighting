@@ -12,6 +12,7 @@
 #include "Engine/Utils.h"
 #include "Render/Material.h"
 
+// -------------------------------------------------------------------------------------------------
 // create/destroy material
 Material* MaterialRef(Material* material)
 {
@@ -27,7 +28,9 @@ Material* MaterialRef(Material* material)
     return ret;
 }
 
-// create/destroy material
+// -------------------------------------------------------------------------------------------------
+// MaterialCreate
+//
 Material* MaterialCreate(Shader* shader, Texture* texture)
 {
     Material* material = new Material();
@@ -40,7 +43,9 @@ Material* MaterialCreate(Shader* shader, Texture* texture)
     return material;
 }
 
+// -------------------------------------------------------------------------------------------------
 // MaterialDestroy
+//
 void MaterialDestroy(Material* victim)
 {
     if (victim == nullptr)
@@ -49,15 +54,25 @@ void MaterialDestroy(Material* victim)
     ShaderDestroy(victim->m_Shader);
     TextureDestroy(victim->m_Texture);
     
-    delete [] victim->m_MaterialPropertyBlock;
-    victim->m_MaterialPropertyBlock = nullptr;
+    victim->m_Shader = nullptr;
+    victim->m_Texture = nullptr;
+    
+    if (victim->m_MaterialPropertyBlock)
+    {
+        delete [] victim->m_MaterialPropertyBlock;
+        victim->m_MaterialPropertyBlock = nullptr;
+    }
     
     delete victim;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderSetMaterialProperty(int* textureSlots, GLuint programName, const Material::MaterialProperty* materialProperty)
 {
     GLint slot = glGetUniformLocation(programName, materialProperty->m_Key);
+    if (slot < 0)
+        return;
+    
     switch (materialProperty->m_Type)
     {
         case Material::kUnused:

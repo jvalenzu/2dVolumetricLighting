@@ -3,6 +3,7 @@
 #include "Engine/Matrix.h"
 #include "Engine/Utils.h"
 #include "Render/Render.h"
+#include "Render/Model.h"
 #include "Tool/Utils.h"
 
 #include <math.h>
@@ -56,37 +57,45 @@ void ToolLoadOrthographic(Mat4* dest, float left, float right, float bottom, flo
     mtx[15] = 1.0f;
 }
 
-Obb ToolGenerateObbFromSimpleModel(const SimpleModel* model)
+Obb ToolGenerateObbFromModelClass(const ModelClass* modelClass)
 {
     Obb ret;
     ObbInit(&ret);
     
-    if (model->m_NumVertices)
+    float m[3] = { 0.0f, 0.0f, 0.0f };
+
+    float total = 0.0f;
+    for (int j=0,jn=modelClass->m_NumSubsets; j<jn; ++j)
     {
-        float m[3] = { 0.0f, 0.0f, 0.0f };
-        
-        for (int i=0,n=model->m_NumVertices; i<n; ++i)
+        const ModelClassSubset* modelClassSubset = &modelClass->m_Subsets[j];
+        for (int i=0,n=modelClassSubset->m_NumVertices; i<n; ++i)
         {
-            const SimpleVertex& vertex = model->m_Vertices[i];
+            const SimpleVertex& vertex = modelClassSubset->m_Vertices[i];
             m[0] += vertex.m_Position[0];
             m[1] += vertex.m_Position[1];
             m[2] += vertex.m_Position[2];
         }
+
+        total += modelClassSubset->m_NumVertices;
+    }
+    
+    const float recipN = 1.0f / total;
+    m[0] *= recipN;
+    m[1] *= recipN;
+    m[2] *= recipN;
         
-        const float recipN = 1.0f / model->m_NumVertices;
-        m[0] *= recipN;
-        m[1] *= recipN;
-        m[2] *= recipN;
+    Mat3 covar;
+    MatrixMakeZero(&covar);
         
-        Mat3 covar;
-        MatrixMakeZero(&covar);
+    float* covarf = covar.asFloat();
         
-        float* covarf = covar.asFloat();
-        
-        // covariance (xi, xj) = (E[(xi - mi)(xj - mj)])
-        for (int c=0,n=model->m_NumVertices; c<n; ++c)
+    // covariance (xi, xj) = (E[(xi - mi)(xj - mj)])
+    for (int j=0,jn=modelClass->m_NumSubsets; j<jn; ++j)
+    {
+        const ModelClassSubset* modelClassSubset = &modelClass->m_Subsets[j];
+        for (int c=0,n=modelClassSubset->m_NumVertices; c<n; ++c)
         {
-            const float* f = model->m_Vertices[c].m_Position;
+            const float* f = modelClassSubset->m_Vertices[c].m_Position;
             
             for (int i=0; i<3; ++i)
             {
@@ -107,24 +116,24 @@ Obb ToolGenerateObbFromSimpleModel(const SimpleModel* model)
                 }
             }
         }
-        
-        // eigendecompose
-        Mat3 s;
-        Mat3 sInv;
-        
-        float lambdas[3];
-        Mat3Diagonalize(&s, lambdas, &sInv, covar);
-        
-        ret.m_Axes = s;
-        
-        for (int i=0; i<3; ++i)
-            ret.m_HalfExtents[i] = lambdas[i] * 0.5f;
     }
+        
+    // eigendecompose
+    Mat3 s;
+    Mat3 sInv;
+        
+    float lambdas[3];
+    Mat3Diagonalize(&s, lambdas, &sInv, covar);
+    
+    ret.m_Axes = s;
+    
+    for (int i=0; i<3; ++i)
+        ret.m_HalfExtents[i] = lambdas[i] * 0.5f;
     
     return ret;
 }
 
-// jiv fixme duplication
+// jiv fixme duplication with above
 Obb ToolGenerateObbFromVec3(const Vec3* vertices, size_t n)
 {
     Obb ret;

@@ -2,6 +2,7 @@
 
 #include "Render/Asset.h"
 #include "Render/Shader.h"
+#include "Render/Model.h"
 #include "Render/Texture.h"
 #include "Engine/Utils.h"
 
@@ -232,3 +233,4 @@ void SimpleAssetManager<T>::Dump(int num)
 
 template struct SimpleAssetManager<Shader>;
 template struct SimpleAssetManager<Texture>;
+template struct SimpleAssetManager<ModelClass>;

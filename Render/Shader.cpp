@@ -21,7 +21,7 @@ struct ShaderManager : SimpleAssetManager<Shader>
     ShaderManager();
     Shader* CreateShader(const char* fname);
     void DestroyShader(Shader* victim);
-
+    
     virtual void DumpTitle();
     virtual void DumpInternal();
 };
@@ -38,7 +38,7 @@ ShaderManager::ShaderManager()
 
 void ShaderManager::DestroyShader(Shader* victim)
 {
-    // jiv fixme delete shader
+    // jiv fixme delete shader for real
     
     // destroy bookkeeping
     DestroyAsset(victim);
@@ -47,9 +47,9 @@ void ShaderManager::DestroyShader(Shader* victim)
 Shader* ShaderManager::CreateShader(const char* fname)
 {
     const uint32_t crc = Djb(fname);
-
+    
     Shader temp;
-        
+    
     // read vertex shader source
     char vshFilePath[512];
     snprintf(vshFilePath, sizeof vshFilePath, "%s.vsh", fname);
@@ -59,7 +59,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
         Printf("Unable to find %s\n", vshFilePath);
         return nullptr;
     }
-        
+    
     // read fragment shader source
     char fshFilePath[512];
     snprintf(fshFilePath, sizeof fshFilePath, "%s.fsh", fname);
@@ -70,14 +70,14 @@ Shader* ShaderManager::CreateShader(const char* fname)
         delete[] vShaderSource;
         return nullptr;
     }
-        
+    
     // Create a program object
     temp.m_ProgramName = glCreateProgram();
     
     // bind the attributes
     glBindAttribLocation(temp.m_ProgramName, kVertexAttributePosition, "inPosition");
-    glBindAttribLocation(temp.m_ProgramName, kVertexAttributeColor, "inColor");
-    glBindAttribLocation(temp.m_ProgramName, kVertexAttributeNormal, "inNormal");
+    glBindAttribLocation(temp.m_ProgramName, kVertexAttributeColor,    "inColor");
+    glBindAttribLocation(temp.m_ProgramName, kVertexAttributeNormal,   "inNormal");
     glBindAttribLocation(temp.m_ProgramName, kVertexAttributeTexCoord, "inTexCoord");
     
     // Specify and compile VertexShader
@@ -165,7 +165,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
     {
         GLint logLength;
         glGetShaderiv(temp.m_ProgramName, GL_INFO_LOG_LENGTH, &logLength);
-        if (logLength > 0) 
+        if (logLength > 0)
         {
             GLchar* log = new GLchar[logLength];
             glGetProgramInfoLog(temp.m_ProgramName, logLength, &logLength, log);
@@ -187,7 +187,7 @@ Shader* ShaderManager::CreateShader(const char* fname)
     
     GetGLError();
     
-    // jiv fixme strdup
+    // jiv fixme strdup this maybe
     temp.m_DebugName = fname;
     
     Shader* ret = AllocateAsset(crc);
@@ -221,6 +221,9 @@ Shader* ShaderCreate(const char* fname)
         ret->m_Crc = crc;
         ret->m_RefCount++;
     }
+    
+    if (ret == nullptr && strcmp(fname, "obj/Shader/Simple"))
+        return ShaderRef(g_SimpleShader);
     
     return ret;
 }

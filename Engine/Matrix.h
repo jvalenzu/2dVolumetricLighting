@@ -658,6 +658,17 @@ struct Mat4
     float m_Y[4];
     float m_Z[4];
     float m_W[4];
+
+    inline void Set(float a, float b, float c, float d,
+                    float e, float f, float g, float h,
+                    float i, float j, float k, float l,
+                    float m, float n, float o, float p)
+    {
+        m_X[0] = a; m_X[1] = b; m_X[2] = c; m_X[3] = d;
+        m_Y[0] = e; m_Y[1] = f; m_Y[2] = g; m_Y[3] = h;
+        m_Z[0] = i; m_Z[1] = j; m_Z[2] = k; m_Z[3] = l;
+        m_W[0] = m; m_W[1] = n; m_W[2] = o; m_W[3] = p;
+    }
     
     inline void SetRot(const Mat3& mat33)
     {
@@ -697,7 +708,13 @@ struct Mat4
         m_W[0] += pos.m_X[0];
         m_W[1] += pos.m_X[1];
         m_W[2] += pos.m_X[2];
-        m_W[3] = 1.0f;
+    }
+    
+    inline void AddTranslation(float x, float y, float z)
+    {
+        m_W[0] += x;
+        m_W[1] += y;
+        m_W[2] += z;
     }
     
     inline void NegateTranslation()
@@ -775,6 +792,8 @@ struct Mat4
     // Scale in place
     void Scale(float value);
     void Scale(const Vec3& value);
+
+    void OrthoNormalize();
 };
 
 // splat value in dest
@@ -808,6 +827,7 @@ Vec2 Orthogonal(const Vec2& a);
 // returns inner product
 float VectorDot(const Vec4& a, const Vec4& b);
 float VectorDot(const Vec3& a, const Vec3& b);
+float VectorDot(const Vec2& a, const Vec2& b);
 
 // cross project
 Vec3 VectorCross(const Vec3& a, const Vec3& b);

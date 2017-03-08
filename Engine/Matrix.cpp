@@ -742,6 +742,14 @@ float VectorDot(const Vec3& a, const Vec3& b)
     return ret;
 }
 
+float VectorDot(const Vec2& a, const Vec2& b)
+{
+    float ret = 0.0f;
+    ret += a.m_X[0]*b.m_X[0];
+    ret += a.m_X[1]*b.m_X[1];
+    return ret;
+}
+
 void VectorSplat(Vec3* dest, float value)
 {
     dest->m_X[0] = dest->m_X[1] = dest->m_X[2] = value;
@@ -1073,4 +1081,16 @@ Vec2 Orthogonal(const Vec2& b)
     ret.m_X[0] =  b.m_X[1];
     ret.m_X[1] = -b.m_X[0];
     return ret;
+}
+
+
+void Mat4::OrthoNormalize()
+{
+    Vec3 x = GetRight().Normalized();
+    Vec3 y = GetUp().Normalized();
+    Vec3 z = GetForward().Normalized();
+    
+    SetRight(x);
+    SetUp(y);
+    SetForward(z);
 }

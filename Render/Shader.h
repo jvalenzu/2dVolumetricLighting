@@ -12,7 +12,7 @@ struct Shader
     GLuint m_ProgramName;
     int m_RefCount;
     uint32_t m_Crc;
-
+    
     GLuint m_PointLightBlockIndex;
     GLuint m_ConicalLightBlockIndex;
     GLuint m_CylindricalLightBlockIndex;

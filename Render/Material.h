@@ -55,6 +55,7 @@ struct Material
     void SetFloat(int index, float value);
     void SetInt(int index, int value);
     void SetVector(int index, Vec4 value);
+    inline void SetVector(int index, float array[3]) { SetVector(index, Vec4(array[0], array[1], array[2], 0.0f)); }
     void SetMatrix(int index, const Mat4& value);
     void SetTexture(int index, int textureId);
     void SetTexture(int index, Texture* texture);
@@ -70,5 +71,3 @@ struct Material
 Material* MaterialCreate(Shader* shader, Texture* texture);
 Material* MaterialRef(Material* material);
 void      MaterialDestroy(Material* victim);
-
-

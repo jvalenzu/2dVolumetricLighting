@@ -55,7 +55,7 @@ static void ApplyUserInput(RenderContext* renderContext, SceneObject* sceneObjec
         sceneObject->m_LocalToWorld.SetTranslation(pos);
         sceneObject->m_Flags |= SceneObject::Flags::kDirty;
     }
-
+    
     if (fabsf(s_Angle) > 1e-3f)
     {
         const float step_size = 0.1f;
@@ -388,7 +388,7 @@ static void MainLoop(RenderContext* renderContext)
     {
         // start render frame
         RenderFrameInit(renderContext);
-
+        
         // IMGUI
         DebugUi::NewFrame();
 
@@ -519,7 +519,7 @@ static void MainLoop(RenderContext* renderContext)
         }
         
         SceneUpdate(&scene);
-        
+
         // 
         //        __                   __ 
         //       /\ \                 /\ \
@@ -541,7 +541,7 @@ static void MainLoop(RenderContext* renderContext)
         // tear down shadow caster render target
         RenderSetRenderTarget(renderContext, nullptr);
         RenderClearReplacementShader(renderContext);
-        
+
         // for each light
         // - raymarch shadow casters into 1d polar coordinate render texture
         // - generate 2d fullscreen map from 1d render texture
@@ -594,34 +594,31 @@ static void MainLoop(RenderContext* renderContext)
                 RenderDrawFullscreen(renderContext, shadowMapSampleMaterial, lightObject->m_Shadow1dMap);
             }
         }
-        
+
         // Run multiple blur passes on the current framebuffer, which just now consists only of the shadowed portions.
         // 3ms
         if (blur_mode == 0)
         {
-            // ping pong blur buffers
-            RenderSetRenderTarget(renderContext, renderTextureTemp[0]);
-            RenderDrawFullscreen(renderContext, shaderBlurX, nullptr);
-            RenderSetRenderTarget(renderContext, renderTextureTemp[1]);
-            RenderDrawFullscreen(renderContext, shaderBlurY, renderTextureTemp[0]);
-            
-            // jesus this is a lot of passes
+            // ping pong blur buffers.  jesus this is a lot of passes
             const int limit=8;
-            for (int i=1; i<limit; ++i)
+            for (int i=0; i<limit; ++i)
             {
-                const int prevTextureIndex = (i-1)%2;
-                const int nextTextureIndex = (i+1)%2;
-                const int textureIndex = i%2;
+                const int current_render_target       = i&1;
+                const int prev_and_next_render_target = current_render_target^1;
                 
-                RenderSetRenderTarget(renderContext, renderTextureTemp[textureIndex]);
-                RenderDrawFullscreen(renderContext, shaderBlurX, renderTextureTemp[prevTextureIndex]);
+                Texture* source = renderTextureTemp[prev_and_next_render_target];
+                if (i==0)
+                    source = nullptr; // first read comes from frame buffer
                 
-                if (i==(limit-1))
+                RenderSetRenderTarget(renderContext, renderTextureTemp[current_render_target]);
+                RenderDrawFullscreen(renderContext, shaderBlurX, source);
+                
+                if (i==limit-1)
                     RenderSetRenderTarget(renderContext, nullptr);
                 else
-                    RenderSetRenderTarget(renderContext, renderTextureTemp[nextTextureIndex]);
+                    RenderSetRenderTarget(renderContext, renderTextureTemp[prev_and_next_render_target]);
                 
-                RenderDrawFullscreen(renderContext, shaderBlurY, renderTextureTemp[textureIndex]);
+                RenderDrawFullscreen(renderContext, shaderBlurY, renderTextureTemp[current_render_target]);
             }
         }
         
@@ -708,7 +705,7 @@ static void MainLoop(RenderContext* renderContext)
         
         // apply the user input
         ApplyUserInput(renderContext, s_SceneObject, s_Target);
-        
+
         ImGui::Render();
         
         running = RenderFrameEnd(renderContext);

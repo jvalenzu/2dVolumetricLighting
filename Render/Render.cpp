@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "slib/Common/Util.h"
 #include "Render/Private/Material.h"
@@ -22,6 +23,7 @@
 #define kConicalLightBinding 4
 #define kDirectionalLightBinding 5
 
+// -------------------------------------------------------------------------------------------------
 const char* GetGLErrorString(GLenum error)
 {
     switch (error)
@@ -92,6 +94,7 @@ GLErrorScope::~GLErrorScope()
 }
 #endif
 
+// -------------------------------------------------------------------------------------------------
 // s_CgInit
 //
 // Initialize GL
@@ -155,10 +158,13 @@ static bool s_CgInit(RenderContext* renderContext)
     return true;
 }
 
+// -------------------------------------------------------------------------------------------------
 // ResetFrameBufferTextureBuffers
 //
 static void ResetFrameBufferTextureBuffers(RenderContext* renderContext)
 {
+    GL_ERROR_SCOPE();
+    
     for (int i=0; i<2; ++i)
     {
         glBindTexture(GL_TEXTURE_2D, renderContext->m_FrameBufferColorIds[i]);
@@ -173,12 +179,30 @@ static void ResetFrameBufferTextureBuffers(RenderContext* renderContext)
         
         glBindTexture(GL_TEXTURE_2D, 0);
         
+        renderContext->m_FrameBufferDepthIds[i] = -1;
+        
+        glGenTextures(1, &renderContext->m_FrameBufferDepthIds[i]);
+        glBindTexture(GL_TEXTURE_2D, renderContext->m_FrameBufferDepthIds[i]);
+        
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, renderContext->m_Width, renderContext->m_Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+        
         glBindFramebuffer(GL_FRAMEBUFFER, renderContext->m_FrameBufferIds[i]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderContext->m_FrameBufferColorIds[i], 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, renderContext->m_FrameBufferDepthIds[i], 0);
     }
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+// -------------------------------------------------------------------------------------------------
 // s_WindowSizeCallback
 //
 // Called when framebuffer resizes
@@ -199,6 +223,7 @@ static void s_WindowSizeCallback(GLFWwindow* window, int width, int height)
     ToolLoadPerspective(&renderContext->m_Projection, 45.0f, aspectRatio, 1.0f, 16777216.0f);
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderInit(RenderContext* renderContext, int width, int height)
 {
     RenderOptions renderOptions;
@@ -206,6 +231,7 @@ void RenderInit(RenderContext* renderContext, int width, int height)
     RenderInit(renderContext, renderOptions);
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions)
 {
     int width = renderOptions.m_Width;
@@ -282,9 +308,7 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     MatrixMakeIdentity(&renderContext->m_Camera);
     MatrixMakeIdentity(&renderContext->m_View);
     
-    // const float aspectRatio = 1.0f;
     const float aspectRatio = (float) renderContext->m_Width/renderContext->m_Height;
-    // const float aspectRatio = (float) renderContext->m_Height/renderContext->m_Width;
     
     // initialize perspective matrix
     if (renderOptions.m_CameraType == RenderOptions::kPerspective)
@@ -296,10 +320,16 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     ShaderInit();
     TextureInit();
     
+    // white texture, mostly for debugging.  ModelClassInit needs this.
+    renderContext->m_WhiteTexture = TextureCreateFromFile("white.png");
+    
+    ModelClassInit(renderContext); // must happen after shader, texture init
+    
     // enable depth test
     glEnable(GL_DEPTH_TEST);
     
     // cull back faces
+    glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     
     // initialize GL
@@ -372,12 +402,6 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
     glBindBufferBase(GL_UNIFORM_BUFFER, kDirectionalLightBinding, renderContext->m_DirectionalLightUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     
-    // white texture, mostly for debugging
-    renderContext->m_WhiteTexture = TextureCreateFromFile("white.png");
-    
-    // cache a cube model for rendering OBBs
-    renderContext->m_CubeModel = RenderGenerateCube(renderContext, 0.5f);
-    
     glfwSetFramebufferSizeCallback(renderContext->m_Window, s_WindowSizeCallback);
     glfwSetWindowUserPointer(renderContext->m_Window, renderContext);
     
@@ -397,19 +421,20 @@ void RenderInit(RenderContext* renderContext, const RenderOptions& renderOptions
         Printf("Ext %d: %s\n", i, extension); 
     }
 #endif
+
+    renderContext->m_CurrentFrameBufferIndex = 0;
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderContextDestroy
 void RenderContextDestroy(RenderContext* renderContext)
 {
     // destroy "singleton" graphics assets
-    SimpleModelDestroy(renderContext->m_CubeModel);
-    renderContext->m_CubeModel = nullptr;
-    
     TextureDestroy(renderContext->m_WhiteTexture);
     renderContext->m_WhiteTexture = nullptr;
     
     // teardown shader/texture singleton data structures
+    ModelClassFini();
     ShaderFini();
     TextureFini();
     
@@ -417,60 +442,7 @@ void RenderContextDestroy(RenderContext* renderContext)
     renderContext->m_PostEffects = nullptr;
 }
 
-// RenderDrawModel
-//
-// Render model.
-void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model)
-{
-    RenderDrawModel(renderContext, model, model->m_Po);
-}
-
-// RenderDrawModel
-//
-// Render model.
-void RenderDrawModel(RenderContext* renderContext, const SimpleModel* model, const Mat4& localToWorld)
-{
-    GL_ERROR_SCOPE();
-    
-    const Material* material = model->m_Material;
-    const Shader* shader = material->m_Shader;
-    
-    if (renderContext->m_ReplacementShader)
-        shader = renderContext->m_ReplacementShader;
-    
-    Mat4 normalModel;
-    MatrixInvert(&normalModel, localToWorld);
-    normalModel.Transpose();
-    
-    // use material
-    int textureSlotItr = 1;
-    RenderUseMaterial(renderContext, &textureSlotItr, material);
-    
-    // global constants
-    RenderSetGlobalConstants(renderContext, &textureSlotItr, shader->m_ProgramName);
-    
-    GLint pi = glGetUniformLocation(shader->m_ProgramName, "project");
-    glUniformMatrix4fv(pi, 1, GL_FALSE, renderContext->m_Projection.asFloat());
-    
-    GLint nmi = glGetUniformLocation(shader->m_ProgramName, "normalModel");
-    glUniformMatrix4fv(nmi, 1, GL_FALSE, normalModel.asFloat());
-    
-    Mat4 modelView;
-    MatrixMultiply(&modelView, localToWorld, renderContext->m_View);
-    
-    GLint mvi = glGetUniformLocation(shader->m_ProgramName, "modelView");
-    glUniformMatrix4fv(mvi, 1, GL_FALSE, modelView.asFloat());
-    
-    GLint viewIndex = glGetUniformLocation(shader->m_ProgramName, "view");
-    glUniformMatrix4fv(viewIndex, 1, GL_FALSE, renderContext->m_View.asFloat());
-    
-    RenderSetLightConstants(renderContext, shader);
-    
-    SimpleModelSetVertexAttributes(model);
-    
-    glDrawElements(GL_TRIANGLES, model->m_NumIndices, GL_UNSIGNED_SHORT, (void*) 0);
-}
-
+// -------------------------------------------------------------------------------------------------
 void RenderUpdatePointLights(RenderContext* renderContext, const Light* pointLights, int numPointLights)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_PointLightUbo);
@@ -509,6 +481,7 @@ void RenderUpdatePointLights(RenderContext* renderContext, const Light* pointLig
     renderContext->m_PointLightMask = pointLightMask;
 }
 
+// -------------------------------------------------------------------------------------------------
 // void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conicalLights, int numConicalLights)
 //
 // 
@@ -549,6 +522,7 @@ void RenderUpdateConicalLights(RenderContext* renderContext, const Light* conica
     renderContext->m_ConicalLightMask = conicalLightMask;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderUpdateCylindricalLights(RenderContext* renderContext, const Light* cylindricalLights, int numCylindricalLights)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, renderContext->m_CylindricalLightUbo);
@@ -586,6 +560,7 @@ void RenderUpdateCylindricalLights(RenderContext* renderContext, const Light* cy
     renderContext->m_CylindricalLightMask = cylindricalLightMask;
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderUpdateDirectionalLights
 void RenderUpdateDirectionalLights(RenderContext* renderContext, const Light* directionalLights, int numDirectionalLights)
 {
@@ -601,6 +576,7 @@ void RenderUpdateDirectionalLights(RenderContext* renderContext, const Light* di
     renderContext->m_NumDirectionalLights = numDirectionalLights;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderOptionsInit(RenderOptions* renderOptions, int width, int height)
 {
     renderOptions->m_CameraType = RenderOptions::kPerspective;
@@ -608,54 +584,78 @@ void RenderOptionsInit(RenderOptions* renderOptions, int width, int height)
     renderOptions->m_Height = height;
 }
 
-void RenderDumpModel(const SimpleModel* model)
+// -------------------------------------------------------------------------------------------------
+void RenderDumpModel(const ModelInstance* model)
 {
     Printf("model:\n");
     MatrixDump(model->m_Po, "    ");
-    Printf("    numVertices: %d\n", model->m_NumVertices);
-    Printf("    numIndices: %d\n", model->m_NumIndices);
-    
-    for (int i=0; i<model->m_NumIndices; ++i)
+
+    for (int j=0; j<model->m_ModelClass->m_NumSubsets; ++j)
     {
-        const SimpleVertex* vertex = &model->m_Vertices[model->m_Indices[i]];
-        Vec3 in{vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2]};
-        Vec4 out;
-        MatrixMultiplyVec(&out, model->m_Po, in.xyz1());
-        Printf("    point[%d] = { %.2f, %.2f, %.2f }\n", i, out[0], out[1], out[2]);
+        Printf("    subset: %d\n", j);
+
+        const ModelClassSubset& modelClassSubset = model->m_ModelClass->m_Subsets[j];
+        Printf("    numVertices: %d\n", modelClassSubset.m_NumVertices);
+        Printf("    numIndices: %d\n", modelClassSubset.m_NumIndices);
+        
+        for (int i=0; i<modelClassSubset.m_NumIndices; ++i)
+        {
+            const SimpleVertex* vertex = &modelClassSubset.m_Vertices[modelClassSubset.m_Indices[i]];
+            Vec3 in{vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2]};
+            Vec4 out;
+            MatrixMultiplyVec(&out, model->m_Po, in.xyz1());
+            Printf("    point[%d] = { %.2f, %.2f, %.2f }\n", i, out[0], out[1], out[2]);
+        }
     }
 }
 
-void RenderDumpModelTransformed(const SimpleModel* model, const Mat4& a)
+// -------------------------------------------------------------------------------------------------
+void RenderDumpModelTransformed(const ModelInstance* model, const Mat4& a)
 {
     Printf("model:\n");
     MatrixDump(a, "    ");
-    Printf("    numVertices: %d\n", model->m_NumVertices);
-    Printf("    numIndices: %d\n", model->m_NumIndices);
-    
-    for (int i=0; i<model->m_NumIndices; ++i)
+
+    for (int j=0; j<model->m_ModelClass->m_NumSubsets; ++j)
     {
-        const SimpleVertex* vertex = model->m_Vertices + model->m_Indices[i];
-        Vec4 out;
-        MatrixMultiplyVec(&out, a, Vec3(vertex->m_Position).xyz1());
-        Printf("    point[%d] = [ %.2f, %.2f, %.2f, 1 ] -> [ %.2f, %.2f, %.2f, 1 ]\n",
-               i, vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2], out[0], out[1], out[2]);
+        const ModelClassSubset* modelClassSubset = &model->m_ModelClass->m_Subsets[j];
+        
+        Printf("    subset: %d\n", j);
+        
+        Printf("    numVertices: %d\n", modelClassSubset->m_NumVertices);
+        Printf("    numIndices: %d\n", modelClassSubset->m_NumIndices);
+        
+        for (int i=0; i<modelClassSubset->m_NumIndices; ++i)
+        {
+            const SimpleVertex* vertex = modelClassSubset->m_Vertices + modelClassSubset->m_Indices[i];
+            Vec4 out;
+            MatrixMultiplyVec(&out, a, Vec3(vertex->m_Position).xyz1());
+            Printf("    point[%d] = [ %.2f, %.2f, %.2f, 1 ] -> [ %.2f, %.2f, %.2f, 1 ]\n",
+                   i, vertex->m_Position[0], vertex->m_Position[1], vertex->m_Position[2], out[0], out[1], out[2]);
+        }
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderSetBlendMode
 //
 // Set the blend mode
 void RenderSetBlendMode(Material::BlendMode blendMode)
 {
+    GL_ERROR_SCOPE();
+    
     switch (blendMode)
     {
         case Material::BlendMode::kOpaque:
         {
             glDisable(GL_COLOR_LOGIC_OP);
             glDepthMask(GL_TRUE);
-            glEnable(GL_BLEND);
+            
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);
+            
+            glDisable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_ZERO);
-            glBlendEquation(GL_FUNC_ADD);
+            
             break;
         }
         case Material::BlendMode::kCutout:
@@ -663,6 +663,7 @@ void RenderSetBlendMode(Material::BlendMode blendMode)
         {
             glDisable(GL_COLOR_LOGIC_OP);
             glDepthMask(GL_FALSE);
+            
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glBlendEquation(GL_FUNC_ADD);
@@ -681,6 +682,7 @@ void RenderSetBlendMode(Material::BlendMode blendMode)
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderResetLightIndices
 //
 // Each frame, we generate light indices for all our lights.  It requires we reset
@@ -690,12 +692,15 @@ void RenderResetLightIndices(RenderContext* renderContext)
     renderContext->m_LightIndex = 0;
 }
 
+// -------------------------------------------------------------------------------------------------
 static inline void RenderUseProgram(const Shader* shader)
 {
     // Printf("Using %s\n", shader->m_DebugName);
-    glUseProgram(shader->m_ProgramName);
+    if (shader)
+        glUseProgram(shader->m_ProgramName);
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderUseMaterial
 //
 void RenderUseMaterial(RenderContext* renderContext, int* textureSlotItr, const Material* material)
@@ -707,7 +712,7 @@ void RenderUseMaterial(RenderContext* renderContext, int* textureSlotItr, const 
     {
         RenderUseProgram(material->m_Shader);
         
-        if (renderContext->m_CachedMaterial != material)
+        if (true || renderContext->m_CachedMaterial != material)
         {
             renderContext->m_CachedMaterial = material;
             RenderSetMaterialConstants(renderContext, textureSlotItr, material);
@@ -720,7 +725,9 @@ void RenderUseMaterial(RenderContext* renderContext, int* textureSlotItr, const 
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderSetGlobalConstants
+//
 void RenderSetGlobalConstants(RenderContext* renderContext, int* textureSlotItr, int programName)
 {    
     for (int i=0; i<renderContext->m_MaterialProperties.kMaxSize; ++i)
@@ -730,6 +737,7 @@ void RenderSetGlobalConstants(RenderContext* renderContext, int* textureSlotItr,
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderSetMaterialConstants
 //
 void RenderSetMaterialConstants(RenderContext* renderContext, int* textureSlotItr, const Material* material)
@@ -748,6 +756,13 @@ void RenderSetMaterialConstants(RenderContext* renderContext, int* textureSlotIt
     GLint mainTextureSlot = glGetUniformLocation(shader->m_ProgramName, "_MainTex");
     glProgramUniform1i(shader->m_ProgramName, mainTextureSlot, 0);
     
+    GLint cameraPosSlot = glGetUniformLocation(shader->m_ProgramName, "_CameraPos");
+    if (cameraPosSlot >= 0)
+    {
+        const Vec4& cameraPos = renderContext->m_Camera.GetTranslation();
+        glUniform4f(cameraPosSlot, cameraPos.m_X[0], cameraPos.m_X[1], cameraPos.m_X[2], cameraPos.m_X[2]);
+    }
+    
     for (int i=0; i<material->m_NumMaterialProperties; ++i)
     {
         const Material::MaterialProperty* materialProperty = &material->m_MaterialPropertyBlock[i];
@@ -755,12 +770,13 @@ void RenderSetMaterialConstants(RenderContext* renderContext, int* textureSlotIt
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderFrameInit
 //
 void RenderFrameInit(RenderContext* renderContext)
 {
     GL_ERROR_SCOPE();
-    
+
     glBindFramebuffer(GL_FRAMEBUFFER, renderContext->m_FrameBufferIds[0]);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -786,6 +802,7 @@ void RenderFrameInit(RenderContext* renderContext)
     RenderGlobalSetVector(renderContext, renderContext->m_ShaderTimeIndex, Vec4(currentTime, currentTime, currentTime, currentTime));
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderAttachPostEffect
 //
 void RenderAttachPostEffect(RenderContext* renderContext, PostEffect* effect)
@@ -794,6 +811,7 @@ void RenderAttachPostEffect(RenderContext* renderContext, PostEffect* effect)
         renderContext->m_PostEffects[renderContext->m_NumPostEffects++] = effect;
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderFullscreenSetVertexAttributes
 //
 void RenderFullscreenSetVertexAttributes(RenderContext* renderContext)
@@ -820,6 +838,7 @@ void RenderFullscreenSetVertexAttributes(RenderContext* renderContext)
                           (void*) 12);                                // offset in buffer data
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderSetProcessKeysCallback(RenderContext* context, ProcessKeysCallback (*processKeysCallback))
 {
     // auto wrapper = [] (GLFWwindow* window, int key, int scanCode, int action, int mods)
@@ -830,6 +849,19 @@ void RenderSetProcessKeysCallback(RenderContext* context, ProcessKeysCallback (*
     glfwSetKeyCallback(context->m_Window, (GLFWkeyfun) processKeysCallback);
 }
 
+// -------------------------------------------------------------------------------------------------
+void RenderSetProcessMouseCallback(RenderContext* context, ProcessMouseCallback (*processMouseCallback))
+{
+    glfwSetMouseButtonCallback(context->m_Window, (GLFWmousebuttonfun) processMouseCallback);
+}
+
+// -------------------------------------------------------------------------------------------------
+void RenderSetProcessCursorCallback(RenderContext* context, ProcessCursorCallback (*processCursorCallback))
+{
+    glfwSetCursorPosCallback(context->m_Window, (GLFWcursorposfun) processCursorCallback);
+}
+
+// -------------------------------------------------------------------------------------------------
 void RenderDumpUniforms(RenderContext* renderContext, const Shader* shader)
 {
 #if 0
@@ -855,6 +887,7 @@ void RenderDumpUniforms(RenderContext* renderContext, const Shader* shader)
 #endif
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader)
 {
     GL_ERROR_SCOPE();
@@ -893,14 +926,14 @@ void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader)
     if (directionalLightsBlockIndex != GL_INVALID_INDEX)
     {
         glUniformBlockBinding(shader->m_ProgramName, directionalLightsBlockIndex, kDirectionalLightBinding);
-
+        
         GLint direcitonalLightNumIndex = glGetUniformLocation(shader->m_ProgramName, "numDirectionalLights");
         if (direcitonalLightNumIndex != GL_INVALID_INDEX)
             glUniform1ui(direcitonalLightNumIndex, renderContext->m_NumDirectionalLights);
-        
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int textureId)
 {
     GL_ERROR_SCOPE();
@@ -942,19 +975,12 @@ void RenderDrawFullscreen(RenderContext* renderContext, Material* material, int 
     GLint mainTextureSlot = glGetUniformLocation(shader->m_ProgramName, "_MainTex");
     glProgramUniform1i(shader->m_ProgramName, mainTextureSlot, 0);
     
-    // RenderDumpUniforms(renderContext, shader);
-    
     RenderSetLightConstants(renderContext, shader);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-// RenderDrawBillboard
-//
-void RenderDrawBillboard(RenderContext* renderContext, Material* material, Texture* texture, const Vec2 points[4])
-{
-}
-
+// -------------------------------------------------------------------------------------------------
 // RenderDrawFullscreen
 //
 void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, int textureId)
@@ -964,6 +990,10 @@ void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, int text
     RenderUseProgram(shader);
     
     RenderFullscreenSetVertexAttributes(renderContext);
+
+    // overwrite existing contents
+    RenderSetBlendMode(Material::BlendMode::kOpaque);
+    glDisable(GL_DEPTH_TEST);
     
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureId);
@@ -995,17 +1025,19 @@ void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, int text
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderDrawFullscreen(RenderContext* renderContext, Shader* shader, Texture* texture)
 {
     GL_ERROR_SCOPE();
     
-    int textureId = renderContext->m_FrameBufferIds[0];
+    int textureId = renderContext->m_FrameBufferColorIds[0];
     if (texture != nullptr)
         textureId = texture->m_TextureId;
     
     RenderDrawFullscreen(renderContext, shader, textureId);
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderDrawFullscreen
 void RenderDrawFullscreen(RenderContext* renderContext, Material* material, Texture* texture)
 {
@@ -1018,18 +1050,38 @@ void RenderDrawFullscreen(RenderContext* renderContext, Material* material, Text
     RenderDrawFullscreen(renderContext, material, textureId);
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderSetRenderTarget(RenderContext* renderContext, Texture* texture)
 {
     if (texture && texture->m_FrameBufferId>0)
     {
         glBindFramebuffer(GL_FRAMEBUFFER, texture->m_FrameBufferId);
         glViewport(0, 0, texture->m_Width, texture->m_Height);
-        if (texture->m_RenderTextureFlags & Texture::RenderTextureFlags::kClearColor)
+
+        switch (texture->m_RenderTextureFlags & (Texture::RenderTextureFlags::kClearColor|Texture::RenderTextureFlags::kClearDepth))
         {
-            glClearColor(texture->m_ClearColor.m_X[0], texture->m_ClearColor.m_X[1], texture->m_ClearColor.m_X[2], 0);
-            glClear(GL_COLOR_BUFFER_BIT);
-            glClearColor(0.5f, 0.5f, 0.5f, 0);
+            case Texture::RenderTextureFlags::kClearColor|Texture::RenderTextureFlags::kClearDepth:
+            {
+                glClearColor(texture->m_ClearColor.m_X[0], texture->m_ClearColor.m_X[1], texture->m_ClearColor.m_X[2], 0);
+                glClear(GL_COLOR_BUFFER_BIT);
+                break;
+            }
+            case Texture::RenderTextureFlags::kClearColor:
+            {
+                glClearColor(texture->m_ClearColor.m_X[0], texture->m_ClearColor.m_X[1], texture->m_ClearColor.m_X[2], 0);
+                glClear(GL_COLOR_BUFFER_BIT);
+                break;
+            }
+            case Texture::RenderTextureFlags::kClearDepth:
+            {
+                glClearColor(texture->m_ClearColor.m_X[0], texture->m_ClearColor.m_X[1], texture->m_ClearColor.m_X[2], 0);
+                glClear(GL_COLOR_BUFFER_BIT);
+                break;
+            }
         }
+        
+        glClearDepth(1.0f);
+        glClear(GL_DEPTH_BUFFER_BIT);
     }
     else
     {
@@ -1042,11 +1094,13 @@ void RenderSetRenderTarget(RenderContext* renderContext, Texture* texture)
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderClearReplacementShader(RenderContext* renderContext)
 {
     renderContext->m_ReplacementShader = nullptr;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderSetReplacementShader(RenderContext* renderContext, Shader* shader)
 {
     renderContext->m_ReplacementShader = shader;
@@ -1061,11 +1115,12 @@ void RenderSetReplacementShader(RenderContext* renderContext, Shader* shader)
         GLint mainTextureSlot = glGetUniformLocation(shader->m_ProgramName, "_MainTex");
         glProgramUniform1i(shader->m_ProgramName, mainTextureSlot, 0);
         
-        // jiv fixme
+        // jiv fixme: set blend mode externally
         RenderSetBlendMode(Material::BlendMode::kBlend);
     }
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderFrameEnd
 bool RenderFrameEnd(RenderContext* renderContext)
 {
@@ -1091,6 +1146,7 @@ bool RenderFrameEnd(RenderContext* renderContext)
     else
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // target final destination
+        glDisable(GL_DEPTH_TEST);
         RenderDrawFullscreen(renderContext, g_SimpleShader, renderContext->m_FrameBufferColorIds[0]);
     }
     
@@ -1106,6 +1162,7 @@ bool RenderFrameEnd(RenderContext* renderContext)
 
 bool g_Trace = false;
 
+// -------------------------------------------------------------------------------------------------
 // RenderGetScreenPos
 Vec4 RenderGetScreenPos(const Mat4& view, const Mat4& proj, float width, float height, const Vec3& worldPos)
 {
@@ -1127,12 +1184,14 @@ Vec4 RenderGetScreenPos(const Mat4& view, const Mat4& proj, float width, float h
     return ret;
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderGetScreenPos
 Vec4 RenderGetScreenPos(const RenderContext* renderContext, const Vec3& worldPos)
 {
     return RenderGetScreenPos(renderContext->m_View, renderContext->m_Projection, renderContext->m_Width, renderContext->m_Height, worldPos);
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderGetWorldPos
 Vec3 RenderGetWorldPos(const RenderContext* renderContext, const Vec2& screenPos, float z)
 {
@@ -1147,27 +1206,29 @@ Vec3 RenderGetWorldPos(const RenderContext* renderContext, const Vec2& screenPos
     return ret.xyz();
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderGenerateSprite
-SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOptions& spriteOptions, Material* material)
+// 
+ModelInstance* RenderGenerateSprite(RenderContext* renderContext, const SpriteOptions& spriteOptions, Material* material)
 {
     GL_ERROR_SCOPE();
+    
+    ModelClass* modelClass = ModelClassAllocateSpawned(1);
+    modelClass->m_RefCount = 1;
     
     const float halfWidth = material->m_Texture->m_Width / (2.0f * spriteOptions.m_PixelsPerUnit);
     const float halfHeight = material->m_Texture->m_Height / (2.0f * spriteOptions.m_PixelsPerUnit);
     
-    SimpleModel* simpleModel = new SimpleModel();
-    simpleModel->m_Material = material;
+    ModelClassSubset* modelClassSubset = &modelClass->m_Subsets[0];
+    modelClassSubset->m_Material = material;
     
     int tintColorIndex = material->GetPropertyIndex("TintColor");
     if (tintColorIndex >= 0)
         material->SetVector(tintColorIndex, spriteOptions.m_TintColor);
     
-    // initialize the matrix position/orientation
-    MatrixMakeIdentity(&simpleModel->m_Po);
-    
-    simpleModel->m_NumVertices = 4;
-    simpleModel->m_Vertices = new SimpleVertex[simpleModel->m_NumVertices];
-    simpleModel->m_Indices = new unsigned short[6];
+    modelClassSubset->m_NumVertices = 4;
+    modelClassSubset->m_Vertices = new SimpleVertex[modelClassSubset->m_NumVertices];
+    modelClassSubset->m_Indices = new unsigned short[6];
     
     //  |   0------1
     //  |   |      |
@@ -1185,28 +1246,28 @@ SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOpti
     const float bottomOffset = spriteOptions.m_Pivot.m_X[1] * halfHeight * -1.0f;
     
     // 0
-    SimpleVertex* simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    SimpleVertex* simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0xffff00ff;
     simpleVertex->m_Position[0] = leftOffset; simpleVertex->m_Position[1] = topOffset; simpleVertex->m_Position[2] = 0.0f;
     simpleVertex->m_Normal[0]   =  0.0f;      simpleVertex->m_Normal[1]   =  0.0f;     simpleVertex->m_Normal[2]   = +1.0f;
     simpleVertex->m_Uv[0]       =  0.0f;      simpleVertex->m_Uv[1]       =  0.0f;
     
     // 1
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0xffffffff;
     simpleVertex->m_Position[0] = rightOffset; simpleVertex->m_Position[1] = topOffset;  simpleVertex->m_Position[2] = 0.0f;
     simpleVertex->m_Normal[0]   =  0.0f;      simpleVertex->m_Normal[1]   =  0.0f;       simpleVertex->m_Normal[2]   = +1.0f;
     simpleVertex->m_Uv[0]       =  1.0f;      simpleVertex->m_Uv[1]       =  0.0f;
     
     // 2
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0xffffffff;
     simpleVertex->m_Position[0] = rightOffset; simpleVertex->m_Position[1] = bottomOffset; simpleVertex->m_Position[2] = 0.0f;
     simpleVertex->m_Normal[0]   =  0.0f;      simpleVertex->m_Normal[1]   =  0.0f;         simpleVertex->m_Normal[2]   = +1.0f;
     simpleVertex->m_Uv[0]       =  1.0f;      simpleVertex->m_Uv[1]       =  1.0f;
     
     // 3
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0xffffffff;
     simpleVertex->m_Position[0] = leftOffset; simpleVertex->m_Position[1] = bottomOffset; simpleVertex->m_Position[2] = 0.0f;
     simpleVertex->m_Normal[0]   =  0.0f;      simpleVertex->m_Normal[1]   =  0.0f;        simpleVertex->m_Normal[2]   = +1.0f;
@@ -1215,25 +1276,25 @@ SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOpti
     // front
     int numIndices = 0;
     
-    simpleModel->m_Indices[numIndices++] = 0;
-    simpleModel->m_Indices[numIndices++] = 1;
-    simpleModel->m_Indices[numIndices++] = 2;
+    modelClassSubset->m_Indices[numIndices++] = 0;
+    modelClassSubset->m_Indices[numIndices++] = 3;
+    modelClassSubset->m_Indices[numIndices++] = 2;
     
-    simpleModel->m_Indices[numIndices++] = 2;
-    simpleModel->m_Indices[numIndices++] = 3;
-    simpleModel->m_Indices[numIndices++] = 0;
+    modelClassSubset->m_Indices[numIndices++] = 2;
+    modelClassSubset->m_Indices[numIndices++] = 1;
+    modelClassSubset->m_Indices[numIndices++] = 0;
     
     // save number of elements
-    simpleModel->m_NumIndices = numIndices;
+    modelClassSubset->m_NumIndices = numIndices;
     
     // generate vertex name
-    glGenVertexArrays(1, &simpleModel->m_VaoName);
-    glBindVertexArray(simpleModel->m_VaoName);
+    glGenVertexArrays(1, &modelClassSubset->m_VaoName);
+    glBindVertexArray(modelClassSubset->m_VaoName);
     
     // generate vertex buffer name
-    glGenBuffers(1, &simpleModel->m_VertexBufferName);
-    glBindBuffer(GL_ARRAY_BUFFER, simpleModel->m_VertexBufferName);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(SimpleVertex)*simpleModel->m_NumVertices, simpleModel->m_Vertices, GL_STATIC_DRAW);
+    glGenBuffers(1, &modelClassSubset->m_VertexBufferName);
+    glBindBuffer(GL_ARRAY_BUFFER, modelClassSubset->m_VertexBufferName);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(SimpleVertex)*modelClassSubset->m_NumVertices, modelClassSubset->m_Vertices, GL_STATIC_DRAW);
     
     glEnableVertexAttribArray(kVertexAttributePosition);
     glVertexAttribPointer(kVertexAttributePosition,
@@ -1268,26 +1329,32 @@ SimpleModel* RenderGenerateSprite(RenderContext* renderContext, const SpriteOpti
                           sizeof(SimpleVertex),                       // stride
                           BUFFER_OFFSETOF(SimpleVertex, m_Uv));       // offset in buffer data
     
-    glGenBuffers(1, &simpleModel->m_IndexBufferName);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, simpleModel->m_IndexBufferName);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, simpleModel->m_NumIndices*sizeof(unsigned short), simpleModel->m_Indices, GL_STATIC_DRAW);
+    glGenBuffers(1, &modelClassSubset->m_IndexBufferName);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelClassSubset->m_IndexBufferName);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelClassSubset->m_NumIndices*sizeof(unsigned short), modelClassSubset->m_Indices, GL_STATIC_DRAW);
+
+    // calculate bsphere
+    ModelClassSubsetCalcBSphere(modelClassSubset);
     
-    return simpleModel;
+    ModelInstance* modelInstance = new ModelInstance();
+    MatrixMakeIdentity(&modelInstance->m_Po);
+    modelInstance->m_ModelClass = modelClass;
+    
+    return modelInstance;
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderGenerateCube
-SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
+void RenderGenerateCubeModelClass(RenderContext* renderContext, ModelClass* modelClass)
 {
-    SimpleModel* simpleModel = new SimpleModel();
+    ModelClassSubset* modelClassSubset = &modelClass->m_Subsets[0];
+    float halfWidth = 0.5f;
     
-    simpleModel->m_Material = MaterialCreate(g_SimpleShader, renderContext->m_WhiteTexture);
+    modelClassSubset->m_Material = MaterialCreate(g_SimpleShader, renderContext->m_WhiteTexture);
     
-    // initialize the matrix position/orientation
-    MatrixMakeIdentity(&simpleModel->m_Po);
-    
-    simpleModel->m_NumVertices = 8;
-    simpleModel->m_Vertices = new SimpleVertex[simpleModel->m_NumVertices];
-    simpleModel->m_Indices = new unsigned short[36];
+    modelClassSubset->m_NumVertices = 8;
+    modelClassSubset->m_Vertices = new SimpleVertex[modelClassSubset->m_NumVertices];
+    modelClassSubset->m_Indices = new unsigned short[36];
     
     //  | +z
     //  |
@@ -1301,7 +1368,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     //  |
     
     int numPositions = 0;
-    SimpleVertex* simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    SimpleVertex* simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0x00ffff00;
     simpleVertex->m_Position[0] = -halfWidth; // 0
     simpleVertex->m_Position[1] = +halfWidth; // 0
@@ -1310,7 +1377,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[1] = +1.0f;
     simpleVertex->m_Normal[2] = +1.0f;
     
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0x0000ffff;
     simpleVertex->m_Position[0] = +halfWidth; // 1
     simpleVertex->m_Position[1] = +halfWidth; // 1
@@ -1319,7 +1386,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[1] = +1.0f;
     simpleVertex->m_Normal[2] = +1.0f;
     
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0x00ff00ff;
     simpleVertex->m_Position[0] = +halfWidth; // 2
     simpleVertex->m_Position[1] = +halfWidth; // 2
@@ -1328,7 +1395,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[1] = +1.0f;
     simpleVertex->m_Normal[2] = -1.0f;
     
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0xff00ffff;
     simpleVertex->m_Position[0] = -halfWidth; // 3
     simpleVertex->m_Position[1] = +halfWidth; // 3
@@ -1337,7 +1404,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[1] = +1.0f;
     simpleVertex->m_Normal[2] = -1.0f;
     
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0xffff00ff;
     simpleVertex->m_Position[0] = -halfWidth; // 4
     simpleVertex->m_Position[1] = -halfWidth; // 4
@@ -1346,7 +1413,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[1] = -1.0f;
     simpleVertex->m_Normal[2] = -1.0f;
     
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0xf0fff0ff;
     simpleVertex->m_Position[0] = +halfWidth; // 5
     simpleVertex->m_Position[1] = -halfWidth; // 5
@@ -1355,7 +1422,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[1] = -1.0f;
     simpleVertex->m_Normal[2] = -1.0f;
     
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0x0ffff0ff;
     simpleVertex->m_Position[0] = +halfWidth; // 6
     simpleVertex->m_Position[1] = -halfWidth; // 6
@@ -1364,7 +1431,7 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     simpleVertex->m_Normal[1] = -1.0f;
     simpleVertex->m_Normal[2] = +1.0f;
     
-    simpleVertex = &simpleModel->m_Vertices[numPositions++];
+    simpleVertex = &modelClassSubset->m_Vertices[numPositions++];
     simpleVertex->m_Color = 0xf0fff0ff;
     simpleVertex->m_Position[0] = -halfWidth; // 7
     simpleVertex->m_Position[1] = -halfWidth; // 7
@@ -1377,107 +1444,116 @@ SimpleModel* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
     int numIndices = 0;
     
     // top
-    simpleModel->m_Indices[numIndices++] = 0;
-    simpleModel->m_Indices[numIndices++] = 1;
-    simpleModel->m_Indices[numIndices++] = 2;
+    modelClassSubset->m_Indices[numIndices++] = 0;
+    modelClassSubset->m_Indices[numIndices++] = 1;
+    modelClassSubset->m_Indices[numIndices++] = 2;
     
-    simpleModel->m_Indices[numIndices++] = 2;
-    simpleModel->m_Indices[numIndices++] = 3;
-    simpleModel->m_Indices[numIndices++] = 0;
+    modelClassSubset->m_Indices[numIndices++] = 2;
+    modelClassSubset->m_Indices[numIndices++] = 3;
+    modelClassSubset->m_Indices[numIndices++] = 0;
     
     // left side
-    simpleModel->m_Indices[numIndices++] = 0;
-    simpleModel->m_Indices[numIndices++] = 3;
-    simpleModel->m_Indices[numIndices++] = 4;
+    modelClassSubset->m_Indices[numIndices++] = 0;
+    modelClassSubset->m_Indices[numIndices++] = 3;
+    modelClassSubset->m_Indices[numIndices++] = 4;
     
-    simpleModel->m_Indices[numIndices++] = 4;
-    simpleModel->m_Indices[numIndices++] = 7;
-    simpleModel->m_Indices[numIndices++] = 0;
+    modelClassSubset->m_Indices[numIndices++] = 4;
+    modelClassSubset->m_Indices[numIndices++] = 7;
+    modelClassSubset->m_Indices[numIndices++] = 0;
     
     // bottom
-    simpleModel->m_Indices[numIndices++] = 5;
-    simpleModel->m_Indices[numIndices++] = 6;
-    simpleModel->m_Indices[numIndices++] = 7;
+    modelClassSubset->m_Indices[numIndices++] = 5;
+    modelClassSubset->m_Indices[numIndices++] = 6;
+    modelClassSubset->m_Indices[numIndices++] = 7;
     
-    simpleModel->m_Indices[numIndices++] = 7;
-    simpleModel->m_Indices[numIndices++] = 4;
-    simpleModel->m_Indices[numIndices++] = 5;
+    modelClassSubset->m_Indices[numIndices++] = 7;
+    modelClassSubset->m_Indices[numIndices++] = 4;
+    modelClassSubset->m_Indices[numIndices++] = 5;
     
     // right side
-    simpleModel->m_Indices[numIndices++] = 2;
-    simpleModel->m_Indices[numIndices++] = 1;
-    simpleModel->m_Indices[numIndices++] = 6;
+    modelClassSubset->m_Indices[numIndices++] = 2;
+    modelClassSubset->m_Indices[numIndices++] = 1;
+    modelClassSubset->m_Indices[numIndices++] = 6;
     
-    simpleModel->m_Indices[numIndices++] = 6;
-    simpleModel->m_Indices[numIndices++] = 5;
-    simpleModel->m_Indices[numIndices++] = 2;
+    modelClassSubset->m_Indices[numIndices++] = 6;
+    modelClassSubset->m_Indices[numIndices++] = 5;
+    modelClassSubset->m_Indices[numIndices++] = 2;
     
     // 
     // 
     // back
-    simpleModel->m_Indices[numIndices++] = 0;
-    simpleModel->m_Indices[numIndices++] = 7;
-    simpleModel->m_Indices[numIndices++] = 6;
+    modelClassSubset->m_Indices[numIndices++] = 0;
+    modelClassSubset->m_Indices[numIndices++] = 7;
+    modelClassSubset->m_Indices[numIndices++] = 6;
     
-    simpleModel->m_Indices[numIndices++] = 6;
-    simpleModel->m_Indices[numIndices++] = 1;
-    simpleModel->m_Indices[numIndices++] = 0;
+    modelClassSubset->m_Indices[numIndices++] = 6;
+    modelClassSubset->m_Indices[numIndices++] = 1;
+    modelClassSubset->m_Indices[numIndices++] = 0;
     
     // front
-    simpleModel->m_Indices[numIndices++] = 3;
-    simpleModel->m_Indices[numIndices++] = 2;
-    simpleModel->m_Indices[numIndices++] = 5;
+    modelClassSubset->m_Indices[numIndices++] = 3;
+    modelClassSubset->m_Indices[numIndices++] = 2;
+    modelClassSubset->m_Indices[numIndices++] = 5;
     
-    simpleModel->m_Indices[numIndices++] = 5;
-    simpleModel->m_Indices[numIndices++] = 4;
-    simpleModel->m_Indices[numIndices++] = 3;
+    modelClassSubset->m_Indices[numIndices++] = 5;
+    modelClassSubset->m_Indices[numIndices++] = 4;
+    modelClassSubset->m_Indices[numIndices++] = 3;
     
     assert(numIndices <= 36);
     
     // save number of elements
-    simpleModel->m_NumIndices = numIndices;
+    modelClassSubset->m_NumIndices = numIndices;
     
     // generate vertex name
-    glGenVertexArrays(1, &simpleModel->m_VaoName);
-    glBindVertexArray(simpleModel->m_VaoName);
+    glGenVertexArrays(1, &modelClassSubset->m_VaoName);
+    glBindVertexArray(modelClassSubset->m_VaoName);
     
     // generate vertex buffer name
-    glGenBuffers(1, &simpleModel->m_VertexBufferName);
-    glBindBuffer(GL_ARRAY_BUFFER, simpleModel->m_VertexBufferName);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(SimpleVertex)*simpleModel->m_NumVertices, simpleModel->m_Vertices, GL_STATIC_DRAW);
+    glGenBuffers(1, &modelClassSubset->m_VertexBufferName);
+    glBindBuffer(GL_ARRAY_BUFFER, modelClassSubset->m_VertexBufferName);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(SimpleVertex)*modelClassSubset->m_NumVertices, modelClassSubset->m_Vertices, GL_STATIC_DRAW);
     
-    glGenBuffers(1, &simpleModel->m_IndexBufferName);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, simpleModel->m_IndexBufferName);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, simpleModel->m_NumIndices*sizeof(unsigned short), simpleModel->m_Indices, GL_STATIC_DRAW);
-    
-    return simpleModel;
+    glGenBuffers(1, &modelClassSubset->m_IndexBufferName);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelClassSubset->m_IndexBufferName);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelClassSubset->m_NumIndices*sizeof(unsigned short), modelClassSubset->m_Indices, GL_STATIC_DRAW);
+
+    // update bsphere
+    ModelClassSubsetCalcBSphere(modelClassSubset);
 }
 
-// SimpleModelDestroy(SimpleModel* simpleModel)
-void SimpleModelDestroy(SimpleModel* simpleModel)
+// -------------------------------------------------------------------------------------------------
+ModelInstance* RenderGenerateCube(RenderContext* renderContext, float halfWidth)
+{
+    return nullptr;
+    
+    ModelInstance* modelInstance = new ModelInstance();
+    MatrixMakeIdentity(&modelInstance->m_Po);
+    modelInstance->m_Po.Scale(Vec3(2.0f*halfWidth, 2.0f*halfWidth, 2.0f*halfWidth));
+    modelInstance->m_ModelClass = ModelClassFind(kModelClassBuiltinCube);
+    return modelInstance;
+}
+
+// -------------------------------------------------------------------------------------------------
+// ModelInstanceDestroy
+//
+void ModelInstanceDestroy(ModelInstance* simpleModel)
 {
     if (simpleModel == nullptr)
         return;
     
-    MaterialDestroy(simpleModel->m_Material);
-    
-    glDeleteBuffers(1, &simpleModel->m_VertexBufferName);
-    glDeleteBuffers(1, &simpleModel->m_IndexBufferName);
-    glDeleteVertexArrays(1, &simpleModel->m_VaoName);
-    
-    delete [] simpleModel->m_Vertices;
-    delete [] simpleModel->m_Indices;
+    ModelClassDestroy(simpleModel->m_ModelClass);
     delete simpleModel;
 }
 
-// SimpleModelSetVertexAttributes
+// -------------------------------------------------------------------------------------------------
+// ModelInstanceSetVertexAttributes
 //
 //
-void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
+void ModelInstanceSetVertexAttributes(const ModelClassSubset* modelClassSubset)
 {
     GL_ERROR_SCOPE();
     
-    glBindBuffer(GL_ARRAY_BUFFER, simpleModel->m_VertexBufferName);
+    glBindBuffer(GL_ARRAY_BUFFER, modelClassSubset->m_VertexBufferName);
     
     // setup vertex attributes.  shaders bind on kVertexAttributePosition etc in ShaderCreate
     glEnableVertexAttribArray(kVertexAttributePosition);
@@ -1512,9 +1588,10 @@ void SimpleModelSetVertexAttributes(const SimpleModel* simpleModel)
                           sizeof(SimpleVertex),                       // stride
                           BUFFER_OFFSETOF(SimpleVertex, m_Uv));       // offset in buffer data
     
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, simpleModel->m_IndexBufferName);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelClassSubset->m_IndexBufferName);
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderAddGlobalProperty
 int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPropertyName, Material::MaterialPropertyType type)
 {
@@ -1533,6 +1610,7 @@ int RenderAddGlobalProperty(RenderContext* renderContext, const char* materialPr
     return index;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderGlobalSetFloat(RenderContext* renderContext, int index, float value)
 {
     assert(index < renderContext->m_MaterialProperties.kMaxSize);
@@ -1541,6 +1619,7 @@ void RenderGlobalSetFloat(RenderContext* renderContext, int index, float value)
     materialProperty->m_Float = value;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderGlobalSetInt(RenderContext* renderContext, int index, int value)
 {
     assert(index < renderContext->m_MaterialProperties.kMaxSize);
@@ -1549,6 +1628,7 @@ void RenderGlobalSetInt(RenderContext* renderContext, int index, int value)
     materialProperty->m_Int = value;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderGlobalSetVector(RenderContext* renderContext, int index, Vec4 value)
 {
     assert(index < renderContext->m_MaterialProperties.kMaxSize);
@@ -1557,6 +1637,7 @@ void RenderGlobalSetVector(RenderContext* renderContext, int index, Vec4 value)
     materialProperty->m_Vector = value;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderGlobalSetMatrix(RenderContext* renderContext, int index, const Mat4& value)
 {
     assert(index < renderContext->m_MaterialProperties.kMaxSize);
@@ -1565,6 +1646,7 @@ void RenderGlobalSetMatrix(RenderContext* renderContext, int index, const Mat4& 
     materialProperty->m_Matrix = value;
 }
 
+// -------------------------------------------------------------------------------------------------
 void RenderGlobalSetTexture(RenderContext* renderContext, int index, int textureId)
 {
     assert(index < renderContext->m_MaterialProperties.kMaxSize);
@@ -1573,6 +1655,7 @@ void RenderGlobalSetTexture(RenderContext* renderContext, int index, int texture
     materialProperty->m_TextureId = textureId;
 }
 
+// -------------------------------------------------------------------------------------------------
 // RenderGlobalSetTexture
 void RenderGlobalSetTexture(RenderContext* renderContext, int index, Texture* texture)
 {
@@ -1580,4 +1663,115 @@ void RenderGlobalSetTexture(RenderContext* renderContext, int index, Texture* te
     if (texture != nullptr)
         textureId = texture->m_TextureId;
     RenderGlobalSetTexture(renderContext, index, textureId);
+}
+
+// -------------------------------------------------------------------------------------------------
+uint32_t RenderModelSubsetGetSortKey(const ModelClassSubset* modelClassSubset)
+{
+    uint32_t materialIdBits = 0;
+    uint32_t blendModeBit = 0;
+    uint32_t positionBits = 0;
+    
+    const BSphere& bsphere = modelClassSubset->m_BSphere;
+    const float minz = bsphere.z() - bsphere.radius();
+    
+    if (modelClassSubset->m_Material->m_BlendMode != Material::BlendMode::kOpaque)
+    {
+        blendModeBit = 0x80000000;
+        positionBits = ((unsigned int) (minz * 128.0f)) & 0x7fff;
+    }
+    else
+    {
+        uint32_t textureId = 0;
+        textureId ^= modelClassSubset->m_Material->m_Texture->m_TextureId;
+        textureId = ((textureId>>16) ^ (textureId&0xffff))&0xffff;
+        
+        materialIdBits = textureId<<15;
+    }
+    
+    uint32_t key = 0;
+    key = blendModeBit | positionBits | materialIdBits;
+    return key;
+}
+
+// -------------------------------------------------------------------------------------------------
+// RenderDrawModelSubset
+//
+void RenderDrawModelSubset(RenderContext* renderContext, const Mat4& localToWorld, const ModelClassSubset* modelClassSubset)
+{
+    GL_ERROR_SCOPE();
+    
+    const Material* material = modelClassSubset->m_Material;
+    const Shader* shader = material->m_Shader;
+    
+    if (renderContext->m_ReplacementShader)
+        shader = renderContext->m_ReplacementShader;
+    
+    Mat4 normalModel;
+    MatrixInvert(&normalModel, localToWorld);
+    normalModel.Transpose();
+    
+    // use material
+    int textureSlotItr = 1;
+    RenderUseMaterial(renderContext, &textureSlotItr, material);
+    
+    // global constants
+    RenderSetGlobalConstants(renderContext, &textureSlotItr, shader->m_ProgramName);
+    
+    GLint pi = glGetUniformLocation(shader->m_ProgramName, "project");
+    glUniformMatrix4fv(pi, 1, GL_FALSE, renderContext->m_Projection.asFloat());
+    
+    GLint nmi = glGetUniformLocation(shader->m_ProgramName, "normalModel");
+    glUniformMatrix4fv(nmi, 1, GL_FALSE, normalModel.asFloat());
+    
+    GLint l2wi = glGetUniformLocation(shader->m_ProgramName, "localToWorld");
+    glUniformMatrix4fv(l2wi, 1, GL_FALSE, localToWorld.asFloat());
+    
+    Mat4 modelView;
+    MatrixMultiply(&modelView, localToWorld, renderContext->m_View);
+    
+    GLint mvi = glGetUniformLocation(shader->m_ProgramName, "modelView");
+    glUniformMatrix4fv(mvi, 1, GL_FALSE, modelView.asFloat());
+    
+    GLint viewIndex = glGetUniformLocation(shader->m_ProgramName, "view");
+    glUniformMatrix4fv(viewIndex, 1, GL_FALSE, renderContext->m_View.asFloat());
+    
+    RenderSetLightConstants(renderContext, shader);
+    
+    ModelInstanceSetVertexAttributes(modelClassSubset);
+    
+    glDrawElements(GL_TRIANGLES, modelClassSubset->m_NumIndices, GL_UNSIGNED_SHORT, (void*) 0);
+    glDisable(GL_BLEND);
+}
+
+// -------------------------------------------------------------------------------------------------
+void ModelClassSubsetCalcBSphere(ModelClassSubset* inplace)
+{
+    if (inplace->m_NumIndices)
+    {
+        Vec3 centroid = Vec3(inplace->m_Vertices[inplace->m_Indices[0]].m_Position);
+        float recip = 1.0f / inplace->m_NumIndices;
+        for (int i=1; i<inplace->m_NumIndices; ++i)
+        {
+            const SimpleVertex& simpleVertex = inplace->m_Vertices[inplace->m_Indices[i]];
+            centroid += Vec3(simpleVertex.m_Position) * recip;
+        }
+        
+        float max_radius_squared = 0.0f;
+        for (int i=0; i<inplace->m_NumIndices; ++i)
+        {
+            const SimpleVertex& simpleVertex = inplace->m_Vertices[inplace->m_Indices[i]];
+            float radius_squared = DistanceSquared(centroid, Vec3(simpleVertex.m_Position));
+            max_radius_squared = Max(radius_squared, max_radius_squared);
+        }
+        
+        inplace->m_BSphere = BSphere(centroid.asFloat(), sqrtf(max_radius_squared));
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
+void RenderSetClearColor(RenderContext* renderContext, Vec3 color)
+{
+    renderContext->m_ClearColor = color;
+    glClearColor(color[0], color[1], color[2], 0.0f);
 }

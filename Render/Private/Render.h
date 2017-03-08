@@ -2,7 +2,18 @@
 
 #pragma once
 
+class RenderContext;
+class ModelClass;
+class ModelClassSubset;
+
 void RenderSetGlobalConstants(RenderContext* renderContext, int* textureSlotItr, int programName);
 void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader);
 
 float RenderWorldToScreenDistance(RenderContext* renderContext, float worldDistance);
+
+ModelClass* RenderGenerateCubeModelClass(RenderContext* renderContext);
+
+void ModelClassSubsetCalcBSphere(ModelClassSubset* inplace);
+
+void RenderGenerateCubeModelClass(RenderContext* renderContext, ModelClass* dest);
+void RenderGenerateSpriteModelClass(RenderContext* renderContext, ModelClass* modelClass);

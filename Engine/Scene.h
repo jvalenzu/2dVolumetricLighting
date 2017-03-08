@@ -9,7 +9,7 @@
 #include "Engine/Obb.h"
 #include "Engine/Light.h"
 
-struct SimpleModel;
+struct ModelInstance;
 struct RenderContext;
 struct Material;
 struct SpriteOptions;
@@ -34,7 +34,7 @@ struct SceneObject
     };
     Mat4 m_PrevLocalToWorld;
     Mat4 m_LocalToWorld;
-    SimpleModel* m_ModelInstance;
+    ModelInstance* m_ModelInstance;
     Obb m_Obb;
     Light m_Light;
     Texture* m_Shadow1dMap;
@@ -57,7 +57,10 @@ struct Scene
     int m_NumObjects;
     int m_MaxObjects;
     SceneObject** m_SceneObjects;
+
+    enum { kMaxSubsets = 128*1024 };
     void* m_SortArray;
+    int m_SortIndex;
     
     enum { kGroupMax = 16 };
     SceneObject* m_SceneGroups[kGroupMax];
