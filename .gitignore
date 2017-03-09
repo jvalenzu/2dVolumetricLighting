@@ -3,6 +3,9 @@
 2dVolumetricLighting.VC.db
 2dVolumetricLighting.VC.VC.opendb
 2dVolumetricLighting.vcxproj.user
+TriangleSort
+TriangleSort.vcxproj.filters
+.DS_Store
 obj
 x64
 imgui.ini
