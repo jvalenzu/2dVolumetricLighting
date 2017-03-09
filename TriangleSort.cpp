@@ -123,8 +123,8 @@ static void ApplyUserInput(RenderContext* renderContext, UserInputState* userInp
         }
         else
         {
-            cameraControllerState->m_Yaw   += 0.1f*direction[0] * M_PI * 0.5f;
-            cameraControllerState->m_Pitch += 0.1f*direction[1] * M_PI * 0.5f;
+            cameraControllerState->m_Yaw   += 0.1f*direction[0] * float(M_PI) * 0.5f;
+            cameraControllerState->m_Pitch += 0.1f*direction[1] * float(M_PI) * 0.5f;
         }
         
         Vec3 translation(0,0,cameraControllerState->m_Zoom);
@@ -202,7 +202,7 @@ static void MainLoop(RenderContext* renderContext)
     SceneCreate(&scene, 256);
     
     // set the clear color
-    RenderSetClearColor(renderContext, Vec3(0.25,0.45,0.45));
+    RenderSetClearColor(renderContext, Vec3(0.25f,0.45f,0.45f));
     
     // move camera to 40.0f
     renderContext->m_Camera.SetTranslation(0.0f, 0.0f, cameraControllerState.m_Zoom);

@@ -11,9 +11,9 @@
 
 #define kModelClassBuiltinCube   1
 
-class ModelClassSubset;
-class ModelInstance;
-class RenderContext;
+struct ModelClassSubset;
+struct ModelInstance;
+struct RenderContext;
 
 struct ModelClass
 {

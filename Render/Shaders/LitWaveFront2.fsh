@@ -27,10 +27,10 @@ void main (void)
 {
     vec4 color = vec4(0,0,0,0);
     vec3 specular = vec3(0,0,0);
-    
+
     vec4 v = normalize(cameraDirectionV);
     
-    for (int i=0; i<numDirectionalLights; ++i)
+    for (int i=0; i<int(numDirectionalLights); ++i)
     {
         Light directionalLight = _DirectionalLight[i];
         float c0 = clamp(dot(normalV.xyz, -directionalLight.m_Direction.xyz), 0.0f, 1.0f);
@@ -47,5 +47,5 @@ void main (void)
     }
     
     fragColor.rgb = _MaterialDiffuse.rgb * color.rgb + _MaterialSpecular.rgb * specular;
-    fragColor.a  = 1.0f;
+    fragColor.a = 1.0f;
 }

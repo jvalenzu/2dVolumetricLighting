@@ -35,9 +35,6 @@
     <ClCompile Include="Engine\Utils.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Tool\RMath.cpp">
-      <Filter>Tool</Filter>
-    </ClCompile>
     <ClCompile Include="Tool\Test.cpp">
       <Filter>Tool</Filter>
     </ClCompile>
@@ -58,6 +55,9 @@
     </ClCompile>
     <ClCompile Include="External\src\lodepng\lodepng.c">
       <Filter>External\lodepng</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Model.cpp">
+      <Filter>Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -218,5 +218,15 @@
     <CustomBuild Include="Render\Shaders\LightPrepass.vsh">
       <Filter>Render\Shaders</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Render\Shaders\LitWaveFront2.fsh">
+      <Filter>Render\Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Render\Shaders\LitWaveFront2.vsh">
+      <Filter>Render\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

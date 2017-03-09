@@ -2,9 +2,9 @@
 
 #pragma once
 
-class RenderContext;
-class ModelClass;
-class ModelClassSubset;
+struct RenderContext;
+struct ModelClass;
+struct ModelClassSubset;
 
 void RenderSetGlobalConstants(RenderContext* renderContext, int* textureSlotItr, int programName);
 void RenderSetLightConstants(RenderContext* renderContext, const Shader* shader);

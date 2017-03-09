@@ -21,15 +21,15 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)EngineUtils.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="External\src\lodepng\lodepng.c" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="TriangleSort.cpp" />
     <ClCompile Include="Render\Asset.cpp" />
     <ClCompile Include="Render\Material.cpp" />
+    <ClCompile Include="Render\Model.cpp" />
     <ClCompile Include="Render\PostEffect.cpp" />
     <ClCompile Include="Render\Render.cpp" />
     <ClCompile Include="Render\Shader.cpp" />
     <ClCompile Include="Render\Texture.cpp" />
     <ClCompile Include="Render\WindowsGL.cpp" />
-    <ClCompile Include="Tool\RMath.cpp" />
     <ClCompile Include="Tool\Test.cpp" />
     <ClCompile Include="Tool\Utils.cpp" />
     <ClCompile Include="External\src\imgui\imgui.cpp" />
@@ -62,6 +62,18 @@
     <ClInclude Include="Tool\Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <CustomBuild Include="Render\Shaders\LitWaveFront2.fsh">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
+    </CustomBuild>
     <CustomBuild Include="Render\Shaders\BlurX.fsh">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
@@ -148,6 +160,18 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <CustomBuild Include="Render\Shaders\LitWaveFront2.vsh">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)obj\Shader\%(Filename)%(Extension)</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Render\Shaders\light.h;$(ProjectDir)Render\Shaders\shader.h</AdditionalInputs>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
+    </CustomBuild>
     <CustomBuild Include="Render\Shaders\BlurX.vsh">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MCppToolPath) -a %(FullPath) &gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Preprocessing %(Filename)%(Extension) =&gt; $(ProjectDir)obj\Shader\%(Filename)%(Extension)</Message>
@@ -334,9 +358,8 @@
     </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D445935C-BF6F-4803-AE16-D5FB156C2AE7}</ProjectGuid>
-    <Keyword>Win32Proj</Keyword>
-    <RootNamespace>My2dVolumetricLighting</RootNamespace>
+    <ProjectGuid>{062E0296-7E8E-4482-A026-B3BAA59078D4}</ProjectGuid>
+    <RootNamespace>TriangleSort</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -368,9 +391,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(Platform)\$(ProjectName}$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(Platform)\$(ProjectName}$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
